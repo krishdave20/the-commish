@@ -9,3 +9,10 @@ export function usePageTitle(path: string): void {
     window.scrollTo?.(0, 0);
   }, [path]);
 }
+
+/** Sets document.title to "<name> · the commish" for a page whose title is data (a player's name). */
+export function useTitle(name: string): void {
+  useEffect(() => {
+    document.title = `${name} · the commish`;
+  }, [name]);
+}

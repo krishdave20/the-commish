@@ -1,21 +1,23 @@
 /* Endpoint health checks for Settings → Data health. Hits every endpoint in SPEC section 4 once and
    says, in plain English, what works and what breaks. Undocumented Sleeper endpoints that fail name the
-   features that depend on them. Network goes through the shared limiter. */
+   features that depend on them. nflverse is not probed directly (no CORS on GitHub releases): its rows read the
+   nightly job's manifest instead. Network goes through the shared limiter. */
 import type { HealthContext, HealthResult } from './contract.ts';
 import type { Limiter } from './limiter.ts';
+import type { NflverseClient, NvResult } from './nflverse.ts';
+import type { NflverseManifest, NflverseSource } from './nflverseTypes.ts';
 import { shapes, type Guard } from './shapes.ts';
 import type { SleeperClient } from './sleeper.ts';
 import type { Transport } from './transport.ts';
-import { fantasyCalcUrl, nflverseUrls, sleeperUrls } from './urls.ts';
+import { fantasyCalcUrl, sleeperUrls } from './urls.ts';
 
 export interface HealthDeps {
   transport: Transport;
   limiter: Limiter;
   client: SleeperClient;
+  nflverse: NflverseClient;
   now: () => number;
 }
-
-const CORS_WARN = 'Blocked by the browser (no CORS on GitHub releases). Will come from the nightly data job in milestone 3.';
 
 interface Spec {
   id: string;
@@ -23,7 +25,6 @@ interface Spec {
   url: string;
   documented: boolean;
   source: HealthResult['source'];
-  method?: 'GET' | 'HEAD';
   guard?: Guard<unknown>;
   /** what the rows are, for the ok message */
   noun?: string;
@@ -33,8 +34,6 @@ interface Spec {
   emptyWarn?: string;
   /** body may legitimately be null */
   nullOk?: boolean;
-  /** HTTP 404 is an expected gap, not a failure */
-  missingWarn?: string;
   onBody?: (body: unknown) => void;
 }
 
@@ -42,7 +41,7 @@ const size = (b: unknown) => (Array.isArray(b) ? b.length : b && typeof b === 'o
 const kb = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
 
 export function createHealth(deps: HealthDeps) {
-  const { transport, limiter, client, now } = deps;
+  const { transport, limiter, client, nflverse, now } = deps;
 
   const result = (s: Pick<Spec, 'id' | 'label' | 'url' | 'documented' | 'source'>, r: Partial<HealthResult> & Pick<HealthResult, 'level' | 'message'>): HealthResult => ({
     id: s.id, label: s.label, url: s.url, documented: s.documented, source: s.source,
@@ -53,21 +52,13 @@ export function createHealth(deps: HealthDeps) {
     const t0 = now();
     let res;
     try {
-      res = await limiter.run(() => transport(s.url, { method: s.method ?? 'GET' }));
+      res = await limiter.run(() => transport(s.url));
     } catch (e) {
       const ms = now() - t0;
-      // fetch() rejects with a TypeError both when offline and when CORS blocks the response
-      if (s.source === 'nflverse' && e instanceof TypeError) return result(s, { level: 'warn', message: CORS_WARN, ms });
       return result(s, { level: 'fail', message: `Could not reach ${s.label}: ${e instanceof Error ? e.message : String(e)}. ${s.impact}`, ms });
     }
     const base = { httpStatus: res.status, ms: res.ms, bytes: res.bytes };
-    if (s.method === 'HEAD') {
-      if (res.status >= 200 && res.status < 400) return result(s, { ...base, level: 'ok', message: `Reachable${res.bytes ? `, ${kb(res.bytes)}` : ''}.` });
-      if (res.status === 404 && s.missingWarn) return result(s, { ...base, level: 'warn', message: s.missingWarn });
-      return result(s, { ...base, level: 'fail', message: `${s.label} answered HTTP ${res.status}. ${s.impact}` });
-    }
     if (res.status !== 200) {
-      if (res.status === 404 && s.missingWarn) return result(s, { ...base, level: 'warn', message: s.missingWarn });
       return result(s, { ...base, level: 'fail', message: `${s.label} answered HTTP ${res.status}. ${s.impact}` });
     }
     if (res.body === null || res.body === undefined) {
@@ -104,17 +95,100 @@ export function createHealth(deps: HealthDeps) {
     }
   }
 
+  /* ---------- nflverse (the nightly job) ---------- */
+
+  const HOUR = 3_600_000;
+  const ageText = (ms: number) => (ms < 48 * HOUR ? `${Math.max(0, Math.round(ms / HOUR))} h` : `${Math.round(ms / (24 * HOUR))} days`);
+  const SOURCES: Array<{ id: NflverseSource['id']; rowId: string; label: string; impact: string }> = [
+    { id: 'pbp', rowId: 'nflverse.pbp', label: 'Play-by-play', impact: 'Target, air-yards and red-zone stats depend on this.' },
+    { id: 'snap_counts', rowId: 'nflverse.snapCounts', label: 'Snap counts', impact: 'Snap share depends on this.' },
+    { id: 'ftn_charting', rowId: 'nflverse.ftn', label: 'FTN charting', impact: 'Blitz, play-action, screen, contested-catch and box splits depend on this.' },
+    { id: 'players', rowId: 'nflverse.players', label: 'nflverse player IDs', impact: 'Joining nflverse stats to Sleeper players depends on this.' },
+  ];
+
+  function nflverseChecks(ctx: HealthContext): Array<[string, () => Promise<HealthResult>]> {
+    let loaded: Promise<NvResult<NflverseManifest>> | null = null;
+    // one live read of the manifest shared by every row below (force: a health check must not report a cached copy as current)
+    const getManifest = () => (loaded ??= nflverse.manifest({ force: true }));
+    const nv = { documented: true, source: 'nflverse' as const };
+    const manifestUrl = nflverse.urlOf('manifest.json');
+    const row = (id: string, label: string, url: string, r: Partial<HealthResult> & Pick<HealthResult, 'level' | 'message'>) => result({ id, label, url, ...nv }, r);
+    const withManifest = (id: string, label: string, url: string, fn: (m: NflverseManifest) => HealthResult): [string, () => Promise<HealthResult>] =>
+      [id, async () => {
+        const m = await getManifest();
+        return m.available ? fn(m.data) : row(id, label, url, { level: 'warn', message: 'Skipped: the nflverse data job has no manifest yet.' });
+      }];
+
+    const out: Array<[string, () => Promise<HealthResult>]> = [];
+    out.push(['nflverse.manifest', async () => {
+      const m = await getManifest();
+      const label = 'nflverse data job';
+      if (!m.available) {
+        return row('nflverse.manifest', label, manifestUrl, {
+          level: 'fail', httpStatus: m.reason === 'not_found' ? 404 : null,
+          message: `${m.message} Run \`npm run data:nflverse\` locally, or wait for the nightly job. Snap share, target share, route and coverage splits depend on this.`,
+        });
+      }
+      const d = m.data;
+      const mismatch = String(d.season) !== ctx.season;
+      return row('nflverse.manifest', label, manifestUrl, {
+        level: mismatch ? 'warn' : 'ok', httpStatus: 200,
+        message: mismatch
+          ? `The data job built ${d.season}, but the app is on ${ctx.season}. Wait for the next nightly run.`
+          : `Built ${d.generatedAt.slice(0, 16).replace('T', ' ')} UTC for ${d.season}, through week ${d.throughWeek}.`,
+      });
+    }]);
+    out.push(withManifest('nflverse.age', 'nflverse data age', manifestUrl, (d) => {
+      const age = now() - Date.parse(d.generatedAt);
+      if (!Number.isFinite(age)) return row('nflverse.age', 'nflverse data age', manifestUrl, { level: 'fail', message: 'The manifest has no readable build time.' });
+      const level = age < 36 * HOUR ? 'ok' : age < 7 * 24 * HOUR ? 'warn' : 'fail';
+      return row('nflverse.age', 'nflverse data age', manifestUrl, {
+        level,
+        message: level === 'ok' ? `Updated ${ageText(age)} ago.`
+          : `Updated ${ageText(age)} ago; the nightly job has not run since. Usage stats are out of date.`,
+      });
+    }));
+    for (const s of SOURCES) {
+      out.push(withManifest(s.rowId, s.label, manifestUrl, (d) => {
+        const src = d.sources.find((x) => x.id === s.id);
+        if (!src) return row(s.rowId, s.label, manifestUrl, { level: 'fail', message: `${s.label} is missing from the manifest. ${s.impact}` });
+        return row(s.rowId, `${s.label}${src.season ? ` ${src.season}` : ''}`, src.url, {
+          level: 'ok', bytes: src.bytes,
+          message: `${src.name}, ${kb(src.bytes)}${src.lastModified ? `, published ${src.lastModified}` : ''}${src.fromCache ? ' (unchanged since the last run)' : ''}.`,
+        });
+      }));
+    }
+    out.push(withManifest('nflverse.participation', 'Participation (routes, man/zone)', manifestUrl, (d) => {
+      const src = d.sources.find((x) => x.id === 'pbp_participation');
+      const impact = 'Route and coverage splits depend on this.';
+      if (!src) return row('nflverse.participation', 'Participation', manifestUrl, { level: 'fail', message: `Participation is missing from the manifest. ${impact}` });
+      const label = `Participation ${d.participationSeason}`;
+      if (d.participationIsCurrent) return row('nflverse.participation', label, src.url, { level: 'ok', bytes: src.bytes, message: `${src.name}, ${kb(src.bytes)}.` });
+      return row('nflverse.participation', label, src.url, {
+        level: 'warn', bytes: src.bytes,
+        message: `${d.participationSeason}, labeled last season; ${d.season} not published yet. Panels switch over on their own once it appears.`,
+      });
+    }));
+    out.push(withManifest('nflverse.unmatched', 'Unmatched players', nflverse.urlOf('unmatched.json'), (d) => {
+      const id = 'nflverse.unmatched';
+      const url = nflverse.urlOf('unmatched.json');
+      const detail = `${d.matched} Sleeper players joined (${d.matchMethods.gsis} by gsis_id, ${d.matchMethods.espn} by espn_id, ${d.matchMethods.name_team_pos + d.matchMethods.name_pos} by name)`;
+      return d.unmatchedCount > 0
+        ? row(id, 'Unmatched players', url, { level: 'warn', message: `${d.unmatchedCount} player${d.unmatchedCount === 1 ? '' : 's'} with snaps or targets could not be joined to Sleeper and show no nflverse stats. ${detail}.` })
+        : row(id, 'Unmatched players', url, { level: 'ok', message: `Every player with snaps or targets joined. ${detail}.` });
+    }));
+    return out;
+  }
+
   async function healthChecks(ctx: HealthContext): Promise<HealthResult[]> {
     const season = ctx.season;
     const week = Math.max(1, ctx.week);
     const prevWeek = Math.max(1, week - 1);
-    const prevSeason = String(Number(season) - 1);
     const L = ctx.leagueId;
     let draftId = ctx.draftId;
     const sl = { documented: true, source: 'sleeper' as const };
     const un = { documented: false, source: 'sleeper' as const };
     const fc = { documented: true, source: 'fantasycalc' as const };
-    const nv = { documented: true, source: 'nflverse' as const, method: 'HEAD' as const };
     const needLeague = (id: string, label: string) => skipped({ id, label, ...sl }, 'no league selected');
 
     const order: string[] = [];
@@ -162,13 +236,8 @@ export function createHealth(deps: HealthDeps) {
     addSpec({ id: 'fantasycalc.dynasty', label: 'FantasyCalc dynasty values', url: fantasyCalcUrl({ isDynasty: true, numQbs: 1, numTeams: 12, ppr: 1 }), ...fc, guard: shapes.fantasyCalc, noun: 'players', impact: 'Dynasty trade values and rookie ranks depend on this; everything else keeps working.' });
     addSpec({ id: 'fantasycalc.redraft', label: 'FantasyCalc redraft values', url: fantasyCalcUrl({ isDynasty: false, numQbs: 1, numTeams: 12, ppr: 1 }), ...fc, guard: shapes.fantasyCalc, noun: 'players', impact: 'Redraft trade values depend on this; everything else keeps working.' });
 
-    /* nflverse (HEAD only; a browser TypeError here means CORS) */
-    addSpec({ id: 'nflverse.pbp', label: `Play-by-play ${season}`, url: nflverseUrls.pbp(season), ...nv, impact: 'Target and air-yards stats depend on this.' });
-    addSpec({ id: 'nflverse.snapCounts', label: `Snap counts ${season}`, url: nflverseUrls.snapCounts(season), ...nv, impact: 'Snap share depends on this.' });
-    addSpec({ id: 'nflverse.ftn', label: `FTN charting ${season}`, url: nflverseUrls.ftn(season), ...nv, impact: 'FTN splits depend on this.' });
-    addSpec({ id: 'nflverse.participationPrev', label: `Participation ${prevSeason}`, url: nflverseUrls.participation(prevSeason), ...nv, impact: 'Route and coverage splits depend on this.' });
-    addSpec({ id: 'nflverse.participation', label: `Participation ${season}`, url: nflverseUrls.participation(season), ...nv, impact: 'Route and coverage splits depend on this.', missingWarn: `Not published yet; ${prevSeason} used, labeled last season.` });
-    addSpec({ id: 'nflverse.players', label: 'nflverse player IDs', url: nflverseUrls.players(), ...nv, impact: 'ID joins to nflverse data depend on this.' });
+    /* nflverse: read through the nightly job's manifest, not the GitHub release URLs */
+    for (const [id, fn] of nflverseChecks(ctx)) add(id, fn);
 
     // draft-specific endpoints need a draft id, which may come from the drafts response above
     const draftIds = ['sleeper.draft', 'sleeper.draftPicks', 'sleeper.draftTradedPicks'];

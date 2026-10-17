@@ -305,7 +305,8 @@ describe('waiver wire (/waivers)', () => {
     });
     renderApp({ linked, route: '/waivers', loadModel });
     expect(await screen.findByText('nobody on the wire beats your bench this window.')).toBeInTheDocument();
-    expect(screen.getByText(/arrive with nflverse data in milestone 3/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'usage risers' })).toBeInTheDocument();
+    expect(screen.getByText('nflverse data arrives with the nightly update.')).toBeInTheDocument();
   });
 });
 

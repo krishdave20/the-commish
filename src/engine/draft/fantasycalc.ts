@@ -28,7 +28,8 @@ export interface FcEntry {
   trend30Day: number | null;
 }
 
-/** Join FantasyCalc rows to Sleeper player ids. Rows without a `sleeperId` (draft picks, unmapped players) are dropped. */
+/** Join FantasyCalc rows to Sleeper player ids. Rows without a `sleeperId` are dropped. Dynasty responses also carry draft
+    picks (position 'PICK'), keyed by FantasyCalc's own id such as `FP_2027_early_0`; they are kept so pick values can be shown. */
 export function joinFantasyCalc(rows: readonly FantasyCalcRow[]): Record<string, FcEntry> {
   const out: Record<string, FcEntry> = {};
   for (const r of rows) {

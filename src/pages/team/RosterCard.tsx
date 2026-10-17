@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { formatPoints1 } from '../../app/format';
 import { useScenario } from '../../app/modelContext';
+import { PlayerLink } from '../../components/PlayerLink';
 import { MatchupGrade } from '../../components/MatchupGrade';
 import { SortableTable } from '../../components/SortableTable';
 import type { Column } from '../../components/useSort';
@@ -34,7 +35,7 @@ export function RosterCard({ engine }: { engine: Engine }) {
   const columns: Column<Row>[] = [
     {
       key: 'player', header: 'player', value: (r) => r.p.name,
-      render: (r) => <><span className="pname">{r.p.name}</span><PlayerTags p={r.p} added={r.added} /></>,
+      render: (r) => <><PlayerLink pid={r.p.pid} name={r.p.name} /><PlayerTags p={r.p} added={r.added} /></>,
     },
     { key: 'pos', header: 'pos', value: (r) => r.p.pos },
     { key: 'nfl', header: 'team', value: (r) => r.p.nfl ?? '', className: 'hide-sm' },

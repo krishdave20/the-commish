@@ -35,6 +35,7 @@ describe('fixture manifest', () => {
 
   it('has a file on disk for every URL, and every file passes the matching shape guard', async () => {
     const guards: Array<[RegExp, (x: unknown) => boolean]> = [
+      [/fantasycalc\.com\/values\//, shapes.fantasyCalc],
       [/\/v1\/state\/nfl$/, shapes.nflState],
       [/\/v1\/user\/[^/]+$/, shapes.user],
       [/\/leagues\/nfl\/\d+$/, shapes.leagues],

@@ -4,12 +4,29 @@ import { createCache } from './cache.ts';
 import type { HealthContext } from './contract.ts';
 import { createDataLayer } from './index.ts';
 import { draft, fakeTransport, league, leagueUser, nflState, ok, roster, status, type FakeTransport } from './test-helpers.ts';
-import { fantasyCalcUrl, nflverseUrls, sleeperUrls } from './urls.ts';
+import { fantasyCalcUrl, sleeperUrls } from './urls.ts';
+import type { NflverseManifest, NflverseSource } from './nflverseTypes.ts';
 
 const ctx: HealthContext = { season: '2026', week: 6, username: 'bob', userId: '7', leagueId: 'L1' };
+const NOW = Date.parse('2026-10-16T12:00:00Z');
+const MANIFEST_URL = './data/nflverse/manifest.json';
 let t: FakeTransport;
 let clock: number;
+
+const source = (id: NflverseSource['id'], name: string, season: number | null = 2026): NflverseSource => ({
+  id, name, url: `https://github.com/nflverse/nflverse-data/releases/download/x/${name}`, season, etag: '"abc"', lastModified: 'Fri, 16 Oct 2026 11:04:00 GMT', bytes: 5_000_000, fromCache: false,
+});
+/** a manifest as the nightly job writes it, built `ageH` hours before the test clock */
+const manifest = (over: Partial<NflverseManifest> = {}, ageH = 3): NflverseManifest => ({
+  schema: 1, generatedAt: new Date(NOW - ageH * 3_600_000).toISOString(), season: 2026, seasonsCovered: [2026], throughWeek: 6,
+  participationSeason: 2025, participationIsCurrent: false, routesDefinition: 'proxy', definitions: {},
+  sources: [source('pbp', 'play_by_play_2026.csv.gz'), source('snap_counts', 'snap_counts_2026.csv'), source('ftn_charting', 'ftn_charting_2026.csv'),
+    source('players', 'players.csv', null), source('pbp_participation', 'pbp_participation_2025.csv', 2025), source('sleeper_players', 'sleeper_players.json', null)],
+  files: {}, xtd: { available: true, fitSeason: 2025, version: 1 }, matchMethods: { gsis: 100, espn: 80, name_team_pos: 380, name_pos: 40 }, matched: 600,
+  unmatchedCount: 0, ftnJoinRate: 0.98, attribution: 'x', ...over,
+});
 const mk = () => createDataLayer({ transport: t, cache: createCache({ memoryOnly: true }), now: () => clock });
+const withManifest = (m: NflverseManifest) => t.set(MANIFEST_URL, ok(m));
 const byId = (rs: Awaited<ReturnType<ReturnType<typeof mk>['api']['healthChecks']>>) => Object.fromEntries(rs.map((r) => [r.id, r]));
 
 /* a transport where every endpoint answers correctly */
@@ -37,52 +54,111 @@ function healthy(): FakeTransport {
     [sleeperUrls.schedule('2026'), ok([{ week: 1, home: 'KC', away: 'BUF' }])],
     [fantasyCalcUrl({ isDynasty: true, numQbs: 1, numTeams: 12, ppr: 1 }), ok([{ player: { sleeperId: '1' }, value: 9000 }])],
     [fantasyCalcUrl({ isDynasty: false, numQbs: 1, numTeams: 12, ppr: 1 }), ok([{ player: { sleeperId: '1' }, value: 8000 }])],
-    [/nflverse-data\/releases\/download\//, ok(null, 5_000_000)],
-    [nflverseUrls.participation('2026'), status(404)],
+    [MANIFEST_URL, ok(manifest())],
   ]);
 }
 
-beforeEach(() => { clock = 5_000_000; t = healthy(); });
+beforeEach(() => { clock = NOW; t = healthy(); });
 
 describe('health checks', () => {
-  it('everything works: ok across Sleeper and FantasyCalc, 2026 participation is a warn', async () => {
+  it('everything works: ok across Sleeper, FantasyCalc and nflverse; 2025 participation is a warn', async () => {
     const rs = byId(await mk().api.healthChecks(ctx));
-    expect(Object.keys(rs)).toHaveLength(28);
+    expect(Object.keys(rs)).toHaveLength(30);
     for (const r of Object.values(rs)) {
       if (r.id === 'nflverse.participation') continue;
       expect(r.level, `${r.id}: ${r.message}`).toBe('ok');
     }
-    expect(rs['nflverse.participation']).toMatchObject({ level: 'warn', httpStatus: 404 });
-    expect(rs['nflverse.participation'].message).toMatch(/not published yet; 2025 used, labeled last season/i);
+    expect(rs['nflverse.participation'].level).toBe('warn');
+    expect(rs['nflverse.participation'].message).toMatch(/2025, labeled last season; 2026 not published yet/i);
     expect(rs['sleeper.stats'].documented).toBe(false);
     expect(rs['sleeper.state'].documented).toBe(true);
     expect(rs['fantasycalc.dynasty'].source).toBe('fantasycalc');
     expect(rs['sleeper.state'].url).toBe(sleeperUrls.state());
     expect(rs['sleeper.state'].checkedAt).toBe(clock);
+    expect(rs['nflverse.pbp'].source).toBe('nflverse');
   });
 
-  it('uses HEAD for nflverse and GET for the rest', async () => {
-    await mk().api.healthChecks(ctx);
-    const nv = t.calls.filter((c) => c.url.includes('nflverse-data'));
-    expect(nv).toHaveLength(6);
-    expect(nv.every((c) => c.method === 'HEAD')).toBe(true);
-    expect(t.calls.filter((c) => !c.url.includes('nflverse-data')).every((c) => c.method === 'GET')).toBe(true);
-    expect(nflverseUrls.participation('2025')).toBe(nv.find((c) => c.url.includes('_2025'))!.url);
-  });
+  describe('nflverse rows read the nightly job, never GitHub', () => {
+    it('one live manifest read serves every row, with no call to GitHub', async () => {
+      await mk().api.healthChecks(ctx);
+      expect(t.count(MANIFEST_URL)).toBe(1);
+      expect(t.calls.filter((c) => c.url.includes('github.com'))).toHaveLength(0);
+      expect(t.calls.every((c) => c.method === 'GET')).toBe(true);
+    });
 
-  it('nflverse blocked by CORS (TypeError) is a warn with the milestone-3 message', async () => {
-    t.set(/nflverse-data/, () => { throw new TypeError('Failed to fetch'); });
-    const rs = byId(await mk().api.healthChecks(ctx));
-    for (const id of ['nflverse.pbp', 'nflverse.snapCounts', 'nflverse.ftn', 'nflverse.participationPrev', 'nflverse.participation', 'nflverse.players']) {
-      expect(rs[id].level).toBe('warn');
-      expect(rs[id].message).toBe('Blocked by the browser (no CORS on GitHub releases). Will come from the nightly data job in milestone 3.');
-    }
-  });
+    it('a cached manifest does not hide a missing one: the check always goes live', async () => {
+      const layer = mk();
+      await layer.nflverse.manifest();
+      t.set(MANIFEST_URL, status(404));
+      const rs = byId(await layer.api.healthChecks(ctx));
+      expect(rs['nflverse.manifest'].level).toBe('fail');
+    });
 
-  it('a missing (non-participation) nflverse file is a fail', async () => {
-    t.set(nflverseUrls.pbp('2026'), status(404));
-    const rs = byId(await mk().api.healthChecks(ctx));
-    expect(rs['nflverse.pbp'].level).toBe('fail');
+    it('no manifest: the manifest row fails with the command to run; the rows that depend on it are skipped warns', async () => {
+      t.set(MANIFEST_URL, status(404));
+      const rs = byId(await mk().api.healthChecks(ctx));
+      expect(rs['nflverse.manifest']).toMatchObject({ level: 'fail', httpStatus: 404 });
+      expect(rs['nflverse.manifest'].message).toMatch(/npm run data:nflverse/);
+      for (const id of ['nflverse.age', 'nflverse.pbp', 'nflverse.snapCounts', 'nflverse.ftn', 'nflverse.players', 'nflverse.participation', 'nflverse.unmatched']) {
+        expect(rs[id].level, id).toBe('warn');
+        expect(rs[id].message).toMatch(/skipped/i);
+      }
+      // the Sleeper rows are untouched
+      expect(rs['sleeper.league'].level).toBe('ok');
+    });
+
+    it('the dev server answering with index.html counts as no manifest, not a crash', async () => {
+      t.set(MANIFEST_URL, ok('<!doctype html><html></html>'));
+      const rs = byId(await mk().api.healthChecks(ctx));
+      expect(rs['nflverse.manifest'].level).toBe('fail');
+    });
+
+    it('age: ok under 36 h, warn under 7 days, fail beyond', async () => {
+      for (const [h, level] of [[2, 'ok'], [35, 'ok'], [37, 'warn'], [6 * 24, 'warn'], [8 * 24, 'fail']] as const) {
+        withManifest(manifest({}, h));
+        const rs = byId(await mk().api.healthChecks(ctx));
+        expect(rs['nflverse.age'].level, `${h} h`).toBe(level);
+      }
+      withManifest(manifest({}, 10));
+      expect(byId(await mk().api.healthChecks(ctx))['nflverse.age'].message).toBe('Updated 10 h ago.');
+      withManifest(manifest({}, 9 * 24));
+      expect(byId(await mk().api.healthChecks(ctx))['nflverse.age'].message).toMatch(/9 days ago/);
+    });
+
+    it('each source file must be in the manifest', async () => {
+      withManifest(manifest({ sources: manifest().sources.filter((s) => s.id !== 'ftn_charting' && s.id !== 'snap_counts') }));
+      const rs = byId(await mk().api.healthChecks(ctx));
+      expect(rs['nflverse.ftn']).toMatchObject({ level: 'fail' });
+      expect(rs['nflverse.ftn'].message).toMatch(/blitz, play-action/i);
+      expect(rs['nflverse.snapCounts'].level).toBe('fail');
+      expect(rs['nflverse.pbp'].level).toBe('ok');
+      expect(rs['nflverse.pbp'].url).toMatch(/play_by_play_2026/);
+    });
+
+    it('participation: warn while it is last season, ok once the current season is published, fail if absent', async () => {
+      withManifest(manifest({ participationSeason: 2026, participationIsCurrent: true, sources: manifest().sources.map((s) => (s.id === 'pbp_participation' ? source('pbp_participation', 'pbp_participation_2026.csv', 2026) : s)) }));
+      expect((byId(await mk().api.healthChecks(ctx)))['nflverse.participation'].level).toBe('ok');
+      withManifest(manifest({ sources: manifest().sources.filter((s) => s.id !== 'pbp_participation') }));
+      expect((byId(await mk().api.healthChecks(ctx)))['nflverse.participation'].level).toBe('fail');
+    });
+
+    it('unmatched players: ok at 0, warn with the count above 0', async () => {
+      withManifest(manifest({ unmatchedCount: 1 }));
+      let r = byId(await mk().api.healthChecks(ctx))['nflverse.unmatched'];
+      expect(r.level).toBe('warn');
+      expect(r.message).toMatch(/^1 player with snaps or targets could not be joined/);
+      withManifest(manifest({ unmatchedCount: 7 }));
+      r = byId(await mk().api.healthChecks(ctx))['nflverse.unmatched'];
+      expect(r.message).toMatch(/^7 players with snaps or targets/);
+      expect(r.message).toMatch(/600 Sleeper players joined \(100 by gsis_id, 80 by espn_id, 420 by name\)/);
+    });
+
+    it('a manifest built for another season is a warn on the manifest row', async () => {
+      withManifest(manifest({ season: 2025 }));
+      const r = byId(await mk().api.healthChecks(ctx))['nflverse.manifest'];
+      expect(r.level).toBe('warn');
+      expect(r.message).toMatch(/built 2025, but the app is on 2026/);
+    });
   });
 
   it('a failing undocumented endpoint is a fail that names the features it feeds', async () => {
@@ -144,8 +220,8 @@ describe('health checks', () => {
     const layer = mk();
     const spy = vi.spyOn(layer.limiter, 'run');
     await layer.api.healthChecks(ctx);
-    // 27 direct probes + the players file (fetched once through the client's own limiter use)
-    expect(spy).toHaveBeenCalledTimes(28);
+    // 21 direct Sleeper/FantasyCalc probes + the players file + the nflverse manifest
+    expect(spy).toHaveBeenCalledTimes(23);
   });
 
   describe('the 14 MB players file', () => {

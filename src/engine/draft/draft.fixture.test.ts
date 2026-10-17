@@ -63,16 +63,25 @@ describe('rankings from the saved season projections', () => {
 });
 
 describe('dynasty modes on the saved data', () => {
-  it('rookie mode loads the players file for years_exp, keeps only rookies, and survives FantasyCalc being unreachable', async () => {
+  it('rookie mode loads the players file for years_exp, keeps only rookies, and uses the captured FantasyCalc values', async () => {
     const inputs = await loadDraftInputs(layer.sleeper, league, { mode: 'rookie' });
     expect(inputs.players).not.toBeNull();
-    expect(inputs.fantasyCalc.ok).toBe(false); // never captured in the fixture → the transport answers 404
-    expect(inputs.fantasyCalc.reason).toMatch(/FantasyCalc/);
+    expect(inputs.fantasyCalc.ok).toBe(true); // captured in the fixture with --only fantasycalc
     const r = buildRankings({ projections: inputs.projections, league, mode: 'rookie', players: inputs.players, fantasyCalc: inputs.fantasyCalc.byId });
     expect(r.adpField).toBe('adp_rookie');
     expect(r.rows.length).toBeGreaterThan(10);
     expect(r.rows.length).toBeLessThan(rankings.rows.length);
     expect(r.rows.every((x) => x.rookie && (x.yearsExp === 0 || x.adp != null))).toBe(true);
+  });
+  it('rookie mode survives FantasyCalc being unreachable (the transport answers 404)', async () => {
+    const src = await fixtureDirSource(FIXTURE_DIR);
+    const inner = fixtureTransport(src);
+    const down = createDataLayer({ transport: (u, i) => (u.includes('fantasycalc') ? Promise.resolve({ status: 503, body: null, bytes: 0, ms: 0 }) : inner(u, i)), cache: createCache({ memoryOnly: true }) });
+    const inputs = await loadDraftInputs(down.sleeper, league, { mode: 'rookie' });
+    expect(inputs.fantasyCalc.ok).toBe(false);
+    expect(inputs.fantasyCalc.byId).toEqual({});
+    expect(inputs.fantasyCalc.reason).toMatch(/FantasyCalc/);
+    expect(buildRankings({ projections: inputs.projections, league, mode: 'rookie', players: inputs.players, fantasyCalc: inputs.fantasyCalc.byId }).rows.length).toBeGreaterThan(10);
   });
   it('startup mode reads the dynasty ADP column', () => {
     const r = buildRankings({ projections: [], league: { ...league, settings: { ...league.settings, type: 2 } } });

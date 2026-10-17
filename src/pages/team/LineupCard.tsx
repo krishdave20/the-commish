@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { formatPoints1 } from '../../app/format';
 import { useScenario } from '../../app/modelContext';
+import { PlayerLink } from '../../components/PlayerLink';
 import { MatchupGrade } from '../../components/MatchupGrade';
 import { Segmented } from '../../components/Segmented';
 import { SLOT_LABEL } from '../../engine';
@@ -70,7 +71,7 @@ export function LineupCard({ engine }: { engine: Engine }) {
               return (
                 <tr key={p.pid} className={r.start ? undefined : 'bn'}>
                   <td className="micro">{SLOT_LABEL[r.slot] ?? r.slot}</td>
-                  <td><span className="pname">{p.name}</span> <span className="dim">{p.pos} · {p.nfl ?? ''}</span><PlayerTags p={p} /></td>
+                  <td><PlayerLink pid={p.pid} name={p.name} /> <span className="dim">{p.pos} · {p.nfl ?? ''}</span><PlayerTags p={p} /></td>
                   <td className="hide-sm"><MatchupGrade opponent={p.opp[week]} dvp={p.dvp[week]} /></td>
                   <td>
                     <div className="rng" title={`floor ${formatPoints1(lo)} · expected ${formatPoints1(v)} · ceiling ${formatPoints1(hi)}`}>

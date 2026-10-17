@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { applyBaseSim, baseSimInput, createEngine } from '../engine';
 import type { LoadProgress, Model } from '../engine';
+import type { ModelExtras } from './loadModel';
 import { useData } from './dataContext';
 import { useActive } from './hooks';
 import { sleeperLoader } from './loadModel';
@@ -13,6 +14,7 @@ import { useSimulation } from './useSimulation';
 interface State {
   key: string | null;
   model: Model | null;
+  extras: ModelExtras | null;
   asOf: number | null;
   stale: boolean;
   error: string | undefined;
@@ -20,7 +22,7 @@ interface State {
   progress: LoadProgress | null;
 }
 
-const EMPTY: State = { key: null, model: null, asOf: null, stale: false, error: undefined, busy: false, progress: null };
+const EMPTY: State = { key: null, model: null, extras: null, asOf: null, stale: false, error: undefined, busy: false, progress: null };
 
 interface Props {
   children: ReactNode;
@@ -52,7 +54,7 @@ export function ModelProvider({ children, loadModel }: Props) {
       },
     }).then(
       (r) => {
-        if (current()) setSt({ key, model: r.model, asOf: r.asOf, stale: r.stale, error: r.error, busy: false, progress: null });
+        if (current()) setSt({ key, model: r.model, extras: r.extras ?? null, asOf: r.asOf, stale: r.stale, error: r.error, busy: false, progress: null });
       },
       (e: unknown) => {
         if (!current()) return;
@@ -87,6 +89,7 @@ export function ModelProvider({ children, loadModel }: Props) {
   const value = useMemo<ModelValue>(() => ({
     model,
     engine,
+    extras: own.extras,
     baseSim,
     asOf: own.asOf,
     stale: own.stale,

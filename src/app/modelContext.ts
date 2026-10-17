@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { ModelExtras } from './loadModel';
 import type { Engine, LoadProgress, Model, Scenario, SimSummary } from '../engine';
 
 export interface ModelValue {
@@ -8,6 +9,8 @@ export interface ModelValue {
   asOf: number | null;
   stale: boolean;
   fromCache: false;
+  /** raw weekly stat lines and scoring from the pull (null until loaded) */
+  extras: ModelExtras | null;
   /** the model's own first simulation (no what-if); null until it finishes */
   baseSim: SimSummary | null;
   loading: boolean;

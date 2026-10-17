@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach } from 'vitest';
 import { AppRoutes } from '../App';
-import { createFakeAccountStore, createFakeApi, sampleLoadModel } from '../test/fakes';
+import { createFakeAccountStore, createFakeApi, createFakeNflverse, createFakeSleeper, sampleLoadModel } from '../test/fakes';
 import type { FakeAccountStore, FakeApi } from '../test/fakes';
 import type { LinkedAccount } from '../data';
 import { DataProvider } from './DataProvider';
@@ -17,6 +17,9 @@ afterEach(cleanup);
 interface Options {
   api?: FakeApi;
   accounts?: FakeAccountStore;
+  sleeper?: ReturnType<typeof createFakeSleeper>;
+  /** pass true for the sample nightly nflverse bundle */
+  nflverse?: boolean;
   /** linked accounts to start with (the first is active) */
   linked?: LinkedAccount[];
   route?: string;
@@ -28,9 +31,10 @@ interface Options {
 export function renderApp(opts: Options = {}) {
   const api = opts.api ?? createFakeApi();
   const accounts = opts.accounts ?? createFakeAccountStore(opts.linked ?? []);
+  const sleeper = opts.sleeper ?? createFakeSleeper();
   const user = userEvent.setup();
   const utils = render(
-    <DataProvider api={api} accounts={accounts}>
+    <DataProvider api={api} accounts={accounts} sleeper={sleeper} nflverse={opts.nflverse ? createFakeNflverse() : undefined}>
       <ModelProvider loadModel={opts.loadModel ?? sampleLoadModel()}>
         <ScenarioProvider>
           <MemoryRouter initialEntries={[opts.route ?? '/']}>
@@ -40,5 +44,5 @@ export function renderApp(opts: Options = {}) {
       </ModelProvider>
     </DataProvider>,
   );
-  return { api, accounts, user, ...utils };
+  return { api, accounts, sleeper, user, ...utils };
 }

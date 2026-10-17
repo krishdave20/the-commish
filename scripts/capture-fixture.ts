@@ -1,16 +1,20 @@
 /* Saves one full Sleeper pull to reference/fixture/ so tests (and the milestone 2 regression test against
    the reference engine) run fully offline.
    Usage: npm run fixture:capture -- --user <username> --league <league_id> [--out <dir>]
+          npm run fixture:capture -- --only fantasycalc [--out <dir>]
+   The second form adds FantasyCalc values to an existing fixture (league and params come from its manifest) and
+   re-captures nothing else.
    Nothing here is tied to a particular user or league: both come from the arguments. */
-import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { gzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import type { NflState, SleeperDraft, SleeperLeague, SleeperUser } from '../src/data/contract.ts';
 import { createLimiter } from '../src/data/limiter.ts';
 import { planPull } from '../src/data/plan.ts';
 import { browserTransport } from '../src/data/transport.ts';
-import { sleeperUrls } from '../src/data/urls.ts';
+import { fantasyCalcUrl, sleeperUrls } from '../src/data/urls.ts';
+import { fantasyCalcParams } from '../src/engine/draft/fantasycalc.ts';
 
 export function parseArgs(argv: string[]): { user: string; league: string; out: string } {
   const get = (name: string) => {
@@ -23,7 +27,50 @@ export function parseArgs(argv: string[]): { user: string; league: string; out: 
   return { user, league, out: resolve(get('out') ?? 'reference/fixture') };
 }
 
+/** `--only <what>`: restricts a run to one add-on (currently only "fantasycalc"). */
+export function parseOnly(argv: string[]): string | undefined {
+  const i = argv.indexOf('--only');
+  return i >= 0 ? argv[i + 1] : undefined;
+}
+
+export const outDirOf = (argv: string[]): string => {
+  const i = argv.indexOf('--out');
+  return resolve((i >= 0 ? argv[i + 1] : undefined) ?? 'reference/fixture');
+};
+
+/** The two FantasyCalc requests saved for a league: its own params (redraft or dynasty as configured) and the same params
+    with the other `isDynasty` value, so the fixture holds both flavours. */
+export function fantasyCalcRequests(league: SleeperLeague): Array<{ name: string; url: string }> {
+  const p = fantasyCalcParams(league);
+  const mine = { name: p.isDynasty ? 'fantasycalc_dynasty' : 'fantasycalc_redraft', url: fantasyCalcUrl(p) };
+  const other = { name: p.isDynasty ? 'fantasycalc_redraft' : 'fantasycalc_dynasty', url: fantasyCalcUrl({ ...p, isDynasty: !p.isDynasty }) };
+  return [mine, other];
+}
+
+/** Fetch FantasyCalc values and add them to the existing manifest; nothing else is touched. */
+async function captureFantasyCalc(out: string) {
+  const manifestPath = resolve(out, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as { league_id: string; files: Record<string, string>; failed?: Record<string, string> };
+  const leagueFile = manifest.files[sleeperUrls.league(manifest.league_id)];
+  if (!leagueFile) throw new Error('The fixture has no league file; capture the fixture first.');
+  const league = JSON.parse(gunzipSync(await readFile(resolve(out, leagueFile))).toString('utf8')) as SleeperLeague;
+  const limiter = createLimiter();
+  for (const { name, url } of fantasyCalcRequests(league)) {
+    const res = await limiter.run(() => browserTransport(url));
+    if (res.status !== 200 || !Array.isArray(res.body)) throw new Error(`FantasyCalc answered HTTP ${res.status} for ${url}`);
+    await writeFile(resolve(out, `${name}.json.gz`), gzipSync(JSON.stringify(res.body)));
+    manifest.files[url] = `${name}.json.gz`;
+    console.log(`  ${name}: ${res.body.length} rows (${url})`);
+  }
+  manifest.files = Object.fromEntries(Object.entries(manifest.files).sort(([a], [b]) => a.localeCompare(b)));
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+  console.log(`Added FantasyCalc to ${manifestPath}`);
+}
+
 async function main() {
+  const only = parseOnly(process.argv.slice(2));
+  if (only === 'fantasycalc') return captureFantasyCalc(outDirOf(process.argv.slice(2)));
+  if (only) throw new Error(`Unknown --only value "${only}" (supported: fantasycalc).`);
   const { user: username, league: leagueId, out } = parseArgs(process.argv.slice(2));
   const limiter = createLimiter();
   const files: Record<string, string> = {};

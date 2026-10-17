@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useActive, useApi, useLeagueBundle, useNflState } from '../../app/hooks';
+import { useNflverse } from '../../app/nflverseData';
+import { UnmatchedTable } from './UnmatchedTable';
 import { formatBytes, formatMs } from '../../app/format';
 import { summarize } from '../../app/health';
 import { FEATURE, HEALTH_LABEL } from '../../app/names';
@@ -10,6 +12,7 @@ export function HealthSection() {
   const { data: active } = useActive();
   const nfl = useNflState();
   const bundle = useLeagueBundle();
+  const nv = useNflverse();
   const [results, setResults] = useState<HealthResult[] | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +86,7 @@ export function HealthSection() {
       )}
       <div className="stack">
         <h3>Unmatched player IDs</h3>
-        <p className="note">Available after nflverse ingestion (milestone 3).</p>
+        <UnmatchedTable players={nv.bundle?.unmatched ?? null} matched={nv.bundle?.manifest.matched} season={nv.bundle?.manifest.season} loading={nv.loading} />
       </div>
     </section>
   );

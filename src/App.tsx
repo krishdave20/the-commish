@@ -1,5 +1,6 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import type { AccountStore, DataApi, SleeperClient } from './data';
+import type { NflverseSource } from './app/nflverseData';
 import { AppShell } from './app/AppShell';
 import { DataProvider } from './app/DataProvider';
 import { ModelProvider } from './app/ModelProvider';
@@ -10,6 +11,7 @@ import Draft from './pages/Draft';
 import Home from './pages/Home';
 import LeagueRace from './pages/LeagueRace';
 import MyTeam from './pages/MyTeam';
+import PlayerProfile from './pages/PlayerProfile';
 import Players from './pages/Players';
 import Settings from './pages/Settings';
 import SignIn from './pages/SignIn';
@@ -26,6 +28,7 @@ export function AppRoutes() {
         <Route index element={<Home />} />
         <Route path="/takes" element={<Takes />} />
         <Route path="/players" element={<Players />} />
+        <Route path="/players/:pid" element={<PlayerProfile />} />
         <Route path="/team" element={<MyTeam />} />
         <Route path="/race" element={<LeagueRace />} />
         <Route path="/waivers" element={<Waivers />} />
@@ -43,13 +46,14 @@ interface Props {
   api: DataApi;
   accounts: AccountStore;
   sleeper?: SleeperClient;
+  nflverse?: NflverseSource;
   /** tests inject a model loader */
   loadModel?: LoadModel;
 }
 
-export function App({ api, accounts, sleeper, loadModel }: Props) {
+export function App({ api, accounts, sleeper, nflverse, loadModel }: Props) {
   return (
-    <DataProvider api={api} accounts={accounts} sleeper={sleeper}>
+    <DataProvider api={api} accounts={accounts} sleeper={sleeper} nflverse={nflverse}>
       <ModelProvider loadModel={loadModel}>
         <ScenarioProvider>
           <HashRouter>

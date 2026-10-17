@@ -3,6 +3,7 @@ import { formatOdds, formatPoints1, signedPct } from '../../app/format';
 import { FEATURE } from '../../app/names';
 import { useScenario } from '../../app/modelContext';
 import { teamResult } from '../../app/results';
+import { PlayerLink } from '../../components/PlayerLink';
 import { CountUp } from '../../components/CountUp';
 import { emptyScenario, toggleIn, withOverride } from '../../engine';
 import type { Engine, ModelPlayer, PlayerOverride, Scenario } from '../../engine';
@@ -149,7 +150,7 @@ export function LabCard({ engine }: { engine: Engine }) {
               const mavg = wks.length ? wks.reduce((s, w) => s + (p.mu[w] || 0), 0) / wks.length : 0;
               return (
                 <tr key={p.pid} className={`${added ? 'added' : ''}${dropped ? ' dropped' : ''}`.trim() || undefined}>
-                  <td><span className="pname">{p.name}</span> <span className="dim">{p.pos}</span><PlayerTags p={p} /></td>
+                  <td><PlayerLink pid={p.pid} name={p.name} /> <span className="dim">{p.pos}</span><PlayerTags p={p} /></td>
                   <td className="keep">
                     <select
                       aria-label={`Out until for ${p.name}`} value={o.returnWeek ? String(o.returnWeek) : ''}

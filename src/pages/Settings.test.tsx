@@ -21,7 +21,7 @@ describe('Settings', () => {
     expect(screen.getByText('League data: Sleeper public API.')).toBeInTheDocument();
     expect(screen.getByText('Free public data only. No AI or paid services at runtime.')).toBeInTheDocument();
     expect(screen.getByText('Refreshes on open when data is older than 6 hours; the players file at most once a day.')).toBeInTheDocument();
-    expect(screen.getByText('Available after nflverse ingestion (milestone 3).')).toBeInTheDocument();
+    expect(screen.getByText('nflverse data arrives with the nightly update.')).toBeInTheDocument();
   });
 
   it('saves Auto-refresh on open in localStorage', async () => {

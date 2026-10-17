@@ -3,17 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
 import { compact, formatPoints1, signed } from '../app/format';
-import { useScenario } from '../app/modelContext';
+import { useModel, useScenario } from '../app/modelContext';
+import { useNflverse } from '../app/nflverseData';
+import { usePlayersFile } from '../app/playersData';
+import { displayName } from '../app/playersIndex';
 import { FEATURE } from '../app/names';
 import { useComputed } from '../app/useComputed';
 import { useDebounced } from '../app/useSimulation';
 import { MatchupGrade } from '../components/MatchupGrade';
+import { PlayerLink } from '../components/PlayerLink';
 import { Segmented } from '../components/Segmented';
 import { SortableTable } from '../components/SortableTable';
 import type { Column } from '../components/useSort';
 import { POS_ORDER, WAIVER_WINDOWS } from '../engine';
 import type { Engine, WaiverEntry, WaiverWindow } from '../engine';
 import { PlayerTags } from './team/PlayerTags';
+import { UsageRisers } from './waivers/UsageRisers';
+import type { RiserPlayer } from './waivers/UsageRisers';
 
 const NONE: WaiverEntry[] = [];
 
@@ -24,6 +30,22 @@ function Board({ engine }: { engine: Engine }) {
   const [win, setWin] = useState<WaiverWindow>('reg');
   const [pos, setPos] = useState('all');
   const cur = engine.model.meta.currentWeek;
+  const nv = useNflverse();
+  const file = usePlayersFile();
+  const { model } = useModel();
+  const freeAgents = useMemo(() => {
+    const out = new Map<string, RiserPlayer>();
+    if (!nv.bundle || !model) return out;
+    const rostered = new Set(model.players.filter((p) => p.ownerRid > 0).map((p) => p.pid));
+    const known = new Map(model.players.map((p) => [p.pid, p]));
+    for (const w of nv.bundle.weekly) {
+      if (out.has(w.pid) || rostered.has(w.pid)) continue;
+      const rec = file.data?.[w.pid];
+      const mp = known.get(w.pid);
+      out.set(w.pid, { name: rec ? displayName({ ...rec, player_id: w.pid }) : (mp?.name ?? w.pid), pos: rec?.position ?? mp?.pos ?? '' });
+    }
+    return out;
+  }, [nv.bundle, model, file.data]);
 
   const board = useComputed(() => engine.waivers(settled, win), [engine, settled, win]);
   const full = board.value?.list ?? NONE;
@@ -47,7 +69,7 @@ function Board({ engine }: { engine: Engine }) {
   const columns: Column<WaiverEntry>[] = [
     {
       key: 'player', header: 'player', value: (w) => w.player.name, className: 'nowrap',
-      render: (w) => <><span className="pname">{w.player.name}</span> <span className="dim">{w.player.nfl ?? ''}</span><PlayerTags p={w.player} /></>,
+      render: (w) => <><PlayerLink pid={w.player.pid} name={w.player.name} /> <span className="dim">{w.player.nfl ?? ''}</span><PlayerTags p={w.player} /></>,
     },
     { key: 'pos', header: 'pos', value: (w) => w.player.pos, className: 'dim' },
     { key: 'gain', header: FEATURE.lift, numeric: true, value: (w) => w.gain, render: (w) => <span className="pos-c">{signed(w.gain)}</span> },
@@ -97,13 +119,7 @@ function Board({ engine }: { engine: Engine }) {
           <SortableTable caption="Waiver wire" columns={columns} rows={list} rowKey={(w) => w.pid} initialSort={{ key: 'gain', dir: 'desc' }} />
         )}
       </section>
-      <section className="card" aria-labelledby="risers-title">
-        <header>
-          <div className="micro">who is gaining snaps</div>
-          <h2 id="risers-title">usage risers</h2>
-        </header>
-        <p className="note">snap and target share trends arrive with nflverse data in milestone 3.</p>
-      </section>
+      <UsageRisers weeks={nv.bundle?.weekly ?? null} through={nv.bundle?.manifest.throughWeek ?? null} freeAgents={freeAgents} loading={nv.loading} />
     </>
   );
 }

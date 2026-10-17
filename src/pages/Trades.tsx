@@ -8,6 +8,7 @@ import { teamResult } from '../app/results';
 import { useSimulation } from '../app/useSimulation';
 import { CountUp } from '../components/CountUp';
 import { Kpi } from '../components/Kpi';
+import { PlayerLink } from '../components/PlayerLink';
 import type { Engine, ModelPlayer, TradeIdea, TradeProposal } from '../engine';
 import { PlayerTags } from './team/PlayerTags';
 
@@ -29,6 +30,7 @@ function PickList({ title, ids, checked, onToggle, value, idx }: {
             <input type="checkbox" checked={checked.includes(p.pid)} onChange={() => onToggle(p.pid)} aria-label={`${title}: ${p.name}`} />
             <span><span className="dim">{p.pos} </span>{p.name}<PlayerTags p={p} /></span>
             <span className="dim" title="expected points, rest of regular season">{formatPoints1(v)}</span>
+            <PlayerLink pid={p.pid} name="↗" className="dim" aria-label={`Scouting report for ${p.name}`} />
           </label>
         ))}
       </div>
@@ -164,7 +166,7 @@ function TradeBlock({ engine }: { engine: Engine }) {
               <tbody>
                 {model.ideas.map((x) => (
                   <tr key={x.idea}>
-                    <td className="n dim">{x.idea}</td><td className="pname">{x.give}</td><td className="pname">{x.get}</td><td className="dim">{x.partner}</td>
+                    <td className="n dim">{x.idea}</td><td><PlayerLink pid={x.givePid} name={x.give} /></td><td><PlayerLink pid={x.getPid} name={x.get} /></td><td className="dim">{x.partner}</td>
                     <td className="n pos-c">{signed(x.myGain)}</td><td className="n pos-c">{signed(x.theirGain)}</td>
                     <td className="n hide-sm">{x.startsForMe}</td>
                     <td><button type="button" className="btn" aria-label={`Load ${x.give} for ${x.get}`} onClick={() => load(x)}>load</button></td>

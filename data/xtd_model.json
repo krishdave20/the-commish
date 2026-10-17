@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "fit_season": 2025,
+  "buckets": [
+    {
+      "play_type": "pass",
+      "yardline_from": 1,
+      "yardline_to": 1,
+      "p_td": 0.58228,
+      "n": 79
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 2,
+      "yardline_to": 2,
+      "p_td": 0.54082,
+      "n": 98
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 3,
+      "yardline_to": 3,
+      "p_td": 0.47716,
+      "n": 79
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 4,
+      "yardline_to": 5,
+      "p_td": 0.46714,
+      "n": 219
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 6,
+      "yardline_to": 10,
+      "p_td": 0.28516,
+      "n": 519
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 11,
+      "yardline_to": 15,
+      "p_td": 0.17941,
+      "n": 641
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 16,
+      "yardline_to": 20,
+      "p_td": 0.11512,
+      "n": 655
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 21,
+      "yardline_to": 30,
+      "p_td": 0.075,
+      "n": 1448
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 31,
+      "yardline_to": 50,
+      "p_td": 0.02339,
+      "n": 3893
+    },
+    {
+      "play_type": "pass",
+      "yardline_from": 51,
+      "yardline_to": 99,
+      "p_td": 0.00378,
+      "n": 8978
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 1,
+      "yardline_to": 1,
+      "p_td": 0.55513,
+      "n": 263
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 2,
+      "yardline_to": 2,
+      "p_td": 0.44361,
+      "n": 133
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 3,
+      "yardline_to": 3,
+      "p_td": 0.28,
+      "n": 125
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 4,
+      "yardline_to": 5,
+      "p_td": 0.25,
+      "n": 244
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 6,
+      "yardline_to": 10,
+      "p_td": 0.13628,
+      "n": 543
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 11,
+      "yardline_to": 15,
+      "p_td": 0.05463,
+      "n": 619
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 16,
+      "yardline_to": 20,
+      "p_td": 0.03857,
+      "n": 612
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 21,
+      "yardline_to": 30,
+      "p_td": 0.01629,
+      "n": 1339
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 31,
+      "yardline_to": 50,
+      "p_td": 0.0097,
+      "n": 3289
+    },
+    {
+      "play_type": "rush",
+      "yardline_from": 51,
+      "yardline_to": 99,
+      "p_td": 0.00341,
+      "n": 7001
+    }
+  ]
+}

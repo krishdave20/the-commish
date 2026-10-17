@@ -3,6 +3,7 @@ import { formatOdds, formatPct, formatPoints1, ordinal, signed } from '../../app
 import { useModel, useScenario } from '../../app/modelContext';
 import { teamResult } from '../../app/results';
 import { Drawer } from '../../components/Drawer';
+import { PlayerLink } from '../../components/PlayerLink';
 import { OddsCell } from '../../components/OddsCell';
 import { Sparkline } from '../../components/charts/Sparkline';
 import type { Engine, ModelPlayer } from '../../engine';
@@ -91,7 +92,7 @@ export function TeamDrawer({ engine, rid, onClose }: Props) {
         <span className="micro">top players, rest of season</span>
         <ul className="plain">
           {detail.top.map(({ p, perWeek }) => (
-            <li key={p.pid}><span className="pname">{p.name}</span><span className="dim"> {p.pos} · {formatPoints1(perWeek)}/wk</span></li>
+            <li key={p.pid}><PlayerLink pid={p.pid} name={p.name} /><span className="dim"> {p.pos} · {formatPoints1(perWeek)}/wk</span></li>
           ))}
         </ul>
       </div>

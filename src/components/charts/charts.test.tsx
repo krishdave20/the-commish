@@ -184,3 +184,39 @@ describe('Sparkline', () => {
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'No weekly points yet');
   });
 });
+
+describe('UsageTrendChart', () => {
+  const series = [
+    { id: 'snap', label: 'snap %', unit: 'snaps', color: 'var(--green)', points: [{ week: 1, value: 0.7, n: 60 }, { week: 2, value: null }, { week: 3, value: 0.85, n: 62 }] },
+    { id: 'tgt', label: 'target share', color: 'var(--gold)', points: [{ week: 1, value: 0.2, n: 30 }, { week: 2, value: 0.25, n: 28 }, { week: 3, value: 0.3, n: 33 }] },
+  ];
+
+  it('draws a line per series, dots only where there is a value, and the sample size in the tooltip', async () => {
+    const { UsageTrendChart } = await import('./UsageTrendChart');
+    const { container } = render(<UsageTrendChart series={series} label="Usage by week" />);
+    expect(container.querySelectorAll('path.trend-line')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-series="snap"] .trend-dot')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-series="tgt"] .trend-dot')).toHaveLength(3);
+    expect(container.querySelector('[data-series="snap"] .trend-dot title')!.textContent).toBe('snap %, week 1: 70.0% (60 snaps)');
+    expect(screen.getByRole('img', { name: 'Usage by week' })).toBeInTheDocument();
+    expect(screen.getAllByText('snap %')).toHaveLength(1);
+  });
+
+  it('draws the line at once with reduced motion, and animates it otherwise', async () => {
+    const { UsageTrendChart } = await import('./UsageTrendChart');
+    const first = render(<UsageTrendChart series={series} label="x" />);
+    expect(first.container.querySelector<SVGElement>('path.trend-line')!.style.strokeDashoffset).toBe('');
+    first.unmount();
+    allowMotion();
+    const again = render(<UsageTrendChart series={series} label="x" />);
+    const path = again.container.querySelector<SVGElement>('path.trend-line')!;
+    expect(path.style.strokeDashoffset).toBe('1');
+    await waitFor(() => expect(path.style.strokeDashoffset).toBe('0'));
+  });
+
+  it('says so with no values', async () => {
+    const { UsageTrendChart } = await import('./UsageTrendChart');
+    render(<UsageTrendChart series={[{ id: 'a', label: 'a', color: 'red', points: [{ week: 1, value: null }] }]} label="x" />);
+    expect(screen.getByText('no weekly values yet.')).toBeInTheDocument();
+  });
+});

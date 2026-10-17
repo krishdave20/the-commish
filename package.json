@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dist": "tsc -b && vite build",
-    "fixture:capture": "tsx scripts/capture-fixture.ts"
+    "fixture:capture": "tsx scripts/capture-fixture.ts",
+    "data:nflverse": "tsx scripts/nflverse/run.ts"
   },
   "dependencies": {
     "@fontsource/dm-mono": "^5.3.0",
@@ -31,6 +32,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "csv-parse": "^7.0.3",
     "fake-indexeddb": "^6.2.6",
     "jsdom": "^30.1.3",
     "oxlint": "^1.81.0",

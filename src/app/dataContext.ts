@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { AccountStore, DataApi, SleeperClient } from '../data';
+import type { NflverseSource } from './nflverseData';
 import type { ResourceStore } from './resourceStore';
 
 export interface AccountsBridge {
@@ -12,6 +13,8 @@ export interface DataContextValue {
   accounts: AccountStore;
   /** the raw Sleeper client the engine pulls through (null in tests that inject a model directly) */
   sleeper: SleeperClient | null;
+  /** the nightly nflverse files (null when there is no source) */
+  nflverse: NflverseSource | null;
   store: ResourceStore;
   bridge: AccountsBridge;
 }

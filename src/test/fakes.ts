@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import type { LoadModel } from '../app/loadModel';
+import type { PlayersMap, SleeperClient, FantasyCalcRow } from '../data';
 import { handModel } from '../engine/test-helpers';
 import type { Model } from '../engine';
 import type {
@@ -291,6 +292,154 @@ export function sampleModel(): Model {
   return m;
 }
 
+const line = (rec_tgt: number, rec: number, rec_yd: number, rec_td: number, pts: number) => ({
+  rec_tgt, rec, rec_yd, rec_td, pts_ppr: pts, off_snp: 50, tm_off_snp: 60,
+});
+
 export function sampleLoadModel(model: () => Model = sampleModel): LoadModel {
-  return async () => ({ model: model(), asOf: FAKE_AS_OF, stale: false });
+  return async () => ({
+    model: model(),
+    asOf: FAKE_AS_OF,
+    stale: false,
+    extras: {
+      stats: {
+        1: { t1wr: line(8, 6, 80, 1, 20) },
+        2: { t1wr: line(5, 3, 40, 0, 7) },
+        3: { t1wr: line(10, 7, 90, 0, 16) },
+        4: { t1qb: { pass_att: 30, pass_cmp: 20, pass_yd: 250, pass_td: 2, pts_ppr: 22 } },
+      },
+      scoring: { rec: 1 },
+      season: '2026',
+      league: sampleLeague,
+    },
+  });
+}
+
+/* ---------- the Sleeper client pieces the scouting report reads ---------- */
+
+function rec(pid: string, first: string, last: string, position: string, team: string | null, extra: Record<string, unknown> = {}) {
+  return {
+    player_id: pid, first_name: first, last_name: last, position, team, status: team ? 'Active' : 'Inactive',
+    injury_status: null, age: 25, birth_date: '2000-03-04', years_exp: 3, height: '73', weight: '210', college: 'State U',
+    depth_chart_order: 1, depth_chart_position: position, ...extra,
+  };
+}
+
+export const samplePlayersFile = (): PlayersMap => ({
+  t1qb: rec('t1qb', 'Alex', 'Arm', 'QB', 'AAA'),
+  t1rb: rec('t1rb', 'Rex', 'Runner', 'RB', 'BBB'),
+  t1wr: rec('t1wr', 'Walt', 'Wideout', 'WR', 'CCC', { injury_status: 'Questionable', injury_body_part: 'Knee', college: 'Tech' }),
+  t1bw: rec('t1bw', 'Backup', 'Wideout', 'WR', 'CCC', { injury_status: 'Questionable' }),
+  t2wr: rec('t2wr', 'Reed', 'Receiver', 'WR', 'DDD'),
+  t2qb: rec('t2qb', 'Quinn', 'Quarterback', 'QB', 'EEE'),
+  fa1: rec('fa1', 'Free Agent', 'Fran', 'WR', 'FFF'),
+  fa2: rec('fa2', 'Wire', 'Runner', 'RB', 'GGG'),
+  x1: rec('x1', 'Old', 'Timer', 'WR', null, { status: 'Retired' }),
+  x2: rec('x2', 'Walter', 'Wide', 'WR', 'HHH'),
+  ol1: rec('ol1', 'Big', 'Lineman', 'OL', 'III'),
+  d1: { player_id: 'd1', first_name: 'Bay', last_name: 'Defense', position: 'DEF', team: 'JJJ', status: 'Active' },
+} as unknown as PlayersMap);
+
+export const sampleFantasyCalc = (): FantasyCalcRow[] => [
+  { player: { id: 1, name: 'Walt Wideout', sleeperId: 't1wr', position: 'WR' }, value: 5234, overallRank: 44, positionRank: 18, trend30Day: -150 } as FantasyCalcRow,
+  { player: { id: 2, name: 'Alex Arm', sleeperId: 't1qb', position: 'QB' }, value: 7000, overallRank: 12, positionRank: 3, trend30Day: 320 } as FantasyCalcRow,
+];
+
+const loaded = <T,>(data: T) => ({ data, asOf: FAKE_AS_OF, fromCache: false, stale: false, bytes: 1, ms: 1, status: 200 });
+
+export interface FakeSleeperOpts { fantasyCalcFails?: boolean }
+
+/** Just `players` and `fantasyCalc`: the two calls the scouting report makes outside the engine's pull. */
+export function createFakeSleeper(o: FakeSleeperOpts = {}) {
+  return {
+    players: vi.fn(async () => loaded(samplePlayersFile())),
+    fantasyCalc: vi.fn(async () => {
+      if (o.fantasyCalcFails) throw new Error('FantasyCalc is down');
+      return loaded(sampleFantasyCalc());
+    }),
+  } as unknown as SleeperClient & { players: ReturnType<typeof vi.fn>; fantasyCalc: ReturnType<typeof vi.fn> };
+}
+
+/* ---------- nflverse output, in the shapes of src/data/nflverseTypes.ts ---------- */
+
+import type { NflverseBundle, NflverseSource } from '../app/nflverseData';
+import type { CoverageRow, NflverseManifest, UnmatchedPlayer, PlayerCounts, PlayerRates, PlayerSeason, PlayerShares, PlayerWeek } from '../data/nflverseTypes';
+
+const ZERO_COUNTS: PlayerCounts = {
+  off_snaps: 0, tm_snaps: 0, tgt: 0, rec: 0, rec_yds: 0, rec_td: 0, air_yds: 0, catchable_tgt: 0, drops: 0, ftn_tgt: 0,
+  rz_tgt: 0, i10_tgt: 0, ez_tgt: 0, car: 0, rush_yds: 0, rush_td: 0, rz_car: 0, i10_car: 0, box_car: 0, stk_car: 0, stk_yds: 0,
+  lgt_car: 0, lgt_yds: 0, bl_tgt: 0, bl_rec: 0, bl_yds: 0, nbl_tgt: 0, nbl_rec: 0, nbl_yds: 0, pa_tgt: 0, scr_tgt: 0, cont_tgt: 0,
+  cont_rec: 0, xtd_rec: null, xtd_rush: null,
+};
+const NULL_SHARES: PlayerShares = {
+  snap_pct: null, tgt_share: null, ay_share: null, wopr: null, rush_share: null, rz_tgt_share: null, i10_tgt_share: null,
+  rz_car_share: null, i10_car_share: null,
+};
+const NULL_RATES: PlayerRates = {
+  adot: null, ypt: null, catch_rate: null, drop_rate: null, ypc: null, ypc_stk: null, ypc_lgt: null, tgt_per_snap: null,
+  ypt_bl: null, ypt_nbl: null, pa_share: null, scr_share: null, cont_rate: null, td_gap: null,
+};
+
+export function nvWeek(o: Partial<PlayerWeek> & { pid: string; week: number }): PlayerWeek {
+  return { team: 'CCC', opp: 'DDD', ...ZERO_COUNTS, ...NULL_SHARES, ...o };
+}
+
+export function nvSeason(o: Partial<PlayerSeason> & { pid: string }): PlayerSeason {
+  return { team: 'CCC', games: 4, ...ZERO_COUNTS, ...NULL_SHARES, ...NULL_RATES, ...o };
+}
+
+export function nvCoverage(o: Partial<CoverageRow> & { pid: string }): CoverageRow {
+  return {
+    team: 'CCC', routes: 0, tgt: 0, rec: 0, yds: 0, td: 0, man_routes: 0, man_tgt: 0, man_rec: 0, man_yds: 0, man_td: 0,
+    zone_routes: 0, zone_tgt: 0, zone_rec: 0, zone_yds: 0, zone_td: 0, yprr: null, tprr: null, yprr_man: null, tprr_man: null,
+    yprr_zone: null, tprr_zone: null, ...o,
+  };
+}
+
+export function nvManifest(o: Partial<NflverseManifest> = {}): NflverseManifest {
+  return {
+    schema: 1, generatedAt: '2026-10-16T09:20:00Z', season: 2026, seasonsCovered: [2026], throughWeek: 6, participationSeason: 2025,
+    participationIsCurrent: false,
+    routesDefinition: 'Routes are a proxy: dropbacks a player was on the field for as a WR, TE or RB.',
+    definitions: { tgt_share: 'His targets over the team’s pass attempts.', wopr: '1.5 × target share + 0.7 × air-yards share.' },
+    sources: [], files: {}, xtd: { available: true, fitSeason: 2025, version: 1 },
+    matchMethods: { gsis: 0, espn: 0, name_team_pos: 0, name_pos: 0 }, matched: 0, unmatchedCount: 0, ftnJoinRate: 0.95,
+    attribution: 'Play-by-play and snap data: nflverse. Charting data: FTN Data via nflverse.', ...o,
+  };
+}
+
+/** A small nightly bundle: Walt Wideout (t1wr) with six weeks of usage, a coverage row from last season, and two unmatched players. */
+export function sampleNflverseBundle(): NflverseBundle {
+  const weekly = [
+    ...[1, 2, 3, 4, 5, 6].map((w) => nvWeek({
+      pid: 't1wr', week: w, off_snaps: 50 + w, tm_snaps: 60, snap_pct: (50 + w) / 60, tgt: 6 + w, tgt_share: 0.2 + w / 100, ay_share: 0.3, rz_tgt: 1, rz_tgt_share: 0.1,
+    })),
+    // a free agent whose snaps jumped in the last two weeks (and his earlier ones were small)
+    ...[1, 2, 3, 4, 5, 6].map((w) => nvWeek({
+      pid: 'x2', week: w, team: 'HHH', off_snaps: w < 5 ? 12 : 44, tm_snaps: 60, snap_pct: (w < 5 ? 12 : 44) / 60, tgt: w < 5 ? 1 : 7, tgt_share: w < 5 ? 0.05 : 0.22,
+    })),
+  ];
+  return {
+    manifest: nvManifest({ matched: 812, unmatchedCount: 2 }),
+    weekly,
+    season: [nvSeason({
+      pid: 't1wr', games: 6, off_snaps: 330, tm_snaps: 360, snap_pct: 0.917, tgt: 60, rec: 41, rec_yds: 560, catchable_tgt: 52, ftn_tgt: 55, tgt_share: 0.26, ay_share: 0.3,
+      adot: 9.8, wopr: 0.74, ypt: 9.3, catch_rate: 0.79, rz_tgt: 6, i10_tgt: 2, rz_tgt_share: 0.2, i10_tgt_share: 0.25, ez_tgt: 3, tgt_per_snap: 0.18, td_gap: 1.3,
+      bl_tgt: 9, ypt_bl: 12.1, nbl_tgt: 46, ypt_nbl: 8.8, pa_share: 0.21, scr_share: 0.1, cont_tgt: 5, cont_rate: 0.6, drops: 2, drop_rate: 0.04,
+    })],
+    coverage: {
+      rows: [nvCoverage({ pid: 't1wr', routes: 520, tgt: 90, rec: 60, yds: 780, yprr: 1.5, tprr: 0.17, man_routes: 120, man_yds: 150, yprr_man: 1.25, zone_routes: 300, zone_yds: 480, yprr_zone: 1.6 })],
+      shells: { t1wr: { COVER_3: [200, 30, 20, 300, 2] } },
+      season: 2025, isCurrent: false, routesDefinition: 'Routes are a proxy: dropbacks a player was on the field for as a WR, TE or RB.',
+    },
+    unmatched: [
+      { key: 'g1', gsis: 'g1', pfr: null, name: 'Mystery Man', team: 'AAA', pos: 'WR', off_snaps: 120, tgt: 14, car: 0, reason: 'no_candidate', candidates: [] },
+      { key: 'g2', gsis: 'g2', pfr: null, name: 'Twin One', team: 'BBB', pos: 'RB', off_snaps: 80, tgt: 3, car: 40, reason: 'ambiguous', candidates: ['Twin One (111)'] },
+    ] satisfies UnmatchedPlayer[],
+    asOf: FAKE_AS_OF,
+  };
+}
+
+export function createFakeNflverse(): NflverseSource {
+  return { load: vi.fn(async () => sampleNflverseBundle()) };
 }

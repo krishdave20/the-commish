@@ -1,0 +1,72 @@
+# Builds the static site and deploys it to GitHub Pages.
+# Runs on every push to main, nightly (to refresh the nflverse aggregates), and on demand.
+# The nflverse pipeline runs here, in Node, because GitHub release assets send no CORS headers;
+# its JSON lands in dist/data/nflverse/ and the browser reads it same-origin.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 9 * * *'   # 09:17 UTC ≈ 5:17 am ET, after nflverse's overnight updates
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  build:
+    needs: check
+    # still build nightly even though `check` is skipped on schedule
+    if: always() && (needs.check.result == 'success' || needs.check.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run dist
+      # raw nflverse downloads persist between runs; the pipeline re-downloads only files whose ETag changed
+      - uses: actions/cache@v4
+        with:
+          path: .cache/nflverse
+          key: nflverse-${{ github.run_id }}
+          restore-keys: nflverse-
+      # a failed pipeline fails the deploy, so the last good site (and its data) stays up
+      - run: npm run data:nflverse -- --out dist/data/nflverse --cache .cache/nflverse
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,6 +1,7 @@
 import { buildModel, loadLeaguePull } from '../engine';
 import type { LoadProgress, Model } from '../engine';
-import type { SleeperClient } from '../data';
+import type { SleeperClient, SleeperLeague } from '../data';
+import type { WeekStats } from '../data';
 
 export interface LoadModelCtx {
   leagueId: string;
@@ -10,7 +11,17 @@ export interface LoadModelCtx {
   onProgress: (p: LoadProgress) => void;
 }
 
+/** What the pull knew that the model does not keep: raw weekly stat lines and the league's scoring. */
+export interface ModelExtras {
+  /** week -> player_id -> Sleeper stat line */
+  stats: Record<number, WeekStats>;
+  scoring: Record<string, number>;
+  season: string;
+  league: SleeperLeague;
+}
+
 export interface LoadedModel {
+  extras?: ModelExtras;
   model: Model;
   /** epoch ms of the oldest piece of source data */
   asOf: number;
@@ -30,6 +41,9 @@ export function sleeperLoader(sleeper: SleeperClient | null): LoadModel {
     await new Promise((r) => setTimeout(r, 0));
     // the first 20,000 simulated seasons run in a worker afterwards (model.oddsPending until they land)
     const model = buildModel(pull, { userId: ctx.userId, simulate: false });
-    return { model, asOf: pull.asOf, stale: pull.stale, error: pull.errors[0] };
+    return {
+      model, asOf: pull.asOf, stale: pull.stale, error: pull.errors[0],
+      extras: { stats: pull.stats, scoring: pull.league.scoring_settings ?? {}, season: pull.plan.season, league: pull.league },
+    };
   };
 }

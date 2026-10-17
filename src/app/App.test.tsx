@@ -54,7 +54,6 @@ describe('app shell', () => {
   it('renders a styled placeholder with the page header on the pages that come later', async () => {
     for (const [route, title, kicker, milestone] of [
       ['/takes', 'hot takes', 'rule-based reads from real numbers', 'Milestone 4'],
-      ['/players', 'scouting report', 'every player, every split', 'Milestone 3'],
       ['/draft', 'draft room', 'rankings, mock drafts, live assistant', 'Milestone 5'],
     ] as const) {
       const { unmount } = renderApp({ linked: [sampleAccount()], route });
