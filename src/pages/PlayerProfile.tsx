@@ -25,9 +25,10 @@ export default function PlayerProfile() {
   const name = rec ? displayName({ ...rec, player_id: pid }) : (mp?.name ?? (file.loading ? 'player' : 'unknown player'));
   const pos = rec?.position ?? mp?.pos ?? '';
   const team = rec ? (rec.team ?? 'fa') : (mp?.nfl ?? 'fa');
-  useTitle(name);
+  useTitle(name.toLowerCase());
 
   const nv = useNflverse();
+  const refreshAll = async () => { await Promise.all([file.refresh(), nv.refresh()]); };
   const nvPlayer = useMemo<PlayerNflverse | null>(() => {
     const b = nv.bundle;
     if (!b) return null;
@@ -50,7 +51,7 @@ export default function PlayerProfile() {
 
   return (
     <div className="page page-fade">
-      <PageHeader kicker={`${PAGES.players.name} · ${pos || '—'} · ${team}`} title={name} data={file} />
+      <PageHeader kicker={`${PAGES.players.name} · ${pos || '—'} · ${team}`} title={name} data={{ ...file, refresh: refreshAll }} />
       <p><Link to="/players">← all players</Link></p>
       <HeaderCard pid={pid} name={name} rec={rec} mp={mp} owner={owner} />
       {model && <OutlookCard model={model} mp={mp} />}

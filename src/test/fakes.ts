@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import type { LoadModel } from '../app/loadModel';
-import type { PlayersMap, SleeperClient, FantasyCalcRow } from '../data';
+import type { PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient } from '../data';
 import { handModel } from '../engine/test-helpers';
 import type { Model } from '../engine';
 import type {
@@ -362,7 +362,7 @@ export function createFakeSleeper(o: FakeSleeperOpts = {}) {
 
 /* ---------- nflverse output, in the shapes of src/data/nflverseTypes.ts ---------- */
 
-import type { NflverseBundle, NflverseSource } from '../app/nflverseData';
+import type { NflverseBundle } from '../app/nflverseData';
 import type { CoverageRow, NflverseManifest, UnmatchedPlayer, PlayerCounts, PlayerRates, PlayerSeason, PlayerShares, PlayerWeek } from '../data/nflverseTypes';
 
 const ZERO_COUNTS: PlayerCounts = {
@@ -440,6 +440,28 @@ export function sampleNflverseBundle(): NflverseBundle {
   };
 }
 
-export function createFakeNflverse(): NflverseSource {
-  return { load: vi.fn(async () => sampleNflverseBundle()) };
+function encode<T extends object>(rows: T[], extra: Record<string, unknown> = {}) {
+  const cols = rows.length ? Object.keys(rows[0]!) : [];
+  return { schema: 1 as const, season: 2026, generatedAt: '2026-10-16T09:20:00Z', cols, rows: rows.map((r) => cols.map((c) => (r as Record<string, unknown>)[c] ?? null)), ...extra };
+}
+
+const available = <T,>(data: T) => ({ available: true as const, data, asOf: FAKE_AS_OF, fromCache: false, stale: false });
+
+/** A stand-in for createDataLayer().nflverse that serves the sample bundle as the pipeline's JSON shapes. */
+export function createFakeNflverse(o: { missing?: boolean; bundle?: () => NflverseBundle } = {}): NflverseClient & Record<'manifest' | 'weekly' | 'season' | 'coverage' | 'unmatched', ReturnType<typeof vi.fn>> {
+  const b = (o.bundle ?? sampleNflverseBundle)();
+  const gone = { available: false as const, reason: 'not_found' as const, message: 'nflverse data is not available yet (manifest.json was not found).', url: './data/nflverse/manifest.json' };
+  const serve = <T,>(make: () => T) => vi.fn(async (..._args: unknown[]) => (o.missing ? gone : available(make())));
+  return {
+    manifest: serve(() => b.manifest),
+    weekly: serve(() => encode(b.weekly)),
+    season: serve(() => encode(b.season)),
+    teams: serve(() => encode([])),
+    coverage: vi.fn(async (..._args: unknown[]) => (o.missing || !b.coverage ? gone : available({
+      ...encode(b.coverage.rows), season: b.coverage.season, isCurrent: b.coverage.isCurrent, routesDefinition: b.coverage.routesDefinition,
+      shells: b.coverage.shells, teams: {},
+    }))),
+    unmatched: serve(() => ({ schema: 1, season: 2026, generatedAt: '', players: b.unmatched })),
+    urlOf: (f: string) => `./data/nflverse/${f}`,
+  } as unknown as NflverseClient & Record<'manifest' | 'weekly' | 'season' | 'coverage' | 'unmatched', ReturnType<typeof vi.fn>>;
 }

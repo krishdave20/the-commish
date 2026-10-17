@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { AccountStore, DataApi, SleeperClient } from '../data';
+import type { AccountStore, DataApi, NflverseClient, SleeperClient } from '../data';
 import { DataContext, createAccountsBridge } from './dataContext';
 import type { DataContextValue } from './dataContext';
-import type { NflverseSource } from './nflverseData';
 import { loadPrefs } from './prefs';
 import { ResourceStore } from './resourceStore';
 
@@ -11,7 +10,7 @@ interface Props {
   api: DataApi;
   accounts: AccountStore;
   sleeper?: SleeperClient;
-  nflverse?: NflverseSource;
+  nflverse?: NflverseClient;
   children: ReactNode;
 }
 

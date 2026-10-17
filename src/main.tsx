@@ -11,12 +11,11 @@ import './styles/components.css';
 import { App } from './App.tsx';
 import { StartupError } from './app/StartupError.tsx';
 import { createAccountStore, createDataLayer } from './data';
-import { createNflverseSource } from './app/nflverseSource';
 
 function boot() {
   try {
     const layer = createDataLayer();
-    return <App api={layer.api} sleeper={layer.sleeper} nflverse={createNflverseSource(`${import.meta.env.BASE_URL}data/nflverse`)} accounts={createAccountStore()} />;
+    return <App api={layer.api} sleeper={layer.sleeper} nflverse={layer.nflverse} accounts={createAccountStore()} />;
   } catch (e) {
     return <StartupError message={e instanceof Error ? e.message : String(e)} />;
   }

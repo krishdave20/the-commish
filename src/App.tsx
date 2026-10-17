@@ -1,6 +1,5 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
-import type { AccountStore, DataApi, SleeperClient } from './data';
-import type { NflverseSource } from './app/nflverseData';
+import type { AccountStore, DataApi, NflverseClient, SleeperClient } from './data';
 import { AppShell } from './app/AppShell';
 import { DataProvider } from './app/DataProvider';
 import { ModelProvider } from './app/ModelProvider';
@@ -46,7 +45,7 @@ interface Props {
   api: DataApi;
   accounts: AccountStore;
   sleeper?: SleeperClient;
-  nflverse?: NflverseSource;
+  nflverse?: NflverseClient;
   /** tests inject a model loader */
   loadModel?: LoadModel;
 }

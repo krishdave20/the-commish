@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { renderApp } from '../app/testUtils';
 import { ageOf, buildPlayerIndex, searchPlayers } from '../app/playersIndex';
 import { WATCHLIST_KEY } from '../app/watchlist';
-import { createFakeSleeper, sampleAccount, samplePlayersFile } from '../test/fakes';
+import { createFakeNflverse, createFakeSleeper, sampleAccount, samplePlayersFile } from '../test/fakes';
 
 afterEach(() => {
   cleanup();
@@ -119,7 +119,7 @@ describe('player profile (/players/:pid)', () => {
     renderApp({ linked, route: '/players/t1wr' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Walt Wideout' })).toBeInTheDocument();
     expect(screen.getByText('scouting report · WR · CCC')).toBeInTheDocument();
-    expect(document.title).toBe('Walt Wideout · the commish');
+    expect(document.title).toBe('walt wideout · the commish');
     const facts = (await screen.findByRole('heading', { level: 2, name: 'Walt Wideout' })).closest('section')!;
     expect(facts).toHaveTextContent('experience3 years');
     expect(facts).toHaveTextContent('injuryQuestionable, Knee');
@@ -229,6 +229,25 @@ describe('with the nightly nflverse data', () => {
     expect(screen.getByText(/Routes are a proxy/)).toBeInTheDocument();
     expect(screen.queryByText('nflverse data arrives with the nightly update.')).not.toBeInTheDocument();
     expect(screen.queryByRole('table', { name: 'Rushing box splits' })).not.toBeInTheDocument(); // a receiver
+  });
+
+  it('Refresh also requests the nflverse files again, forced', async () => {
+    const nflverse = createFakeNflverse();
+    const { user, sleeper } = renderApp({ linked, route: '/players/t1wr', nflverse });
+    await screen.findByRole('heading', { level: 2, name: 'usage trends' });
+    expect(nflverse.manifest).toHaveBeenLastCalledWith({ force: undefined });
+    await user.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(nflverse.manifest).toHaveBeenLastCalledWith({ force: true }));
+    expect(nflverse.weekly).toHaveBeenLastCalledWith(undefined, { force: true });
+    expect(nflverse.season).toHaveBeenLastCalledWith(undefined, { force: true });
+    expect(nflverse.coverage).toHaveBeenLastCalledWith({ force: true });
+    expect(nflverse.unmatched).toHaveBeenLastCalledWith({ force: true });
+    expect(sleeper.players).toHaveBeenLastCalledWith({ force: true });
+  });
+
+  it('says the data arrives with the nightly update when the files are missing', async () => {
+    renderApp({ linked, route: '/players/t1wr', nflverse: createFakeNflverse({ missing: true }) });
+    expect(await screen.findByText('nflverse data arrives with the nightly update.')).toBeInTheDocument();
   });
 
   it('a player with no rows in the files gets a quiet note', async () => {

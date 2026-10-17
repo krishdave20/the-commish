@@ -19,7 +19,7 @@ interface Options {
   accounts?: FakeAccountStore;
   sleeper?: ReturnType<typeof createFakeSleeper>;
   /** pass true for the sample nightly nflverse bundle */
-  nflverse?: boolean;
+  nflverse?: ReturnType<typeof createFakeNflverse> | boolean;
   /** linked accounts to start with (the first is active) */
   linked?: LinkedAccount[];
   route?: string;
@@ -32,9 +32,10 @@ export function renderApp(opts: Options = {}) {
   const api = opts.api ?? createFakeApi();
   const accounts = opts.accounts ?? createFakeAccountStore(opts.linked ?? []);
   const sleeper = opts.sleeper ?? createFakeSleeper();
+  const nflverse = createFakeNflverse();
   const user = userEvent.setup();
   const utils = render(
-    <DataProvider api={api} accounts={accounts} sleeper={sleeper} nflverse={opts.nflverse ? createFakeNflverse() : undefined}>
+    <DataProvider api={api} accounts={accounts} sleeper={sleeper} nflverse={opts.nflverse === true ? nflverse : opts.nflverse || undefined}>
       <ModelProvider loadModel={opts.loadModel ?? sampleLoadModel()}>
         <ScenarioProvider>
           <MemoryRouter initialEntries={[opts.route ?? '/']}>
@@ -44,5 +45,5 @@ export function renderApp(opts: Options = {}) {
       </ModelProvider>
     </DataProvider>,
   );
-  return { api, accounts, sleeper, user, ...utils };
+  return { api, accounts, sleeper, nflverse, user, ...utils };
 }
