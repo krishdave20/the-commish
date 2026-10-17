@@ -5,7 +5,7 @@ export function StartupError({ message }: Props) {
   return (
     <div className="signin-wrap">
       <div className="signin">
-        <div className="micro">War Room</div>
+        <div className="micro">the commish</div>
         <h1>Could not start</h1>
         <p className="note neg-c" role="alert">{message}</p>
       </div>

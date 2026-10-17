@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { documentTitle, pageForPath } from './names';
 
-/** Sets document.title to "Locker Room · War Room" for a route path. */
+/** Sets document.title to "locker room · the commish" for a route path. */
 export function usePageTitle(path: string): void {
   useEffect(() => {
     document.title = documentTitle(pageForPath(path));

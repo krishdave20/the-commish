@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createCache } from './cache.ts';
 
 let n = 0;
-const freshName = () => `war-room-test-${n++}`;
+const freshName = () => `the-commish-test-${n++}`;
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe('cache', () => {
@@ -18,7 +18,7 @@ describe('cache', () => {
     expect(await c.get('missing')).toBeNull();
   });
 
-  it('stores gzip bytes in the `raw` store of the `war-room`-style db', async () => {
+  it('stores gzip bytes in the `raw` store of the `the-commish`-style db', async () => {
     const name = freshName();
     const c = createCache({ dbName: name });
     const big = { rows: Array.from({ length: 2000 }, (_, i) => ({ id: i, team: 'KC' })) };

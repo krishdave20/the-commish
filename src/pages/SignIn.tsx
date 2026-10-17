@@ -99,7 +99,7 @@ export default function SignIn() {
     <div className="signin-wrap">
       <div className="signin page-fade">
         <header className="page-head">
-          <div className="micro">war room · {PAGES.signin.kicker}</div>
+          <div className="micro">the commish · {PAGES.signin.kicker}</div>
           <h1>{PAGES.signin.name}</h1>
           <p className="note">
             Enter a Sleeper username to follow your leagues. There is no password: Sleeper does not offer one to
@@ -117,7 +117,7 @@ export default function SignIn() {
               />
             </label>
             <button type="submit" className="btn solid" disabled={busy || !username.trim()}>Find my leagues</button>
-            {active && <Link to="/" className="btn quiet">Back to War Room</Link>}
+            {active && <Link to="/" className="btn quiet">Back to the commish</Link>}
           </div>
           {phase.kind === 'busy' && <p className="msg note" role="status">{phase.text}</p>}
           {phase.kind === 'error' && <p className="msg err" role="alert">{phase.text}</p>}

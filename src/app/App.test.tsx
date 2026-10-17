@@ -28,7 +28,7 @@ describe('app shell', () => {
   it('puts the wordmark and account switcher in the sidebar', async () => {
     renderApp({ linked: [sampleAccount()] });
     expect(await screen.findByText('Sam Sample')).toBeInTheDocument();
-    expect(screen.getByText('war room')).toBeInTheDocument();
+    expect(screen.getByText('the commish')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Add an account' })).toHaveAttribute('href', '/signin');
     // the league select shows the league name once the bundle loads
     expect(await screen.findByRole('option', { name: 'Sample League' })).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('app shell', () => {
       expect(screen.getByText(kicker)).toBeInTheDocument();
       expect(screen.getByText(milestone)).toBeInTheDocument();
       expect(await screen.findByText('Data as of Fri, Oct 16, 4:05 PM')).toBeInTheDocument();
-      expect(document.title).toBe(`${title} · war room`);
+      expect(document.title).toBe(`${title} · the commish`);
       unmount();
     }
   });
@@ -70,7 +70,7 @@ describe('app shell', () => {
   it('sets the document title to the page name', async () => {
     renderApp({ linked: [sampleAccount()], route: '/team' });
     await screen.findByRole('heading', { level: 1, name: 'locker room' });
-    expect(document.title).toBe('locker room · war room');
+    expect(document.title).toBe('locker room · the commish');
   });
 
   it('has a small under the hood link outside the nine main items', async () => {

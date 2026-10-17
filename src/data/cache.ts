@@ -1,4 +1,4 @@
-/* Raw API responses, gzipped, in IndexedDB (db `war-room`, store `raw`). A small `meta` store holds
+/* Raw API responses, gzipped, in IndexedDB (db `the-commish`, store `raw`). A small `meta` store holds
    key/size/time so stats() never has to read the 14 MB players blob. If IndexedDB is missing or throws
    (private windows, blocked storage, tests) everything falls back to an in-memory map. */
 import { openDB, type IDBPDatabase } from 'idb';
@@ -64,7 +64,7 @@ async function unpack(rec: RawRecord): Promise<CachedValue> {
 }
 
 export function createCache(opts: CacheOpts = {}): Cache {
-  const dbName = opts.dbName ?? 'war-room';
+  const dbName = opts.dbName ?? 'the-commish';
   const now = opts.now ?? Date.now;
   const mem = new Map<string, RawRecord>();
   let dbp: Promise<IDBPDatabase | null> | null = null;

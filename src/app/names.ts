@@ -55,5 +55,5 @@ export function pageForPath(path: string): PageName | null {
 }
 
 export function documentTitle(page: PageName | null): string {
-  return page ? `${page.name} · war room` : 'war room';
+  return page ? `${page.name} · the commish` : 'the commish';
 }

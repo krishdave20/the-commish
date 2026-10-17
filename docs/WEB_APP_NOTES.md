@@ -1,4 +1,7 @@
-# War Room as a web app: how it differs from SPEC.md
+# the commish: how it differs from SPEC.md
+
+SPEC.md calls the app "War Room". The owner renamed it **the commish** (Oct 16, 2026): app, docs, package
+(`the-commish`) and GitHub repo. The reference files in `reference/` keep their original names.
 
 The owner changed the target from an Electron macOS app to a web app (Oct 16, 2026).
 Everything in SPEC.md still applies except where this table says otherwise.
@@ -9,7 +12,7 @@ Everything in SPEC.md still applies except where this table says otherwise.
 | Files under `userData`, raw gzipped | IndexedDB (via `idb`). Raw responses stored gzipped with `CompressionStream`; derived aggregates as JSON. |
 | Worker thread for pbp parsing | Done ahead of time by a nightly job (see nflverse below); Web Workers for any in-browser heavy work. |
 | Season sim in a Web Worker | Same. |
-| Unsigned `.dmg` | Static build (`npm run dist` → `dist/`), deployable to GitHub Pages or any static host. `base: './'` + `HashRouter`. |
+| Unsigned `.dmg` | Static build (`npm run dist` → `dist/`), hosted free on GitHub Pages (owner decision, Oct 16, 2026). `base: './'` + `HashRouter`. |
 | "Check for updates" menu item | About screen compares the version with an optional `version.json` URL. |
 | Bundled fonts | `@fontsource/dm-mono` and `@fontsource/instrument-serif` (both SIL OFL), bundled by Vite. |
 | Playwright launches the built app | Playwright runs against `vite preview` (milestone 6). |
@@ -62,7 +65,7 @@ counts a DEF row as played when `gp > 0`. On the Oct 16 fixture this moves playo
 
 ## CORS (checked Oct 16, 2026)
 - Sleeper (`api.sleeper.app`, documented and undocumented) and FantasyCalc send `Access-Control-Allow-Origin: *`, so the browser calls them directly.
-- nflverse GitHub release assets send no CORS header, and `pbp_participation_2025.csv` is 49 MB. Plan (milestone 3, owner to confirm): a scheduled GitHub Action downloads nflverse files, builds per-player-week aggregates, and publishes small JSON next to the site. Until then the app shows nflverse panels as unavailable.
+- nflverse GitHub release assets send no CORS header, and `pbp_participation_2025.csv` is 49 MB. Decided (Oct 16, 2026): a scheduled GitHub Action downloads nflverse files, builds per-player-week aggregates, and publishes small JSON next to the site. Until then the app shows nflverse panels as unavailable.
 
 ## ID join reality check
 Of 830 active QB/RB/WR/TE in `/v1/players/nfl`, only 158 have `gsis_id` and 205 have `espn_id`. The name + team + position fallback will carry most joins; Data health must show what is unmatched.

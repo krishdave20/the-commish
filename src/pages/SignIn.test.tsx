@@ -7,7 +7,7 @@ describe('sign in', () => {
   it('is called check in', async () => {
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'check in' })).toBeInTheDocument();
-    expect(document.title).toBe('check in · war room');
+    expect(document.title).toBe('check in · the commish');
   });
 
   it('says so when Sleeper has no such username', async () => {

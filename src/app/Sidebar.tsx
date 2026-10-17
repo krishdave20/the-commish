@@ -6,8 +6,8 @@ import { PAGES } from './names';
 export function Sidebar() {
   return (
     <aside className="sidebar">
-      <NavLink to="/" className="wordmark" aria-label="War Room home">
-        war room
+      <NavLink to="/" className="wordmark" aria-label="the commish home">
+        the commish
         <small>fantasy football, from public data</small>
       </NavLink>
       <nav className="nav" aria-label="Primary">
