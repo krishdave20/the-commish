@@ -1,0 +1,28 @@
+/* Design tokens (SPEC section 8). One deliberate light look; there is no dark mode. */
+:root {
+  --paper: #f4f1eb;
+  --sheet: #faf8f3;
+  --ink: #1f1d19;
+  --ink-2: #5d5850;
+  --ink-3: #8a8478;
+  --rule: #dcd5c6;
+  --rule-2: #e9e4d8;
+
+  --green: #2d5a27;
+  --green-2: #4f7d48;
+  --green-soft: #dfe7d9;
+  --red: #8b3a1a;
+  --red-soft: #f1e0d6;
+  --gold: #c4922a;
+  --gold-ink: #8a6418;
+  --gold-soft: #f3e8cf;
+
+  --mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+
+  --r: 3px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sidebar-w: 15.5rem;
+
+  color-scheme: light;
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="War Room">
+  <rect width="64" height="64" rx="12" fill="#f4f1eb"/>
+  <g transform="rotate(-35 32 32)">
+    <ellipse cx="32" cy="32" rx="25" ry="15" fill="#8b3a1a"/>
+    <path d="M13.5 24.5q-2.5 7.5 0 15M50.5 24.5q2.5 7.5 0 15" fill="none" stroke="#faf8f3" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M23 32h18" stroke="#faf8f3" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M27 28.5v7M32 28.5v7M37 28.5v7" stroke="#faf8f3" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+</svg>

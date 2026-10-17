@@ -1,0 +1,37 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# local
+.DS_Store
+coverage
+
+# build kit archive (contents are unpacked in the repo)
+war_room_build_kit.zip
+# nflverse pipeline output for local dev (CI regenerates it nightly)
+public/data/nflverse/
+.cache/
+# notebooks
+.ipynb_checkpoints/
+.claude/
