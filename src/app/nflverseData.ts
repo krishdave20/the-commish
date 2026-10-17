@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import type { NflverseClient } from '../data';
-import { coverageRows, seasonRows, weeklyRows } from '../data';
-import type { CoverageRow, CoverageTuple, NflverseManifest, PlayerSeason, PlayerWeek, UnmatchedPlayer } from '../data/nflverseTypes';
+import { coverageRows, seasonRows, teamRows, weeklyRows } from '../data';
+import type { CoverageRow, CoverageTeam, CoverageTuple, NflverseManifest, PlayerSeason, PlayerWeek, TeamWeek, UnmatchedPlayer } from '../data/nflverseTypes';
 import { useData } from './dataContext';
 import type { Fetcher } from './resourceStore';
 
@@ -10,10 +10,14 @@ export interface NflverseBundle {
   manifest: NflverseManifest;
   weekly: PlayerWeek[];
   season: PlayerSeason[];
+  /** team-week opportunity totals and what each defense faced (empty when the file is missing) */
+  teams: TeamWeek[];
   coverage: {
     rows: CoverageRow[];
     /** pid -> coverage shell -> [routes, targets, receptions, yards, td] */
     shells: Record<string, Record<string, CoverageTuple>>;
+    /** defense team -> the coverage mix it ran */
+    teams: Record<string, CoverageTeam>;
     season: number;
     isCurrent: boolean;
     routesDefinition: string;
@@ -29,8 +33,8 @@ export async function loadNflverseBundle(client: NflverseClient, o: { force?: bo
   const opts = { force: o.force };
   const manifest = await client.manifest(opts);
   if (!manifest.available) throw new Error(manifest.message);
-  const [weekly, season, coverage, unmatched] = await Promise.all([
-    client.weekly(undefined, opts), client.season(undefined, opts), client.coverage(opts), client.unmatched(opts),
+  const [weekly, season, teams, coverage, unmatched] = await Promise.all([
+    client.weekly(undefined, opts), client.season(undefined, opts), client.teams(undefined, opts), client.coverage(opts), client.unmatched(opts),
   ]);
   if (!weekly.available) throw new Error(weekly.message);
   if (!season.available) throw new Error(season.message);
@@ -38,9 +42,10 @@ export async function loadNflverseBundle(client: NflverseClient, o: { force?: bo
     manifest: manifest.data,
     weekly: weeklyRows(weekly.data),
     season: seasonRows(season.data),
+    teams: teams.available ? teamRows(teams.data) : [],
     coverage: coverage.available
       ? {
-        rows: coverageRows(coverage.data), shells: coverage.data.shells, season: coverage.data.season,
+        rows: coverageRows(coverage.data), shells: coverage.data.shells, teams: coverage.data.teams ?? {}, season: coverage.data.season,
         isCurrent: coverage.data.isCurrent, routesDefinition: coverage.data.routesDefinition,
       }
       : null,

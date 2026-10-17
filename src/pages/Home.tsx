@@ -1,35 +1,71 @@
 import { useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import type { Phase } from '../data';
 import { useActive, useLeagueBundle, useNflState } from '../app/hooks';
+import { parsePreviewPhase, previewName } from '../app/huddlePhase';
+import { useModel } from '../app/modelContext';
+import { useNflverse } from '../app/nflverseData';
 import { formatMoney, formatPoints, formatPoints1, ordinal } from '../app/format';
 import { groupSlots, leagueScoring, leagueTypeLabel, statusLabel } from '../app/league';
-import { PAGES } from '../app/names';
+import { FEATURE, PAGES } from '../app/names';
 import { usePageTitle } from '../app/usePageTitle';
 import { currentDraft, phaseLabel, safeDetectPhase } from '../app/phase';
 import { CountUp } from '../components/CountUp';
 import { Kpi } from '../components/Kpi';
 import { PageHeader } from '../components/PageHeader';
+import { AgeProfile } from './home/AgeProfile';
+import { Drafting } from './home/Drafting';
+import { InjuriesCard } from './home/InjuriesCard';
+import { LeagueHistory } from './home/LeagueHistory';
+import { MatchupCard } from './home/MatchupCard';
+import { Movers } from './home/Movers';
+import { OddsCard } from './home/OddsCard';
+import { PreDraft } from './home/PreDraft';
+import { RookieClass } from './home/RookieClass';
+import { TopTakes } from './home/TopTakes';
+import { WaiversCard } from './home/WaiversCard';
+import { AlertsCard } from './team/AlertsCard';
 import { buildStandings, recordLabel } from './standings';
 import type { StandingRow } from './standings';
+import type { LeagueBundle } from '../data';
+import type { Engine } from '../engine';
 
 export default function Home() {
   const bundle = useLeagueBundle();
   usePageTitle(PAGES.home.path);
   const nfl = useNflState();
+  const model = useModel();
+  const nv = useNflverse();
   const { data: active } = useActive();
+  const [params] = useSearchParams();
   const data = bundle.data;
   const userId = active?.account.userId ?? null;
 
   const rows = useMemo(() => (data ? buildStandings(data, userId) : []), [data, userId]);
   const mine = rows.find((r) => r.isMine) ?? null;
 
-  const phase = useMemo(
+  const live = useMemo(
     () => (data && nfl.data ? safeDetectPhase(nfl.data, data.league, currentDraft(data.league, data.drafts)) : null),
     [data, nfl.data],
   );
+  // `#/?phase=offseason` forces a layout for review
+  const forced = parsePreviewPhase(params.get('phase'));
+  const phase: Phase | null = forced ?? live;
+  const inSeason = phase === 'in_season' || phase === 'postseason';
+  const season = nfl.data?.league_season ?? nfl.data?.season ?? data?.league.season ?? '';
+
+  const header = { ...bundle, refresh: async () => { await Promise.all([bundle.refresh(), model.refresh(), nv.refresh()]); } };
 
   return (
     <div className="page page-fade">
-      <PageHeader kicker={data ? `${PAGES.home.kicker} · ${data.league.season} season` : PAGES.home.kicker} title={PAGES.home.name} data={bundle} />
+      <PageHeader kicker={data ? `${PAGES.home.kicker} · ${data.league.season} season` : PAGES.home.kicker} title={PAGES.home.name} data={header} />
+
+      {forced && (
+        <p className="preview-note" role="status">
+          <span>{FEATURE.preview}: {previewName(forced)}</span>
+          <Link to={PAGES.home.path}>back to live</Link>
+        </p>
+      )}
 
       {!active?.leagueId && (
         <p className="note">No league is selected yet. Use “Add an account” in the sidebar to follow one.</p>
@@ -38,7 +74,12 @@ export default function Home() {
         <p className="note neg-c" role="status">League data is not available yet. Try Refresh.</p>
       )}
 
-      {data && mine && <MyKpis mine={mine} teams={rows.length} />}
+      {data && mine && inSeason && <MyKpis mine={mine} teams={rows.length} />}
+
+      {data && phase === 'drafting' && <Drafting bundle={data} userId={userId} />}
+      {data && phase === 'pre_draft' && <PreDraft bundle={data} userId={userId} />}
+      {data && phase === 'offseason' && <OffseasonSections bundle={data} userId={userId} season={season} />}
+      {data && inSeason && <InSeasonSections engine={model.engine} loading={model.loading} error={model.error} />}
 
       {data && (
         <div className="home-grid">
@@ -67,18 +108,58 @@ export default function Home() {
             <p className="note">{`Phase: ${phaseLabel(phase)}`}</p>
           </section>
 
-          <section className="card" aria-labelledby="home-standings">
-            <header>
-              <div className="micro">Sorted by wins, then points for</div>
-              <h2 id="home-standings">Standings</h2>
-            </header>
-            <StandingsTable rows={rows} />
-          </section>
+          {(inSeason || phase === null) && (
+            <section className="card" aria-labelledby="home-standings">
+              <header>
+                <div className="micro">Sorted by wins, then points for</div>
+                <h2 id="home-standings">Standings</h2>
+              </header>
+              <StandingsTable rows={rows} />
+              <p><Link to={PAGES.race.path}>open the {PAGES.race.name} for odds and clinch marks →</Link></p>
+            </section>
+          )}
         </div>
       )}
-
-      {data && <p className="note">Playoff odds, matchup and waiver adds arrive in milestone 2.</p>}
     </div>
+  );
+}
+
+/** Playoff odds, this week's matchup, lineup alerts, injuries, the waiver wire's top three and the top takes for my players. */
+function InSeasonSections({ engine, loading, error }: { engine: Engine | null; loading: boolean; error: string | undefined }) {
+  if (!engine) {
+    return (
+      <p className={`note${error && !loading ? ' neg-c' : ''}`} role="status">
+        {loading ? 'building the model for your odds, matchup and waiver adds…' : error ? `could not build the model. ${error}` : 'no model yet.'}
+      </p>
+    );
+  }
+  return (
+    <>
+      <div className="grid2">
+        <OddsCard engine={engine} />
+        <MatchupCard engine={engine} />
+      </div>
+      <div className="grid2">
+        <AlertsCard engine={engine} withWire={false} />
+        <InjuriesCard engine={engine} />
+      </div>
+      <WaiversCard engine={engine} />
+      <TopTakes />
+    </>
+  );
+}
+
+/** Dynasty value movers, the rookie class, my roster's age profile and the league's history. */
+function OffseasonSections({ bundle, userId, season }: { bundle: LeagueBundle; userId: string | null; season: string }) {
+  return (
+    <>
+      <Movers bundle={bundle} userId={userId} />
+      <div className="grid2">
+        <RookieClass league={bundle.league} season={season} />
+        <AgeProfile bundle={bundle} userId={userId} />
+      </div>
+      <LeagueHistory bundle={bundle} userId={userId} />
+    </>
   );
 }
 

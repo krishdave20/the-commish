@@ -10,11 +10,13 @@ interface Props {
   page: PageKey;
   /** extra text after the kicker, e.g. "week 6" */
   suffix?: (engine: Engine) => string | undefined;
+  /** also reload this (nflverse, say) when Refresh is pressed */
+  alsoRefresh?: () => Promise<void>;
   children: (engine: Engine) => ReactNode;
 }
 
 /** Page frame for engine-backed pages: header with the model's as-of stamp, Refresh and pull progress, then the body once the model is ready. */
-export function EnginePage({ page, suffix, children }: Props) {
+export function EnginePage({ page, suffix, alsoRefresh, children }: Props) {
   const m = useModel();
   const p = PAGES[page];
   usePageTitle(p.path);
@@ -22,7 +24,7 @@ export function EnginePage({ page, suffix, children }: Props) {
   const kicker = extra ? `${p.kicker} · ${extra}` : p.kicker;
   return (
     <div className="page page-fade">
-      <PageHeader kicker={kicker} title={p.name} data={m} />
+      <PageHeader kicker={kicker} title={p.name} data={alsoRefresh ? { ...m, refresh: async () => { await Promise.all([m.refresh(), alsoRefresh()]); } } : m} />
       {m.engine ? children(m.engine) : (
         <p className={`note${m.error && !m.loading ? ' neg-c' : ''}`} role="status">
           {m.loading

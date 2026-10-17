@@ -1,8 +1,9 @@
 /* Components, copied from the patterns in reference/fantasy_war_room.html */
 
 /* headline figures */
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
-.kpi { background: var(--sheet); padding: 14px 16px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+/* separators are drawn by each cell (right + bottom), so a short last row leaves sheet, not a rule-coloured hole */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr)); gap: 0; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+.kpi { background: var(--sheet); box-shadow: 1px 0 0 var(--rule), 0 1px 0 var(--rule); padding: 14px 16px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
 .kpi .big { font-family: var(--serif); font-size: 42px; line-height: 1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .kpi .sub { color: var(--ink-2); font-size: 11.5px; }
 
@@ -241,3 +242,40 @@ input[type='range'] { accent-color: var(--green); }
 
 a.plink { color: inherit; text-decoration: none; }
 a.plink:hover { color: var(--green); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- M4: hot takes ---------- */
+.take-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 25rem), 1fr)); gap: 14px; align-items: stretch; }
+.take-card { background: var(--sheet); border: 1px solid var(--rule); border-left: 3px solid var(--ink-3); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.take-card[data-tone='good'] { border-left-color: var(--green); }
+.take-card[data-tone='bad'] { border-left-color: var(--red); }
+.take-card[data-tone='watch'] { border-left-color: var(--gold); }
+.take-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.take-tone { font-weight: 500; }
+.take-tone.good { color: var(--green); }
+.take-tone.bad { color: var(--red); }
+.take-tone.watch { color: var(--gold-ink); }
+.take-head { font-family: var(--serif); font-style: normal; font-size: 26px; line-height: 1.08; text-wrap: balance; }
+.take-stat { font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.take-track { font-size: 11px; color: var(--ink-3); }
+.take-why { font-size: 12.5px; padding-left: 10px; border-left: 1px solid var(--rule); }
+.take-foot { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: 11px; }
+.take-actions { margin-top: 2px; }
+.take-filters { display: grid; gap: 10px; }
+.empty-take { font-family: var(--serif); font-size: 26px; color: var(--ink-2); padding: 18px 0; }
+.take-item { display: grid; min-width: 0; }
+
+/* ---------- M4: huddle ---------- */
+.agebars { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.agebars li { display: grid; grid-template-columns: 2.4em minmax(5rem, 1fr) 3em minmax(8rem, 14rem); gap: 10px; align-items: center; }
+@media (max-width: 560px) { .agebars li { grid-template-columns: 2.4em minmax(4rem, 1fr) 3em; } .agebars li > :last-child { grid-column: 2 / -1; } }
+.preview-note { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 6px 10px; border: 1px dashed var(--gold); border-radius: var(--r); background: var(--gold-soft); color: var(--gold-ink); font-size: 12px; }
+.banner { display: grid; gap: 8px; padding: 18px 20px; background: var(--green); color: var(--paper); border-radius: var(--r); }
+.banner h2 { color: var(--paper); font-size: 44px; line-height: 1; }
+.banner .micro, .banner .note { color: #cfdcc9; }
+.banner .btn.solid { background: var(--paper); color: var(--green); border-color: var(--paper); justify-self: start; }
+.banner .btn.solid:hover { background: var(--sheet); color: var(--green); }
+.countdown { font-family: var(--serif); font-size: 56px; line-height: 1; }
+.tiers { display: grid; gap: 10px; }
+.tiers dt { font-size: 11px; color: var(--ink-3); letter-spacing: 0.09em; }
+.tiers dd { margin: 0; font-size: 12.5px; }
+.mvgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 22px; align-items: start; }

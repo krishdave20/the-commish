@@ -51,8 +51,8 @@ describe('sign in', () => {
     expect(accounts.setActive).toHaveBeenCalledWith('u1');
     expect(await screen.findByRole('heading', { level: 1, name: 'huddle' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { level: 2, name: 'Sample League' })).toBeInTheDocument();
-    expect(await screen.findByRole('table', { name: 'League standings' })).toBeInTheDocument();
-    expect(screen.getByText('Reed Between the Lines')).toBeInTheDocument();
+    const standings = await screen.findByRole('table', { name: 'League standings' });
+    expect(within(standings).getByText('Reed Between the Lines')).toBeInTheDocument();
   });
 
   it('also loads the previous season in the offseason', async () => {

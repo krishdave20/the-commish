@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
 import { formatOdds, formatPoints1, signed, signedPct } from '../app/format';
@@ -122,9 +123,16 @@ export default function Trades() {
 function TradeBlock({ engine }: { engine: Engine }) {
   const { model, meRid } = engine;
   const others = useMemo(() => model.teams.filter((t) => t.rid !== meRid).sort((a, b) => a.team.localeCompare(b.team)), [model, meRid]);
-  const [partner, setPartner] = useState(others[0]?.rid ?? meRid);
-  const [send, setSend] = useState<string[]>([]);
-  const [get, setGet] = useState<string[]>([]);
+  // /trades?player=<pid> (the hot takes' "trade block" button) starts with that player ticked on his side of the deal
+  const [params] = useSearchParams();
+  const [preset] = useState(() => {
+    const mp = model.players.find((p) => p.pid === params.get('player'));
+    if (!mp || mp.ownerRid === 0) return null;
+    return mp.ownerRid === meRid ? { partner: null, send: [mp.pid], get: [] as string[] } : { partner: mp.ownerRid, send: [] as string[], get: [mp.pid] };
+  });
+  const [partner, setPartner] = useState(preset?.partner ?? others[0]?.rid ?? meRid);
+  const [send, setSend] = useState<string[]>(preset?.send ?? []);
+  const [get, setGet] = useState<string[]>(preset?.get ?? []);
   const analyzerRef = useRef<HTMLElement | null>(null);
   const own = engine.me.ownerId === model.meta.userId;
 

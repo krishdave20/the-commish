@@ -3,28 +3,16 @@ import { useScenario } from '../../app/modelContext';
 import { FEATURE } from '../../app/names';
 import { WinsNeededChart } from '../../components/charts/WinsNeededChart';
 import type { Engine } from '../../engine';
+import { magicLine } from './magicLine';
 
 /** Wins you need (P(playoffs | final wins)) and the clinch line from winsToClinch. */
 export function MagicNumber({ engine }: { engine: Engine }) {
   const { live } = useScenario();
-  const { divisions } = engine.model.meta;
-
   const buckets = useMemo(
     () => Object.entries(live?.myHist ?? {}).map(([w, h]) => ({ wins: Number(w), sims: h.n, made: h.made })),
     [live],
   );
-  const line = useMemo(() => {
-    const des = engine.designations()[engine.meRid];
-    const wc = engine.winsToClinch();
-    if (des?.clinch) return `magic number: 0. you have clinched a playoff spot${des.divClinch ? ' and the division' : ''}.`;
-    if (des?.elim) return 'you have been eliminated from the playoffs.';
-    let text: string;
-    if (wc.spot === null) text = 'no number of your own wins guarantees a spot yet.';
-    else if (wc.winOut) text = `magic number: ${wc.spot}. win all ${wc.open} of your remaining games to clinch a spot.`;
-    else text = `magic number: ${wc.spot}. win ${wc.spot} of your last ${wc.open} to clinch a spot.`;
-    if (divisions > 0 && wc.div !== null) text += ` win ${wc.div} of your last ${wc.open} to clinch the division.`;
-    return text;
-  }, [engine, divisions]);
+  const line = useMemo(() => magicLine(engine), [engine]);
 
   return (
     <section className="card" aria-labelledby="magic-title">

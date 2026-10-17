@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
 import { compact, formatPoints1, signed } from '../app/format';
@@ -8,6 +7,7 @@ import { useNflverse } from '../app/nflverseData';
 import { usePlayersFile } from '../app/playersData';
 import { displayName } from '../app/playersIndex';
 import { FEATURE } from '../app/names';
+import { useTryWaiver } from '../app/tryWaiver';
 import { useComputed } from '../app/useComputed';
 import { useDebounced } from '../app/useSimulation';
 import { MatchupGrade } from '../components/MatchupGrade';
@@ -24,8 +24,7 @@ import type { RiserPlayer } from './waivers/UsageRisers';
 const NONE: WaiverEntry[] = [];
 
 function Board({ engine }: { engine: Engine }) {
-  const { scenario, setScenario } = useScenario();
-  const navigate = useNavigate();
+  const { scenario } = useScenario();
   const settled = useDebounced(scenario, 250);
   const [win, setWin] = useState<WaiverWindow>('reg');
   const [pos, setPos] = useState('all');
@@ -56,15 +55,7 @@ function Board({ engine }: { engine: Engine }) {
   );
   const weeks = board.value?.weeks ?? [];
 
-  function tryIt(w: WaiverEntry) {
-    setScenario((s) => ({
-      ...s,
-      adds: s.adds.includes(w.pid) ? s.adds : [...s.adds, w.pid],
-      drops: s.drops.includes(w.drop.pid) ? s.drops : [...s.drops, w.drop.pid],
-      pins: s.pins.filter((x) => x !== w.drop.pid),
-    }));
-    navigate('/team');
-  }
+  const tryIt = useTryWaiver();
 
   const columns: Column<WaiverEntry>[] = [
     {

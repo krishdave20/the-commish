@@ -44,6 +44,37 @@ export const FEATURE = {
   onTheClock: 'on the clock',
   mock: 'mock draft',
   injuryReport: 'injury report',
+  /* hot takes */
+  takesFeed: 'the feed',
+  takesForPlayer: 'hot takes',
+  /* huddle sections */
+  odds: 'playoff odds',
+  matchup: 'this week’s matchup',
+  injuries: 'injury flags',
+  waiverAdds: 'top waiver adds',
+  yourTakes: 'hot takes for your players',
+  movers: 'value movers',
+  rookies: 'rookie class',
+  ageProfile: 'roster age profile',
+  history: 'league history',
+  countdown: 'draft countdown',
+  prep: 'prep checklist',
+  preview: 'previewing',
+} as const;
+
+/** What each detector is called in the filter row (the plain-English name of the rule behind the card). */
+export const TAKE_KIND_LABEL = {
+  usage_spike: 'usage spike',
+  target_hog: 'target hog',
+  buy_low: 'buy low',
+  sell_high: 'sell high',
+  rz_role_change: 'red-zone role',
+  box_count_edge: 'box-count edge',
+  blitz_beater: 'blitz beater',
+  soft_schedule: 'soft schedule',
+  waiver_riser: 'waiver riser',
+  dynasty_mover: 'dynasty mover',
+  coverage_note: 'coverage note',
 } as const;
 
 /** healthy, questionable or out for a data-health level (the underlying level values stay ok, warn, fail). */

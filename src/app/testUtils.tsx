@@ -10,6 +10,8 @@ import { DataProvider } from './DataProvider';
 import type { LoadModel } from './loadModel';
 import { ModelProvider } from './ModelProvider';
 import { ScenarioProvider } from './ScenarioProvider';
+import { TakesEngineContext, defaultBuildTakes } from './takesEngine';
+import type { BuildTakes } from './takesEngine';
 
 // vitest runs without globals, so Testing Library cannot register its own cleanup
 afterEach(cleanup);
@@ -25,6 +27,8 @@ interface Options {
   route?: string;
   /** how the engine model is built; default is the sample league */
   loadModel?: LoadModel;
+  /** the takes engine to use (default: the app's own; pass `stubBuildTakes()` for fixed cards) */
+  buildTakes?: BuildTakes;
 }
 
 /** Mount the whole app in a MemoryRouter with fakes. */
@@ -38,9 +42,11 @@ export function renderApp(opts: Options = {}) {
     <DataProvider api={api} accounts={accounts} sleeper={sleeper} nflverse={opts.nflverse === true ? nflverse : opts.nflverse || undefined}>
       <ModelProvider loadModel={opts.loadModel ?? sampleLoadModel()}>
         <ScenarioProvider>
-          <MemoryRouter initialEntries={[opts.route ?? '/']}>
-            <AppRoutes />
-          </MemoryRouter>
+          <TakesEngineContext.Provider value={opts.buildTakes ?? defaultBuildTakes}>
+            <MemoryRouter initialEntries={[opts.route ?? '/']}>
+              <AppRoutes />
+            </MemoryRouter>
+          </TakesEngineContext.Provider>
         </ScenarioProvider>
       </ModelProvider>
     </DataProvider>,

@@ -73,7 +73,7 @@ export function useActive(): Resource<ActiveSelection | null> {
 
 /* ---------- network-backed resources ---------- */
 
-function useResource<T>(key: string | null, fetcher: Fetcher<T> | null): Resource<T> {
+export function useResource<T>(key: string | null, fetcher: Fetcher<T> | null): Resource<T> {
   const { store } = useData();
   useSyncExternalStore(store.subscribe, store.getVersion);
   const entry = key ? store.get<T>(key) : undefined;

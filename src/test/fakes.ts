@@ -1,11 +1,14 @@
 import { vi } from 'vitest';
 import type { LoadModel } from '../app/loadModel';
-import type { PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient } from '../data';
+import type { PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient, ProjectionRow, TrendingRow } from '../data';
+import { syntheticPool } from '../engine/draft/test-helpers';
 import { handModel } from '../engine/test-helpers';
+import type { BuildTakes } from '../app/takesEngine';
+import type { Take } from '../takes/types';
 import type { Model } from '../engine';
 import type {
-  AccountStore, CacheStats, DataApi, Fetched, HealthResult, LeagueBundle, LinkedAccount,
-  NflState, SleeperLeague, SleeperUser,
+  AccountStore, CacheStats, DataApi, Fetched, HealthResult, LeagueBundle, LeagueUser, LinkedAccount,
+  NflState, SleeperDraft, SleeperLeague, SleeperRoster, SleeperUser,
 } from '../data/contract';
 
 /* In-memory stand-ins for DataApi and AccountStore, built from a small invented league.
@@ -347,17 +350,106 @@ export const sampleFantasyCalc = (): FantasyCalcRow[] => [
 
 const loaded = <T,>(data: T) => ({ data, asOf: FAKE_AS_OF, fromCache: false, stale: false, bytes: 1, ms: 1, status: 200 });
 
-export interface FakeSleeperOpts { fantasyCalcFails?: boolean }
+/** The sample season projections for the draft engine: the draft tests' synthetic pool, with a few rookies. */
+export function sampleSeasonProjections(): ProjectionRow[] {
+  const rows = syntheticPool();
+  for (const pid of ['RB4', 'RB9', 'WR3', 'WR8', 'QB5']) {
+    const r = rows.find((x) => x.player_id === pid);
+    if (r?.player) r.player.years_exp = 0;
+  }
+  return rows;
+}
 
-/** Just `players` and `fantasyCalc`: the two calls the scouting report makes outside the engine's pull. */
+export interface FakeSeason { league: SleeperLeague; rosters: SleeperRoster[]; users: LeagueUser[] }
+
+export interface FakeSleeperOpts {
+  fantasyCalcFails?: boolean;
+  /** league id -> its league object, rosters and users, for the huddle's league-history walk */
+  seasons?: Record<string, FakeSeason>;
+  /** the draft `sleeper.draft(id)` answers with (default: none, so the bundle's draft is used) */
+  draft?: SleeperDraft | null;
+  trending?: TrendingRow[];
+  projections?: ProjectionRow[];
+  projectionsFail?: boolean;
+  /** FantasyCalc rows (default: sampleFantasyCalc()) */
+  fantasyCalcRows?: FantasyCalcRow[];
+}
+
+/** The Sleeper client pieces the app reads outside the engine's pull: players, FantasyCalc, trending adds, past seasons and draft inputs. */
 export function createFakeSleeper(o: FakeSleeperOpts = {}) {
+  const seasons = o.seasons ?? {};
+  const season = (id: string): FakeSeason => {
+    const s = seasons[id];
+    if (!s) throw new Error(`No league ${id}`);
+    return s;
+  };
   return {
     players: vi.fn(async () => loaded(samplePlayersFile())),
     fantasyCalc: vi.fn(async () => {
       if (o.fantasyCalcFails) throw new Error('FantasyCalc is down');
-      return loaded(sampleFantasyCalc());
+      return loaded(o.fantasyCalcRows ?? sampleFantasyCalc());
     }),
-  } as unknown as SleeperClient & { players: ReturnType<typeof vi.fn>; fantasyCalc: ReturnType<typeof vi.fn> };
+    trending: vi.fn(async () => loaded(o.trending ?? [{ player_id: 'fa1', count: 12400 }])),
+    league: vi.fn(async (id: string) => loaded(season(id).league)),
+    rosters: vi.fn(async (id: string) => loaded(season(id).rosters)),
+    users: vi.fn(async (id: string) => loaded(season(id).users)),
+    draft: vi.fn(async () => { if (!o.draft) throw new Error('No draft'); return loaded(o.draft); }),
+    draftPicks: vi.fn(async () => loaded([])),
+    draftTradedPicks: vi.fn(async () => loaded([])),
+    seasonProjections: vi.fn(async () => {
+      if (o.projectionsFail) throw new Error('Sleeper projections are down');
+      return loaded(o.projections ?? sampleSeasonProjections());
+    }),
+  } as unknown as SleeperClient & {
+    players: ReturnType<typeof vi.fn>; fantasyCalc: ReturnType<typeof vi.fn>; trending: ReturnType<typeof vi.fn>;
+    league: ReturnType<typeof vi.fn>; seasonProjections: ReturnType<typeof vi.fn>;
+  };
+}
+
+/* ---------- hot takes ---------- */
+
+function take(o: Partial<Take> & { trackRecord?: string | null } & Pick<Take, 'kind' | 'pid' | 'player' | 'pos' | 'headline' | 'statLine'>): Take {
+  return {
+    id: `${o.kind}:${o.pid}:6`, team: 'CCC', season: '2026', week: 6, throughWeek: 6, whyForYou: null, relevance: 'league', tone: 'good', score: 0.5,
+    sample: { label: 'weeks', n: 3 }, dataLabel: null, sources: ['nflverse'], actions: ['profile', 'watchlist'], ...o,
+  };
+}
+
+/** Five takes in the engine's ranked order: two on my players, a waiver riser, a trade target and a dynasty mover. */
+export function sampleTakes(): Take[] {
+  return [
+    take({
+      kind: 'usage_spike', pid: 't1wr', player: 'Walt Wideout', pos: 'WR', relevance: 'mine', tone: 'good',
+      headline: 'Walt Wideout’s snap share jumped 18 points', statLine: '94% of snaps vs 76% over the previous 3 weeks, 3 games',
+      whyForYou: 'He starts for you at WR1.', actions: ['profile', 'watchlist', 'lab', 'trade'], sources: ['nflverse'],
+      trackRecord: '2025 backtest: beat projection 45% of the time vs 37% for all players (119 takes)',
+    }),
+    take({
+      kind: 'sell_high', pid: 't1rb', player: 'Rex Runner', pos: 'RB', team: 'BBB', relevance: 'mine', tone: 'bad',
+      headline: 'Rex Runner is scoring far above his expected touchdowns', statLine: '5 TDs vs 2.1 expected on 38 carries',
+      whyForYou: 'A sell-high window on your RB1.', dataLabel: 'last season (2025)', actions: ['profile', 'watchlist', 'lab', 'trade'], sources: ['nflverse', 'ftn'],
+    }),
+    take({
+      kind: 'waiver_riser', pid: 'fa1', player: 'Free Agent Fran', pos: 'WR', team: 'FFF', relevance: 'waiver', tone: 'good',
+      headline: 'Free Agent Fran is getting added and getting looks', statLine: '12.4k adds in 24 hours; snap share up 14 points over 3 games',
+      whyForYou: 'Free on your wire; he would start over Backup Wideout.', dataLabel: 'proxy', actions: ['profile', 'watchlist', 'lab'], sources: ['sleeper', 'nflverse'],
+    }),
+    take({
+      kind: 'buy_low', pid: 't2wr', player: 'Reed Receiver', pos: 'WR', team: 'DDD', relevance: 'trade_target', tone: 'watch',
+      headline: 'Reed Receiver has top-24 air yards and bottom-half scoring', statLine: 'air-yards share rank 11 of WR, points per game rank 41, 5 games',
+      actions: ['profile', 'watchlist', 'trade'], sources: ['nflverse'], sample: { label: 'games', n: 5 },
+    }),
+    take({
+      kind: 'dynasty_mover', pid: 't2qb', player: 'Quinn Quarterback', pos: 'QB', team: 'EEE', relevance: 'league', tone: 'good',
+      headline: 'Quinn Quarterback’s dynasty value is up 6% in 30 days', statLine: 'value 6,840 vs 6,450 thirty days ago, 3rd of 36 QBs',
+      actions: ['profile', 'watchlist'], sources: ['fantasycalc'], sample: { label: 'days', n: 30 },
+    }),
+  ];
+}
+
+/** A takes engine stand-in: always the same five takes, and a spy on the inputs it was handed. */
+export function stubBuildTakes(takes: () => Take[] = sampleTakes) {
+  return vi.fn<BuildTakes>(() => takes());
 }
 
 /* ---------- nflverse output, in the shapes of src/data/nflverseTypes.ts ---------- */
@@ -430,8 +522,9 @@ export function sampleNflverseBundle(): NflverseBundle {
     coverage: {
       rows: [nvCoverage({ pid: 't1wr', routes: 520, tgt: 90, rec: 60, yds: 780, yprr: 1.5, tprr: 0.17, man_routes: 120, man_yds: 150, yprr_man: 1.25, zone_routes: 300, zone_yds: 480, yprr_zone: 1.6 })],
       shells: { t1wr: { COVER_3: [200, 30, 20, 300, 2] } },
-      season: 2025, isCurrent: false, routesDefinition: 'Routes are a proxy: dropbacks a player was on the field for as a WR, TE or RB.',
+      teams: {}, season: 2025, isCurrent: false, routesDefinition: 'Routes are a proxy: dropbacks a player was on the field for as a WR, TE or RB.',
     },
+    teams: [],
     unmatched: [
       { key: 'g1', gsis: 'g1', pfr: null, name: 'Mystery Man', team: 'AAA', pos: 'WR', off_snaps: 120, tgt: 14, car: 0, reason: 'no_candidate', candidates: [] },
       { key: 'g2', gsis: 'g2', pfr: null, name: 'Twin One', team: 'BBB', pos: 'RB', off_snaps: 80, tgt: 3, car: 40, reason: 'ambiguous', candidates: ['Twin One (111)'] },
@@ -456,7 +549,7 @@ export function createFakeNflverse(o: { missing?: boolean; bundle?: () => Nflver
     manifest: serve(() => b.manifest),
     weekly: serve(() => encode(b.weekly)),
     season: serve(() => encode(b.season)),
-    teams: serve(() => encode([])),
+    teams: serve(() => encode(b.teams)),
     coverage: vi.fn(async (..._args: unknown[]) => (o.missing || !b.coverage ? gone : available({
       ...encode(b.coverage.rows), season: b.coverage.season, isCurrent: b.coverage.isCurrent, routesDefinition: b.coverage.routesDefinition,
       shells: b.coverage.shells, teams: {},

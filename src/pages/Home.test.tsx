@@ -33,8 +33,7 @@ describe('Home', () => {
     const chips = within(panel).getByLabelText('Roster slots');
     expect(chips).toHaveTextContent('RB ×2');
     expect(chips).toHaveTextContent('BN ×3');
-    expect(panel).toHaveTextContent(/Phase: /);
-    expect(screen.getByText('Playoff odds, matchup and waiver adds arrive in milestone 2.')).toBeInTheDocument();
+    expect(panel).toHaveTextContent('Phase: In season');
   });
 
   it('sorts standings by wins then points for, and highlights my team', async () => {

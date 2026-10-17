@@ -13,6 +13,7 @@ import { NflversePanels } from './player/NflversePanels';
 import type { PlayerNflverse } from './player/nflversePlayer';
 import { byWeek, coverageOf, forPlayer, seasonOf } from './player/nflverseSelect';
 import { OutlookCard } from './player/OutlookCard';
+import { PlayerTakes } from './player/TakesCard';
 import { ValueCard } from './player/ValueCard';
 
 /** One player's scouting report: facts, outlook, game log, trade value and (when the nightly update has run) nflverse usage. */
@@ -54,6 +55,7 @@ export default function PlayerProfile() {
       <PageHeader kicker={`${PAGES.players.name} · ${pos || '—'} · ${team}`} title={name} data={{ ...file, refresh: refreshAll }} />
       <p><Link to="/players">← all players</Link></p>
       <HeaderCard pid={pid} name={name} rec={rec} mp={mp} owner={owner} />
+      <PlayerTakes pid={pid} />
       {model && <OutlookCard model={model} mp={mp} />}
       {extras && model && <GameLogCard pid={pid} extras={extras} currentWeek={model.meta.currentWeek} />}
       <ValueCard pid={pid} league={extras?.league ?? null} />
