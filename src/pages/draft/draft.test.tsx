@@ -425,6 +425,11 @@ describe('draft room: on the clock', () => {
     expect(await screen.findByText(/no draft in progress/)).toBeInTheDocument();
   });
 
+  it('accepts ?tab=live as an alias for on the clock', async () => {
+    mount({ route: '/draft?tab=live', draft: null });
+    expect(await screen.findByText(/no draft in progress/)).toBeInTheDocument();
+  });
+
   it('asks for the draft’s own mode when another one is being explored', async () => {
     const { user } = live(2);
     await screen.findByText('live');

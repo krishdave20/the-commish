@@ -107,7 +107,9 @@ function DraftPage() {
   };
 
   /* ---------- tabs ---------- */
-  const tabParam = params.get('tab');
+  // 'live' is accepted as an alias for the on-the-clock tab (older links and the huddle used it)
+  const rawTab = params.get('tab');
+  const tabParam = rawTab === 'live' ? 'clock' : rawTab;
   const tab: TabKey = isTab(tabParam) ? tabParam : live ? 'clock' : 'rankings';
   const setTab = useCallback((t: TabKey) => { setParams((p) => { const n = new URLSearchParams(p); n.set('tab', t); return n; }, { replace: true }); }, [setParams]);
   const leagueId = league?.league_id ?? null;

@@ -14,7 +14,7 @@ export function Drafting({ bundle, userId }: { bundle: LeagueBundle; userId: str
       <h2 id="clock-title">{FEATURE.onTheClock}</h2>
       <p>{slot !== null ? `you pick from slot ${slot}. ` : ''}head to the {PAGES.draft.name} to follow the board.</p>
       <Link className="btn solid" to={PAGES.draft.path}>open the {PAGES.draft.name}</Link>
-      <p className="note"><Link to={`${PAGES.draft.path}?tab=live`}>open {FEATURE.onTheClock} →</Link></p>
+      <p className="note"><Link to={`${PAGES.draft.path}?tab=clock`}>open {FEATURE.onTheClock} →</Link></p>
     </section>
   );
 }

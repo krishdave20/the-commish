@@ -522,7 +522,7 @@ describe('huddle: drafting', () => {
     const banner = (await screen.findByRole('heading', { level: 2, name: 'on the clock' })).closest('section')!;
     expect(banner).toHaveTextContent('the draft is live');
     expect(banner).toHaveTextContent('you pick from slot 4.');
-    expect(within(banner).getByRole('link', { name: 'open on the clock →' })).toHaveAttribute('href', '/draft?tab=live');
+    expect(within(banner).getByRole('link', { name: 'open on the clock →' })).toHaveAttribute('href', '/draft?tab=clock');
     expect(screen.queryByRole('heading', { name: 'playoff odds' })).not.toBeInTheDocument();
     await user.click(within(banner).getByRole('link', { name: 'open the draft room' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'draft room' })).toBeInTheDocument();
