@@ -6,6 +6,8 @@ import { Drawer } from '../../components/Drawer';
 import { PlayerLink } from '../../components/PlayerLink';
 import { OddsCell } from '../../components/OddsCell';
 import { Sparkline } from '../../components/charts/Sparkline';
+import { useLosersSetting } from '../../components/bracket/useBracketData';
+import { LOSERS_COPY } from '../../app/names';
 import type { Engine, ModelPlayer } from '../../engine';
 
 interface Props {
@@ -17,6 +19,7 @@ interface Props {
 export function TeamDrawer({ engine, rid, onClose }: Props) {
   const { model } = useModel();
   const { scenario, live } = useScenario();
+  const { mode } = useLosersSetting();
   const team = rid === null ? null : engine.model.teams.find((t) => t.rid === rid) ?? null;
 
   const detail = useMemo(() => {
@@ -51,6 +54,7 @@ export function TeamDrawer({ engine, rid, onClose }: Props) {
   const res = teamResult(model, live, team.rid);
   const seeds = res.seeds.map((v, i) => (v >= 0.01 ? `${ordinal(i + 1)} ${formatPct(v)}` : null)).filter(Boolean).join(' · ');
   const luck = detail.luck;
+  const fieldOdds = mode === 'toilet' ? res.flush : res.consolation;
 
   return (
     <Drawer open onClose={onClose} title={team.team} kicker={`${team.manager} · ${team.wins}–${team.losses}${team.ties ? `–${team.ties}` : ''}`}>
@@ -58,6 +62,14 @@ export function TeamDrawer({ engine, rid, onClose }: Props) {
         <span className="micro">playoff odds</span>
         <OddsCell value={res.playoff} pending={engine.model.oddsPending} />
         <span className="note">{engine.model.oddsPending ? 'odds are still simming.' : <>{formatOdds(res.div)} to win the division · {formatPoints1(res.expW)} expected wins ({res.winsP10.toFixed(0)} to {res.winsP90.toFixed(0)})</>}</span>
+      </div>
+      <div className="stat">
+        <span className="micro">title odds</span>
+        <OddsCell value={res.title} pending={engine.model.oddsPending} />
+        <span className="note">
+          {engine.model.oddsPending ? 'odds are still simming.'
+            : <>{formatOdds(res.finals)} to reach the final · {formatPct(fieldOdds, fieldOdds > 0 && fieldOdds < 0.01 ? 1 : 0)} to be crowned {LOSERS_COPY[mode].champ}</>}
+        </span>
       </div>
       <div className="stat">
         <span className="micro">weekly scores</span>

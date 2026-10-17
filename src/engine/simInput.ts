@@ -1,6 +1,7 @@
 /* Build a SimInput from a model and a means table (see scenario.ts teamMeans). */
 import { DEFAULT_SEED, SIM_RUNS, type SimInput, type SimSummary } from './sim.ts';
 import type { Means } from './scenario.ts';
+import { rulesOf } from './bracket/rules.ts';
 import type { Model } from './types.ts';
 
 export interface SimInputOpts {
@@ -12,6 +13,11 @@ export interface SimInputOpts {
   picks?: Record<string, number>;
   /** team whose win histogram is tracked (default: the model's signed-in team) */
   meRid?: number;
+}
+
+function playoffOf(model: Model): SimInput['playoff'] {
+  const r = rulesOf(model.meta);
+  return { weekStart: r.weekStart, roundType: r.roundType, seedType: r.seedType };
 }
 
 export function simInputFor(model: Model, means: Means, o: SimInputOpts = {}): SimInput {
@@ -28,6 +34,7 @@ export function simInputFor(model: Model, means: Means, o: SimInputOpts = {}): S
     seed: o.seed ?? DEFAULT_SEED,
     picks: o.picks ?? {},
     meRid: o.meRid ?? model.meRid,
+    playoff: playoffOf(model),
   };
 }
 
@@ -50,7 +57,8 @@ export function applyBaseSim(model: Model, summary: SimSummary): Model {
     teams: model.teams.map((t) => {
       const o = summary.teams[t.rid];
       if (!o) return t;
-      return { ...t, playoffPct: o.playoff, divWinPct: nDiv ? o.div : 0, expWins: r2(o.expW), winsP10: o.winsP10, winsP90: o.winsP90, seedPct: o.seeds };
+      return { ...t, playoffPct: o.playoff, divWinPct: nDiv ? o.div : 0, expWins: r2(o.expW), winsP10: o.winsP10, winsP90: o.winsP90, seedPct: o.seeds,
+        titlePct: o.titlePct, finalsPct: o.finalsPct, expFinish: o.expFinish, flushPct: o.flushPct, consolationPct: o.consolationPct, inToiletBowlPct: o.inToiletBowlPct };
     }),
   };
 }

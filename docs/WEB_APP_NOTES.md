@@ -75,3 +75,45 @@ Of 830 active QB/RB/WR/TE in `/v1/players/nfl`, only 158 have `gsis_id` and 205 
 - `/v1/players/nfl` at most once per 24 h.
 - On open, refetch anything older than 6 h; Refresh forces a refetch (players file still capped daily unless forced from Settings).
 - If the network fails, serve the cache and mark it stale, with the "data as of" stamp of the cached copy.
+
+## Playoff brackets (owner request, Oct 16, 2026)
+Brackets live in `src/engine/bracket/` (pure), `src/components/bracket/` (the interactive `Bracket`) and are placed on the playoff
+picture (`pages/race/BracketCard.tsx`), the huddle (`pages/home/PathCard.tsx`, `PostseasonBrackets.tsx`) and Front Office
+(`pages/settings/LosersSection.tsx`). Names: `FEATURE.bracket` ("road to the ’ship", kicker "playoff bracket"), `LOSERS_COPY`
+(the toilet bowl: "consolation bracket: losers advance"; or "the consolation prize").
+
+**What Sleeper sends (checked on the fixture league and on the finished 2025 league, Oct 16, 2026)**
+- `GET /v1/league/{id}/winners_bracket` and `/losers_bracket`: arrays of `{ r, m, t1, t2, w, l, t1_from?, t2_from?, p? }`, CORS `*`, cached 5 min by Sleeper's CDN
+  (the client refetches after 5 min, not 6 h). `[]` or `null` is possible; the client turns both into `[]`.
+- The bracket exists in week 6: Sleeper fills round 1 from the current standings (`t1`/`t2` set, `w`/`l` null) and leaves later rounds as `t*_from` links.
+- The winners bracket holds every game of the playoff weeks, not only the title road: round 2 also has the round-1 losers' games and round 3 the
+  placement games `p: 3 | 5 | 7`. `p: 1` is the championship. The app keeps only the road to `p: 1`.
+- Round-1 order is 1v8, 4v5, 3v6, 2v7 (t1 is the better seed); seeds are not in the rows, so they are read off that layout. Bye layout for 6 teams
+  is assumed (bye teams appear in round 2 without a `_from`), unverified: no 6-team league was available.
+- League settings of both leagues: `playoff_teams` 8, `playoff_week_start` 15, `playoff_round_type` 0, `playoff_seed_type` 0, `playoff_type` 0.
+  Meaning used: round_type 0 one week per round, 1 two-week championship, 2 two weeks every round; seed_type 0 fixed bracket, 1 reseed each round;
+  `playoff_type` is read but not used.
+- **There is no league setting for toilet bowl versus consolation.** The league object only has `loser_bracket_id` and `loser_bracket_overrides_id`
+  (and the app searched every settings key). Sleeper's own help centre offers both styles, so the app reads the style off the losers bracket: its
+  `p: 1` game takes `{ w }` links in a consolation bracket (this league) and would take `{ l }` links in a toilet bowl (not yet seen).
+
+**Model**
+- Toilet bowl default (owner decision): the non-playoff teams play a bracket seeded worst-first; the LOSER of each game advances; the team that loses
+  every round is "toilet bowl champ" (the worst team). The front-office setting (`prefs.losers`: `match` | `toilet` | `consolation`, default `toilet`, device-wide
+  like the other prefs) switches it to a plain consolation bracket (winners advance, seeded best-first) or to whatever Sleeper's own losers bracket is.
+- One data model for all three: a pick is always "the team that advances", so a toilet bowl click is "flush X" and the loser advances.
+- Real games from Sleeper lock a game by the pair of teams that played it, so the played games of Sleeper's losers bracket lock the matching toilet bowl games.
+- Round scores: normal around the expected lineup points of the round's week(s) (`team.exp` by week, what-if applied), the model's weekly SD (×0.85 for the
+  week in progress); two-week rounds add means and variances. Weeks the model has no mean for borrow the team's average (the pull stops at the
+  last round of a one-week-per-round bracket, so two-week rounds borrow).
+- **Odds on the bracket are exact**: every set of results is walked (≤ 2^16), so they add to 1 and do not wobble when you pick. Larger brackets sample.
+- **Season simulation**: the playoff pass runs after the LAST regular-season run, over every stored seeding, with the same PRNG stream continuing after
+  the regular-season draws; regular-season outputs are bit-identical with it on or off (tested with exact equality on the fixture). It plays the
+  championship, the toilet bowl and the consolation bracket per run and adds `titlePct`, `finalsPct`, `expFinish`, `flushPct`, `consolationPct`,
+  `inToiletBowlPct`. Fields are only present once all runs are done.
+- Seeding on the playoff picture: "if it ended today" (division winners, then record, points for), "projected" (most likely seed per team, greedy by
+  probability, no seed double-booked), "from the machine" (record after the machine's picks; unpicked games go to the favourite).
+- Side edits outside the bracket folders: `engine/model.ts` (adds `meta.playoff`), `engine/types.ts`, `engine/sim.ts` (+ `bracket/prng.ts`, which holds
+  `mulberry32` unchanged), `engine/simInput.ts`, `app/results.ts`, `app/prefs.ts` (+ `losers`, and a `wr-prefs` event), `components/OddsCell.tsx` (`invert`),
+  `test/fakes.ts` (bracket endpoints on the fake Sleeper client); `lib.test.ts` and `m2.test.tsx` now allow for the new pref and the extra odds columns.
+- Not done: no health-check row for the bracket endpoints (`src/data/health.ts` was not in scope).

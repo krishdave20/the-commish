@@ -54,7 +54,8 @@ describe('a model built without its first simulation (oddsPending)', () => {
     expect(rowOf(table, 'Sunday Scaries')).toBeInTheDocument();
 
     await waitFor(() => expect(within(table).queryAllByText('simming…')).toHaveLength(0), { timeout: 4000 });
-    expect(within(rowOf(table, 'Sunday Scaries')).getByText(/^(>99|<1|\d+)%$/)).toBeInTheDocument();
+    // playoffs, title and flush odds all fill in
+    expect(within(rowOf(table, 'Sunday Scaries')).getAllByText(/^(>99|<1|\d+)%$/).length).toBeGreaterThanOrEqual(3);
     expect(await screen.findByRole('img', { name: 'Seed odds for 4 teams' })).toBeInTheDocument();
   });
 
@@ -345,10 +346,11 @@ describe('trade block (/trades)', () => {
     expect(await screen.findByText(/deal ideas are worked out for your own team/)).toBeInTheDocument();
   });
 
-  it('has the contender or rebuilder placeholder', async () => {
+  it('offers dynasty mode as a quiet explore switch in a redraft league (details in dynasty.test.tsx)', async () => {
     renderApp({ linked, route: '/trades' });
     expect(await screen.findByRole('heading', { level: 2, name: 'contender or rebuilder' })).toBeInTheDocument();
-    expect(screen.getByText(/arrive in milestone 5/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'dynasty mode: explore' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText(/this league is redraft/)).toBeInTheDocument();
   });
 });
 

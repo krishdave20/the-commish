@@ -1,0 +1,74 @@
+/* Playoff brackets (the commish). Tokens only; radius 3px at most; thin rule-coloured elbows. */
+
+.br { display: grid; gap: 10px; min-width: 0; }
+.br-controls { gap: 8px; }
+.br-count { margin-left: 4px; }
+.br-hint, .br-caption { max-width: 72ch; }
+
+/* the scrolling frame: the page never scrolls sideways, this does */
+.br-scroll { border: 1px solid var(--rule-2); border-radius: var(--r); background: var(--paper); padding: 10px 12px 14px; max-width: 100%; }
+.br-canvas { position: relative; }
+.br-lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.br-line { fill: none; stroke: var(--rule); stroke-width: 1; }
+.br-line.on { stroke: var(--green-2); }
+.br[data-kind='toilet'] .br-line.on { stroke: #b9806a; }
+.br[data-kind='consolation'] .br-line.on { stroke: var(--ink-3); }
+.br-head { position: absolute; top: 0; height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* a game: two slots with a hairline between */
+.br-match { position: absolute; display: grid; grid-template-rows: 30px 30px; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+.br-match[data-locked='true'] { border-color: var(--ink-3); }
+.br-slot { font: inherit; font-size: 12px; text-align: left; color: var(--ink); background: var(--sheet); border: 0; padding: 0 8px; display: grid; grid-template-columns: 1.3em minmax(0, 1fr) auto auto; gap: 6px; align-items: center; cursor: pointer; transition: background 0.18s, opacity 0.18s; min-width: 0; border-radius: 0; }
+.br-slot.empty { cursor: default; padding: 0 8px; display: flex; align-items: center; background: var(--sheet); font-size: 11px; }
+.br-slot:hover:not([aria-disabled='true']) { background: var(--paper); }
+.br-slot[aria-disabled='true'] { cursor: default; }
+.br-slot:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; position: relative; z-index: 1; }
+.br-seed { color: var(--ink-3); font-size: 10.5px; text-align: right; }
+.br-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.br-slot.me .br-name::after { content: ' · you'; color: var(--gold-ink); font-weight: 400; font-size: 10.5px; }
+.br-bye { font-style: normal; font-weight: 400; font-size: 10px; color: var(--ink-3); margin-left: 6px; letter-spacing: 0.06em; }
+.br-pts { color: var(--ink-2); font-size: 11.5px; text-align: right; }
+.br-p { color: var(--ink-3); font-size: 11px; min-width: 2.6em; text-align: right; }
+.br-slot[data-state='adv'] { background: var(--green-soft); }
+.br-slot[data-state='adv'] .br-p { color: var(--green); }
+.br[data-kind='toilet'] .br-slot[data-state='adv'] { background: var(--red-soft); }
+.br[data-kind='consolation'] .br-slot[data-state='adv'] { background: var(--rule-2); }
+.br-slot[data-state='out'] { opacity: 0.45; }
+.br-stamp { font-size: 9.5px; padding: 0 5px; letter-spacing: 0.08em; line-height: 1.5; }
+
+/* the last slot */
+.br-champ { position: absolute; display: grid; align-content: center; gap: 4px; padding: 10px 14px; border: 1px dashed var(--rule); border-radius: var(--r); background: transparent; min-width: 0; }
+.br-champ[data-state='crowned'] { border: 1px solid var(--gold); background: var(--sheet); }
+.br-champ-name { font-family: var(--serif); font-size: 26px; line-height: 1.12; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; padding-bottom: 2px; }
+.br-champ-name.dim { font-size: 20px; }
+.br-champ-label { color: var(--ink-3); }
+.br-rule { display: block; height: 2px; width: 3.2rem; background: var(--gold); border-radius: 1px; }
+.br-champ[data-kind='toilet'][data-state='crowned'] { border-color: #d3b3a6; }
+.br-champ[data-kind='toilet'] .br-rule { background: #b9806a; }
+.br-champ[data-kind='consolation'][data-state='crowned'] { border-color: var(--rule); }
+.br-champ[data-kind='consolation'] .br-rule { background: var(--ink-3); }
+.br-champ-line { font-size: 11.5px; color: var(--ink-2); }
+
+/* head-to-head tooltip */
+.br-tip { position: absolute; z-index: 6; width: min(26rem, 80vw); background: var(--ink); color: var(--paper); border-radius: var(--r); padding: 8px 10px; font-size: 11.5px; display: grid; gap: 4px; pointer-events: none; box-shadow: 0 4px 14px rgba(31, 29, 25, 0.22); }
+.br-tip .note, .br-tip .dim { color: #cfc8b6; }
+.br-tip-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 10px; align-items: baseline; }
+.br-tip-row > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.br-tip-row .n { text-align: right; white-space: nowrap; }
+
+.br-odds { display: grid; gap: 6px; }
+
+/* the playoff picture: the two brackets */
+.br-pair { display: grid; gap: 22px; align-items: start; min-width: 0; }
+@media (min-width: 1100px) { .br-pair.wide { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+.br-pair > * { min-width: 0; }
+.br-note { font-size: 12px; color: var(--ink-2); border-left: 2px solid var(--rule); padding-left: 10px; max-width: 72ch; }
+.path-line { font-size: 14px; max-width: 74ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  .br-slot { transition: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .br-line { transition: stroke 0.3s var(--ease); }
+  .br-champ[data-state='crowned'] { animation: wr-rise 0.5s var(--ease) both; }
+}

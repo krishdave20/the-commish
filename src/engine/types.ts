@@ -4,6 +4,7 @@
 import type { NflState, SleeperLeague, SleeperRoster, LeagueUser } from '../data/contract.ts';
 import type { Matchup, ProjectionRow, ScheduleGame, TrendingRow, WeekStats } from '../data/types.ts';
 import type { PullPlan } from '../data/plan.ts';
+import type { PlayoffRules } from './bracket/types.ts';
 
 /** Sleeper position codes the engine models. */
 export type Pos = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF' | 'DL' | 'LB' | 'DB';
@@ -108,6 +109,19 @@ export interface ModelTeam {
   winsP90: number;
   /** chance of finishing at each seed 1..playoffTeams */
   seedPct: number[];
+  /* playoff results from the same simulation (optional: models built before the bracket work, and hand-built ones, have none) */
+  /** chance of winning the championship */
+  titlePct?: number;
+  /** chance of reaching the championship game */
+  finalsPct?: number;
+  /** expected finish (1 = champion) when the team makes the playoffs */
+  expFinish?: number;
+  /** chance of being crowned toilet bowl champion (the worst team of the non-playoff field) */
+  flushPct?: number;
+  /** chance of winning the consolation bracket (the best team of the non-playoff field) */
+  consolationPct?: number;
+  /** chance of being in the non-playoff field */
+  inToiletBowlPct?: number;
   status: 'Alive';
 }
 
@@ -161,6 +175,8 @@ export interface ModelMeta {
   lastRegularWeek: number;
   maxWeek: number;
   playoffWeeks: number[];
+  /** the league's playoff settings (week start, round type, seeding type); absent on hand-built models, which assume one week per round */
+  playoff?: PlayoffRules;
   playoffTeams: number;
   divisions: number;
   waiverBudget: number;

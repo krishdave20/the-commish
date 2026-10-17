@@ -5,6 +5,8 @@ import { formatOdds, formatPoints, formatPoints1, signed } from '../../app/forma
 import { ClinchMark, MarkLegend } from '../../components/ClinchMark';
 import { OddsCell } from '../../components/OddsCell';
 import { Segmented } from '../../components/Segmented';
+import { useLosersSetting } from '../../components/bracket/useBracketData';
+import { LOSERS_COPY } from '../../app/names';
 import { SortableTable } from '../../components/SortableTable';
 import { TierPill } from '../../components/TierPill';
 import type { Column } from '../../components/useSort';
@@ -18,6 +20,8 @@ interface Props {
 export function StandingsCard({ engine, onOpen }: Props) {
   const rows = useRaceRows(engine);
   const pending = engine.model.oddsPending;
+  const { mode } = useLosersSetting();
+  const lc = LOSERS_COPY[mode];
   const { divisions, playoffTeams } = engine.model.meta;
   const [pick, setPick] = useState('all');
   const divNames = useMemo(() => [...new Set(rows.map((r) => r.division))], [rows]);
@@ -42,6 +46,14 @@ export function StandingsCard({ engine, onOpen }: Props) {
     },
     { key: 'odds', header: 'playoffs', value: (r) => r.playoff, render: (r) => <OddsCell value={r.playoff} pending={pending} /> },
     ...(divisions > 0 ? [{ key: 'div', header: 'division %', numeric: true, value: (r: RaceRow) => r.div, render: (r: RaceRow) => (pending ? '…' : formatOdds(r.div)), className: 'hide-sm' }] : []),
+    {
+      key: 'title', header: 'title', value: (r) => r.title, className: 'hide-sm',
+      render: (r) => (pending ? <span className="dim">…</span> : <OddsCell value={r.title} />),
+    },
+    {
+      key: 'field', header: lc.odds, value: (r) => r.field, className: 'hide-sm',
+      render: (r) => <span title={`${lc.oddsHeader}: chance of being crowned ${lc.champ}`}>{pending ? <span className="dim">…</span> : <OddsCell value={r.field} invert={mode === 'toilet'} />}</span>,
+    },
     {
       key: 'expw', header: 'exp wins', numeric: true, value: (r) => r.expW,
       render: (r) => (pending ? <span className="dim">…</span> : <span title={`10th to 90th percentile: ${r.p10.toFixed(0)} to ${r.p90.toFixed(0)} wins`}>{formatPoints1(r.expW)} <span className="dim">{r.p10.toFixed(0)}–{r.p90.toFixed(0)}</span></span>),

@@ -138,7 +138,10 @@ export function PreDraft({ bundle, userId }: { bundle: LeagueBundle; userId: str
                 </p>
               </>
             )}
-          <p className="note">full mock draft arrives in the draft room (milestone 5).</p>
+          <p className="note">
+            <Link to={`${PAGES.draft.path}?tab=mock`}>run the full mock draft →</Link>{' · '}
+            <Link to={`${PAGES.draft.path}?tab=rankings`}>see the rankings →</Link>
+          </p>
         </section>
       </div>
 

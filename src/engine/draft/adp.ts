@@ -35,12 +35,13 @@ export function inferDraftMode(league: Pick<LeagueLike, 'settings'>, draft?: { s
   return isDynasty(league) ? 'startup' : 'redraft';
 }
 
-/** The ADP column for offense positions. */
+/** The ADP column for offense positions. The draft mode wins over the league's own type: a startup draft always reads the
+    dynasty columns (a redraft league exploring one included), a rookie draft `adp_rookie`, a redraft draft the redraft columns. */
 export function adpField(league: LeagueLike, mode: DraftMode = inferDraftMode(league)): string {
   if (mode === 'rookie') return 'adp_rookie';
   const kind = scoringKind(league.scoring_settings);
   const twoQb = isTwoQb(league.roster_positions);
-  if (isDynasty(league)) return twoQb ? 'adp_dynasty_2qb' : `adp_dynasty_${kind}`;
+  if (mode === 'startup') return twoQb ? 'adp_dynasty_2qb' : `adp_dynasty_${kind}`;
   return twoQb ? 'adp_2qb' : `adp_${kind}`;
 }
 

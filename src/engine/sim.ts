@@ -12,6 +12,10 @@
 
    Stepwise API: `createSim(input)` then `sim.step(n)` until it returns true; `sim.summary()` can be read at
    any point. `simulate(input)` runs the whole thing synchronously. */
+import { createPlayoffPass, type PlayoffTeamResult } from './bracket/season.ts';
+import { weekMean } from './bracket/odds.ts';
+import { mulberry32 } from './bracket/prng.ts';
+import type { PlayoffRules } from './bracket/types.ts';
 import type { ByWeek } from './types.ts';
 
 export const SIM_RUNS = 20000;
@@ -42,9 +46,12 @@ export interface SimInput {
   picks?: Record<string, number>;
   /** track the win-count histogram for this team (`myHist`) */
   meRid?: number | null;
+  /** also play the playoffs of every run once the regular season is drawn (see bracket/season.ts): title, final, toilet bowl and
+      consolation odds. The regular-season numbers are bit-identical with or without it. */
+  playoff?: Pick<PlayoffRules, 'weekStart' | 'roundType' | 'seedType'>;
 }
 
-export interface TeamSim {
+export interface TeamSim extends Partial<TeamPlayoffSim> {
   /** chance of making the playoffs */
   playoff: number;
   /** chance of winning the division (0 with no divisions) */
@@ -56,6 +63,9 @@ export interface TeamSim {
   winsP10: number;
   winsP90: number;
 }
+
+/** The playoff fields of a team's results; present only when the input asked for `playoff` and every run is done. */
+export type TeamPlayoffSim = PlayoffTeamResult;
 
 export interface SimSummary {
   /** runs completed */
@@ -74,15 +84,7 @@ export interface Sim {
   readonly done: number;
 }
 
-export function mulberry32(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export { mulberry32 };
 
 /** linear-interpolated quantile; NaN for an empty array (as in the reference) */
 export function quantile(arr: readonly number[], p: number): number {
@@ -122,6 +124,16 @@ export function createSim(input: SimInput): Sim {
   const myHist: Record<number, { n: number; made: number }> = {};
   const meI = input.meRid != null ? (idx[input.meRid] ?? -1) : -1;
   const W0 = T.map((t) => t.wins), PF0 = T.map((t) => t.pf);
+  /* the playoff extension: each run's full seeding is kept (playoff teams best-first, then the rest best-first) and the playoffs
+     are played after the LAST regular-season run, with the same stream, so no regular-season draw moves */
+  const po = input.playoff;
+  const orders = po ? new Int16Array(n * K) : null;
+  const pass = po ? createPlayoffPass({
+    rules: po, teams: K, playoffTeams: NP, sd,
+    mean: (team, week) => weekMean({ means: input.means, sd, currentWeek: input.currentWeek }, T[team]!.rid, week),
+    currentWeek: input.currentWeek,
+  }) : null;
+  let playoffResult: PlayoffTeamResult[] | null = null;
   const Wv = new Float64Array(K), PF = new Float64Array(K), key = new Float64Array(K);
   let ran = 0;
 
@@ -151,6 +163,14 @@ export function createSim(input: SimInput): Sim {
       rest.sort((x, y) => key[y]! - key[x]!);
       const order = winners.concat(rest.slice(0, Math.max(0, NP - winners.length))).slice(0, NP);
       order.forEach((i, s) => { made[i] = made[i]! + 1; seeds[i]![s] = seeds[i]![s]! + 1; });
+      if (orders) {
+        const taken = new Set(order);
+        const out: number[] = [];
+        for (let i = 0; i < K; i++) if (!taken.has(i)) out.push(i);
+        out.sort((x, y) => key[y]! - key[x]!);
+        orders.set(order, ran * K);
+        orders.set(out, ran * K + order.length);
+      }
       winners.forEach((i) => { div[i] = div[i]! + 1; });
       if (meI >= 0) {
         const mw = Wv[meI]!;
@@ -158,6 +178,10 @@ export function createSim(input: SimInput): Sim {
         h.n++;
         if (order.includes(meI)) h.made++;
       }
+    }
+    if (pass && orders && ran >= n && !playoffResult) {
+      for (let run = 0; run < n; run++) pass.play(orders.subarray(run * K, run * K + K), gauss);
+      playoffResult = pass.result(n);
     }
     return ran >= n;
   }
@@ -170,6 +194,7 @@ export function createSim(input: SimInput): Sim {
         playoff: made[i]! / k, div: div[i]! / k, expW: winsSum[i]! / k,
         seeds: Array.from(seeds[i]!).map((x) => x / k),
         winsP10: quantile(winDist[i]!, 0.1), winsP90: quantile(winDist[i]!, 0.9),
+        ...(playoffResult ? playoffResult[i] : {}),
       };
     });
     const hist: Record<number, { n: number; made: number }> = {};

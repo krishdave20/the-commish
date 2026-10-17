@@ -10,7 +10,7 @@ import type { Limiter } from './limiter.ts';
 import { shapes, type Guard } from './shapes.ts';
 import type { Transport } from './transport.ts';
 import type {
-  DraftPick, FantasyCalcRow, Matchup, PlayersMap, ProjectionRow, ScheduleGame, Transaction, TrendingRow, TrendingType, WeekStats,
+  BracketRow, DraftPick, FantasyCalcRow, Matchup, PlayersMap, ProjectionRow, ScheduleGame, Transaction, TrendingRow, TrendingType, WeekStats,
 } from './types.ts';
 import { fantasyCalcUrl, OFFENSE_POSITIONS, SLEEPER_BASE, sleeperUrls, type FantasyCalcParams } from './urls.ts';
 
@@ -18,6 +18,8 @@ export const TTL = {
   state: 10 * 60_000,
   players: 24 * 3_600_000,
   default: 6 * 3_600_000,
+  /** the playoff brackets change as games finish (Sleeper's own CDN caches them for 5 minutes) */
+  bracket: 5 * 60_000,
 };
 
 /** Fetched plus what the network call cost; health checks and the Settings screen read the extras. */
@@ -124,6 +126,11 @@ export function createSleeperClient(deps: SleeperClientDeps) {
     list<TradedPick>(sleeperUrls.tradedPicks(id), 'traded picks', shapes.tradedPicks, o);
   const drafts = (id: string, o?: FetchOpts) =>
     list<SleeperDraft>(sleeperUrls.drafts(id), 'league drafts', shapes.drafts, o);
+  /** `[]` before the playoffs (Sleeper answers an empty list or `null`) */
+  const winnersBracket = (id: string, o?: FetchOpts) =>
+    load<BracketRow[]>({ url: sleeperUrls.winnersBracket(id), label: 'winners bracket', guard: shapes.bracket, ttl: TTL.bracket, nullAs: [], o });
+  const losersBracket = (id: string, o?: FetchOpts) =>
+    load<BracketRow[]>({ url: sleeperUrls.losersBracket(id), label: 'losers bracket', guard: shapes.bracket, ttl: TTL.bracket, nullAs: [], o });
   const draft = (draftId: string, o?: FetchOpts) =>
     load<SleeperDraft>({ url: sleeperUrls.draft(draftId), label: 'draft', guard: shapes.draft, o });
   /** the live assistant polls this with force: true */
@@ -171,7 +178,7 @@ export function createSleeperClient(deps: SleeperClientDeps) {
 
   return {
     nflState, user, userFetched, userLeagues, league, rosters, users, matchups, transactions, tradedPicks,
-    drafts, draft, draftPicks, draftTradedPicks, players, trending,
+    drafts, draft, draftPicks, draftTradedPicks, players, trending, winnersBracket, losersBracket,
     stats, projections, seasonProjections, schedule, fantasyCalc, leagueBundle,
   };
 }

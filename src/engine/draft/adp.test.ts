@@ -62,3 +62,16 @@ describe('readAdp', () => {
     expect(readAdp({ adp_ppr: 999, adp_std: 40 }, 'adp_ppr', 'adp_std')).toBe(40);
   });
 });
+
+describe('the draft mode wins over the league type', () => {
+  it('startup reads the dynasty columns even in a redraft or keeper league', () => {
+    expect(adpField(leagueOf({ rec: 1 }), 'startup')).toBe('adp_dynasty_ppr');
+    expect(adpField(leagueOf({ type: 1, rec: 0.5 }), 'startup')).toBe('adp_dynasty_half_ppr');
+    expect(adpField(leagueOf({ slots: SF, rec: 0 }), 'startup')).toBe('adp_dynasty_2qb');
+    expect(adpFieldFor('WR', leagueOf(), 'startup')).toBe('adp_dynasty_ppr');
+  });
+  it('rookie is adp_rookie and an explicit redraft draft reads redraft columns, whatever the league type', () => {
+    expect(adpField(leagueOf(), 'rookie')).toBe('adp_rookie');
+    expect(adpField(leagueOf({ type: 2 }), 'redraft')).toBe('adp_ppr');
+  });
+});

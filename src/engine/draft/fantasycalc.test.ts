@@ -26,6 +26,11 @@ describe('league → FantasyCalc params', () => {
     expect(fantasyCalcParams(leagueOf({ rec: 0 })).ppr).toBe(0);
     expect(fantasyCalcParams(leagueOf({ teams: 12 }), 14).numTeams).toBe(14);
   });
+  it('an isDynasty override wins over settings.type (either way); without one the league decides', () => {
+    expect(fantasyCalcParams(leagueOf(), undefined, { isDynasty: true }).isDynasty).toBe(true);
+    expect(fantasyCalcParams(leagueOf({ type: 2 }), undefined, { isDynasty: false }).isDynasty).toBe(false);
+    expect(fantasyCalcParams(leagueOf({ type: 2 }), undefined, {}).isDynasty).toBe(true);
+  });
 });
 
 describe('join and load', () => {
@@ -45,6 +50,12 @@ describe('join and load', () => {
     expect(r.byId['1']!.value).toBe(10);
     expect(r.asOf).toBe(123);
     expect(seen[0]).toEqual({ isDynasty: true, numQbs: 1, numTeams: 12, ppr: 1 });
+  });
+  it('loadFantasyCalc passes the isDynasty override and force through to the client', async () => {
+    const seen: unknown[][] = [];
+    const c = { fantasyCalc: async (...a: unknown[]) => { seen.push(a); return { data: [row('1', 10)], asOf: 1, stale: false }; } } as unknown as Parameters<typeof loadFantasyCalc>[0];
+    await loadFantasyCalc(c, leagueOf(), { isDynasty: true, force: true });
+    expect(seen[0]).toEqual([{ isDynasty: true, numQbs: 1, numTeams: 12, ppr: 1 }, { force: true }]);
   });
   it('is graceful when it is down: empty result and a reason, never a throw', async () => {
     const down = await loadFantasyCalc(client(async () => { throw new DataError('network', 'Could not reach FantasyCalc values: offline'); }), leagueOf());

@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import type { Picks } from '../engine';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
 import { formatNote } from './race/formatNote';
+import { BracketCard } from './race/BracketCard';
 import { MagicNumber } from './race/MagicNumber';
 import { PlayoffMachine } from './race/PlayoffMachine';
 import { SeedingCard } from './race/SeedingCard';
@@ -10,6 +12,8 @@ import { TeamDrawer } from './race/TeamDrawer';
 
 export default function LeagueRace() {
   const [open, setOpen] = useState<number | null>(null);
+  // the playoff machine's picks feed the bracket's "from the machine" seeding
+  const [picks, setPicks] = useState<Picks>({});
   return (
     <EnginePage page="race">
       {(engine) => (
@@ -21,7 +25,8 @@ export default function LeagueRace() {
             <SeedingCard engine={engine} />
             <MagicNumber engine={engine} />
           </div>
-          <PlayoffMachine engine={engine} />
+          <BracketCard engine={engine} picks={picks} />
+          <PlayoffMachine engine={engine} picks={picks} setPicks={setPicks} />
           <TeamDrawer engine={engine} rid={open} onClose={() => setOpen(null)} />
         </>
       )}

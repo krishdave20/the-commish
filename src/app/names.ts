@@ -60,6 +60,59 @@ export const FEATURE = {
   countdown: 'draft countdown',
   prep: 'prep checklist',
   preview: 'previewing',
+  /* playoff brackets */
+  bracket: 'road to the ’ship',
+  bracketKicker: 'playoff bracket',
+  yourPath: 'your path',
+  /** front office: how the non-playoff teams' bracket works */
+  losersSetting: 'the toilet bowl',
+} as const;
+
+/** What the non-playoff teams' bracket is called and says, by mode. The toilet bowl is the default (owner request, Oct 16, 2026):
+    the LOSER of each game advances and the team that loses every round is crowned the worst team. The same bracket runs as a
+    plain consolation bracket (winners advance) when the front-office setting says so. */
+export const LOSERS_COPY = {
+  toilet: {
+    name: 'the toilet bowl',
+    kicker: 'consolation bracket: losers advance',
+    /** the odds column and the team drawer's line */
+    odds: 'flush',
+    oddsHeader: 'flush %',
+    champ: 'toilet bowl champ',
+    line: 'crowned the worst team in the league',
+    verb: 'flush',
+    advanced: 'flushed',
+    chance: 'to lose',
+    hint: 'click the team that gets flushed. the loser advances, and the team that loses every round is crowned.',
+  },
+  consolation: {
+    name: 'the consolation prize',
+    kicker: 'consolation bracket: winners advance',
+    odds: 'consolation',
+    oddsHeader: 'consolation %',
+    champ: 'consolation champ',
+    line: 'best of the rest',
+    verb: 'advance',
+    advanced: 'advances',
+    chance: 'to win',
+    hint: 'click the team that wins. winners advance, like the playoffs, among the teams that missed them.',
+  },
+} as const;
+
+export type LosersMode = keyof typeof LOSERS_COPY;
+
+/** The championship bracket's copy, in the same shape. */
+export const TITLE_COPY = {
+  name: FEATURE.bracket,
+  kicker: FEATURE.bracketKicker,
+  odds: 'title',
+  oddsHeader: 'title %',
+  champ: 'league champ',
+  line: 'wins the whole thing',
+  verb: 'advance',
+  advanced: 'advances',
+  chance: 'to win',
+  hint: 'click a team to advance it; click it again to undo. title odds update with every pick.',
 } as const;
 
 /** What each detector is called in the filter row (the plain-English name of the rule behind the card). */

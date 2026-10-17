@@ -7,6 +7,7 @@ import { AttributionSection } from './settings/AttributionSection';
 import { CacheSection } from './settings/CacheSection';
 import { HealthSection } from './settings/HealthSection';
 import { LinkedAccountsSection } from './settings/LinkedAccountsSection';
+import { LosersSection } from './settings/LosersSection';
 import { ScheduleSection } from './settings/ScheduleSection';
 
 export default function Settings() {
@@ -17,6 +18,7 @@ export default function Settings() {
       <PageHeader kicker={PAGES.settings.kicker} title={PAGES.settings.name} data={bundle} />
       <LinkedAccountsSection />
       <ScheduleSection />
+      <LosersSection />
       <CacheSection />
       <HealthSection />
       <AttributionSection />

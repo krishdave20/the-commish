@@ -1,7 +1,8 @@
 import { vi } from 'vitest';
 import type { LoadModel } from '../app/loadModel';
-import type { PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient, ProjectionRow, TrendingRow } from '../data';
+import type { BracketRow, DraftPick, PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient, ProjectionRow, TrendingRow } from '../data';
 import { syntheticPool } from '../engine/draft/test-helpers';
+import { buildRankings, createMock, draftOrderFor } from '../engine';
 import { handModel } from '../engine/test-helpers';
 import type { BuildTakes } from '../app/takesEngine';
 import type { Take } from '../takes/types';
@@ -373,6 +374,13 @@ export interface FakeSleeperOpts {
   projectionsFail?: boolean;
   /** FantasyCalc rows (default: sampleFantasyCalc()) */
   fantasyCalcRows?: FantasyCalcRow[];
+  /** the picks `sleeper.draftPicks(id)` answers with (default: none) */
+  picks?: DraftPick[];
+  /** Sleeper's `winners_bracket` / `losers_bracket` rows (default: none, as before the playoffs) */
+  bracket?: BracketRow[];
+  losersBracket?: BracketRow[];
+  /** make the bracket endpoints fail, as a 404 or an outage would */
+  bracketFails?: boolean;
 }
 
 /** The Sleeper client pieces the app reads outside the engine's pull: players, FantasyCalc, trending adds, past seasons and draft inputs. */
@@ -394,8 +402,16 @@ export function createFakeSleeper(o: FakeSleeperOpts = {}) {
     rosters: vi.fn(async (id: string) => loaded(season(id).rosters)),
     users: vi.fn(async (id: string) => loaded(season(id).users)),
     draft: vi.fn(async () => { if (!o.draft) throw new Error('No draft'); return loaded(o.draft); }),
-    draftPicks: vi.fn(async () => loaded([])),
+    draftPicks: vi.fn(async () => loaded(o.picks ?? [])),
     draftTradedPicks: vi.fn(async () => loaded([])),
+    winnersBracket: vi.fn(async () => {
+      if (o.bracketFails) throw new Error('winners bracket not found');
+      return loaded(o.bracket ?? []);
+    }),
+    losersBracket: vi.fn(async () => {
+      if (o.bracketFails) throw new Error('losers bracket not found');
+      return loaded(o.losersBracket ?? []);
+    }),
     seasonProjections: vi.fn(async () => {
       if (o.projectionsFail) throw new Error('Sleeper projections are down');
       return loaded(o.projections ?? sampleSeasonProjections());
@@ -403,7 +419,31 @@ export function createFakeSleeper(o: FakeSleeperOpts = {}) {
   } as unknown as SleeperClient & {
     players: ReturnType<typeof vi.fn>; fantasyCalc: ReturnType<typeof vi.fn>; trending: ReturnType<typeof vi.fn>;
     league: ReturnType<typeof vi.fn>; seasonProjections: ReturnType<typeof vi.fn>;
+    draft: ReturnType<typeof vi.fn>; draftPicks: ReturnType<typeof vi.fn>;
   };
+}
+
+/* ---------- draft room ---------- */
+
+/** The sample league's draft: 6 teams, 4 rounds, snake, the sample user in slot 3 (roster 3). */
+export function sampleDraft(patch: Partial<SleeperDraft> = {}): SleeperDraft {
+  return {
+    draft_id: 'L1-draft', league_id: 'L1', season: '2026', status: 'pre_draft', type: 'snake', start_time: null,
+    settings: { teams: 6, rounds: 4 }, draft_order: { u1: 3 },
+    slot_to_roster_id: { '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6 }, ...patch,
+  };
+}
+
+/** Sleeper-shaped picks for a draft the bots made (the engine's mock, fixed seed), first `count` of them (default all). */
+export function sampleDraftPicks(draft: SleeperDraft = sampleDraft(), count?: number): DraftPick[] {
+  const league = sampleLeague;
+  const rankings = buildRankings({ projections: sampleSeasonProjections(), league, mode: 'redraft', players: null, fantasyCalc: null });
+  const order = draftOrderFor(draft, [], league.total_rosters);
+  const mock = createMock({ rankings, order, userRosterId: 3, seed: 7 });
+  mock.autoAll();
+  return mock.state.picks.slice(0, count ?? order.length).map((p) => ({
+    round: p.round, pick_no: p.pickNo, player_id: p.pid, roster_id: p.rosterId, draft_slot: p.slot, draft_id: draft.draft_id,
+  }));
 }
 
 /* ---------- hot takes ---------- */

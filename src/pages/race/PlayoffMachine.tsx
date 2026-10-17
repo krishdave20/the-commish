@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { formatOdds, formatPoints1, signedPct } from '../../app/format';
 import { useModel, useScenario } from '../../app/modelContext';
 import { FEATURE } from '../../app/names';
@@ -13,12 +14,11 @@ import type { Engine, Picks } from '../../engine';
 const RUNS = 6000;
 
 /** Pick winners for the remaining games. Marks and records update at once (strict math); odds are re-simulated on the machine channel. */
-export function PlayoffMachine({ engine }: { engine: Engine }) {
+export function PlayoffMachine({ engine, picks, setPicks }: { engine: Engine; picks: Picks; setPicks: Dispatch<SetStateAction<Picks>> }) {
   const { model } = useModel();
   const { scenario, live } = useScenario();
   const games = engine.model.games;
   const weeks = useMemo(() => [...new Set(games.map((g) => g.week))].sort((a, b) => a - b), [games]);
-  const [picks, setPicks] = useState<Picks>({});
   const [weekPick, setWeekPick] = useState<number | null>(null);
   const week = weekPick ?? weeks[0] ?? engine.model.meta.currentWeek;
   const pending = engine.model.oddsPending;

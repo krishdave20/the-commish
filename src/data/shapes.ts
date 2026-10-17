@@ -6,7 +6,7 @@ import type {
   LeagueUser, NflState, SleeperDraft, SleeperLeague, SleeperRoster, SleeperUser, TradedPick,
 } from './contract.ts';
 import type {
-  DraftPick, FantasyCalcRow, Matchup, PlayersMap, ProjectionRow, ScheduleGame, Transaction, TrendingRow, WeekStats,
+  BracketRow, DraftPick, FantasyCalcRow, Matchup, PlayersMap, ProjectionRow, ScheduleGame, Transaction, TrendingRow, WeekStats,
 } from './types.ts';
 
 export type Guard<T> = (x: unknown) => x is T;
@@ -46,6 +46,9 @@ const trending = (x: unknown) => isObj(x) && isStr(x.player_id) && isNum(x.count
 const matchup = (x: unknown) => isObj(x) && isNum(x.roster_id) && isNum(x.points);
 const transaction = (x: unknown) => isObj(x) && isStr(x.transaction_id) && isStr(x.type) && isStr(x.status);
 const pick = (x: unknown) => isObj(x) && isNum(x.round) && isNum(x.pick_no) && isStr(x.player_id);
+const numNull = (x: unknown) => x === null || x === undefined || isNum(x);
+const bracketRow = (x: unknown) =>
+  isObj(x) && isNum(x.r) && isNum(x.m) && numNull(x.t1) && numNull(x.t2) && numNull(x.w) && numNull(x.l);
 const fcRow = (x: unknown) => isObj(x) && isObj(x.player) && isNum(x.value);
 
 export const shapes = {
@@ -67,4 +70,6 @@ export const shapes = {
   transactions: arrayOf<Transaction>(transaction),
   draftPicks: arrayOf<DraftPick>(pick),
   fantasyCalc: arrayOf<FantasyCalcRow>(fcRow),
+  /** `winners_bracket` / `losers_bracket`: an array of games (Sleeper answers `[]` or `null` before the playoffs) */
+  bracket: arrayOf<BracketRow>(bracketRow),
 };

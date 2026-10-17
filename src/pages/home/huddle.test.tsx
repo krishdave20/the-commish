@@ -417,7 +417,8 @@ describe('huddle: pre-draft', () => {
     await waitFor(() => expect(box).toHaveTextContent('projected grade'));
     expect(box).toHaveTextContent(`projected grade${grade.letter}`);
     expect(box).toHaveTextContent(`lineup rank${grade.rank} of ${grade.teams}`);
-    expect(box).toHaveTextContent('full mock draft arrives in the draft room (milestone 5).');
+    expect(within(box).getByRole('link', { name: 'run the full mock draft →' })).toHaveAttribute('href', '/draft?tab=mock');
+    expect(within(box).getByRole('link', { name: 'see the rankings →' })).toHaveAttribute('href', '/draft?tab=rankings');
     expect(box).toHaveTextContent('your first picks:');
 
     const tiers = section('tiers to study');
@@ -521,7 +522,7 @@ describe('huddle: drafting', () => {
     const banner = (await screen.findByRole('heading', { level: 2, name: 'on the clock' })).closest('section')!;
     expect(banner).toHaveTextContent('the draft is live');
     expect(banner).toHaveTextContent('you pick from slot 4.');
-    expect(banner).toHaveTextContent('the live draft assistant arrives in milestone 5.');
+    expect(within(banner).getByRole('link', { name: 'open on the clock →' })).toHaveAttribute('href', '/draft?tab=live');
     expect(screen.queryByRole('heading', { name: 'playoff odds' })).not.toBeInTheDocument();
     await user.click(within(banner).getByRole('link', { name: 'open the draft room' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'draft room' })).toBeInTheDocument();

@@ -18,6 +18,7 @@ import { waiverBoard, waiverBoards, type WaiverWindow } from './waivers.ts';
 import type { Model, ModelTeam } from './types.ts';
 
 export * from './types.ts';
+export * from './bracket/index.ts';
 export { loadLeaguePull, type LoadOpts, type LoadProgress } from './load.ts';
 export { buildModel, makeScorer, type BuildOpts, FALLBACK_Q, FALLBACK_SD, INJ_MULT, POOL_CAP, MIN_CAL_SAMPLES } from './model.ts';
 export {
@@ -31,7 +32,7 @@ export {
 } from './scenario.ts';
 export {
   SIM_RUNS, DEFAULT_SEED, mulberry32, quantile, createSim, simulate, simulateChunked,
-  type Sim, type SimInput, type SimSummary, type SimTeam, type SimGame, type TeamSim, type ChunkOpts,
+  type Sim, type SimInput, type SimSummary, type SimTeam, type SimGame, type TeamSim, type TeamPlayoffSim, type ChunkOpts,
 } from './sim.ts';
 export { simInputFor, baseSimInput, applyBaseSim, type SimInputOpts } from './simInput.ts';
 export { runSimInWorker, cancelSim, type RunOpts } from './simRunner.ts';

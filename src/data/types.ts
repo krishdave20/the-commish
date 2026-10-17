@@ -81,3 +81,20 @@ export interface FantasyCalcRow {
 
 export type SleeperSeasonType = 'regular' | 'post' | 'pre';
 export type TrendingType = 'add' | 'drop';
+
+/** One game of Sleeper's `winners_bracket` / `losers_bracket`. `t1`/`t2` are roster ids (null until known), `w`/`l` the
+    winner and loser roster ids (null until played). `t1_from`/`t2_from` say which earlier game feeds a slot: `{ w: m }`
+    is the winner of match `m`, `{ l: m }` its loser. `p` marks a placement game (`p: 1` is the final of that bracket). */
+export interface BracketFrom { w?: number; l?: number }
+export interface BracketRow {
+  r: number;
+  m: number;
+  t1: number | null;
+  t2: number | null;
+  w: number | null;
+  l: number | null;
+  t1_from?: BracketFrom | null;
+  t2_from?: BracketFrom | null;
+  p?: number;
+  [k: string]: unknown;
+}

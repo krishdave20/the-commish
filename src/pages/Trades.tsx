@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
 import { formatOdds, formatPoints1, signed, signedPct } from '../app/format';
-import { useScenario } from '../app/modelContext';
+import { useModel, useScenario } from '../app/modelContext';
 import { FEATURE } from '../app/names';
 import { teamResult } from '../app/results';
 import { useSimulation } from '../app/useSimulation';
@@ -11,7 +11,14 @@ import { CountUp } from '../components/CountUp';
 import { Kpi } from '../components/Kpi';
 import { PlayerLink } from '../components/PlayerLink';
 import type { Engine, ModelPlayer, TradeIdea, TradeProposal } from '../engine';
+import { evaluateDynastyTrade } from '../engine/dynasty/index.ts';
 import { PlayerTags } from './team/PlayerTags';
+import { DynastyReadout } from './trades/DynastyReadout';
+import { LensCard } from './trades/LensCard';
+import { PickPicker } from './trades/PickPicker';
+import { PicksCard } from './trades/PicksCard';
+import { useDynasty } from './trades/useDynasty';
+import type { DynastyView } from './trades/useDynasty';
 
 function PickList({ title, ids, checked, onToggle, value, idx }: {
   title: string;
@@ -39,15 +46,22 @@ function PickList({ title, ids, checked, onToggle, value, idx }: {
   );
 }
 
-function Analyzer({ engine, analyzerRef, state }: {
+type SetList = (f: (l: string[]) => string[]) => void;
+
+function Analyzer({ engine, analyzerRef, state, dyn }: {
   engine: Engine;
   analyzerRef: React.RefObject<HTMLElement | null>;
-  state: { partner: number; send: string[]; get: string[]; setPartner: (r: number) => void; setSend: (f: (l: string[]) => string[]) => void; setGet: (f: (l: string[]) => string[]) => void };
+  state: {
+    partner: number; send: string[]; get: string[]; sendPicks: string[]; getPicks: string[];
+    setPartner: (r: number) => void; setSend: SetList; setGet: SetList; setSendPicks: SetList; setGetPicks: SetList;
+  };
+  /** dynasty mode (null in a redraft league that is not being explored) */
+  dyn: DynastyView | null;
 }) {
   const { scenario } = useScenario();
   const { model, meRid } = engine;
   const { currentWeek: cur, lastRegularWeek: last } = model.meta;
-  const { partner, send, get } = state;
+  const { partner, send, get, sendPicks, getPicks } = state;
   const scope = useMemo(() => engine.scope(scenario), [engine, scenario]);
   const others = useMemo(() => model.teams.filter((t) => t.rid !== meRid).sort((a, b) => a.team.localeCompare(b.team)), [model, meRid]);
 
@@ -55,9 +69,11 @@ function Analyzer({ engine, analyzerRef, state }: {
   const myIds = useMemo(() => scope.myRoster(), [scope]);
   const theirIds = useMemo(() => model.players.filter((p) => p.ownerRid === partner).map((p) => p.pid), [model, partner]);
 
-  const proposal: TradeProposal | null = send.length || get.length ? { partnerRid: partner, send, get } : null;
-  const ev = useMemo(() => (proposal ? engine.evaluateTrade(scenario, proposal) : null), [engine, scenario, partner, send, get]); // eslint-disable-line react-hooks/exhaustive-deps
-  const inputs = useMemo(() => (proposal ? engine.tradeSimInputs(scenario, proposal) : null), [engine, scenario, partner, send, get]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a deal can be picks alone: the lineup then does not move, but the value does
+  const any = send.length + get.length + sendPicks.length + getPicks.length > 0;
+  const proposal: TradeProposal | null = any ? { partnerRid: partner, send, get } : null;
+  const ev = useMemo(() => (proposal ? engine.evaluateTrade(scenario, proposal) : null), [engine, scenario, partner, send, get, any]); // eslint-disable-line react-hooks/exhaustive-deps
+  const inputs = useMemo(() => (proposal ? engine.tradeSimInputs(scenario, proposal) : null), [engine, scenario, partner, send, get, any]); // eslint-disable-line react-hooks/exhaustive-deps
   const before = useSimulation(inputs?.before ?? null, 'trade', 80);
   const after = useSimulation(inputs?.after ?? null, 'trade-after', 80);
   const ready = before.fresh && after.fresh && before.result && after.result;
@@ -65,8 +81,19 @@ function Analyzer({ engine, analyzerRef, state }: {
   const b1 = ready ? teamResult(model, after.result, meRid).playoff : 0;
   const partnerName = model.teams.find((t) => t.rid === partner)?.team ?? '';
 
-  const toggle = (set: (f: (l: string[]) => string[]) => void) => (pid: string) =>
+  const toggle = (set: SetList) => (pid: string) =>
     set((l) => (l.includes(pid) ? l.filter((x) => x !== pid) : [...l, pid]));
+
+  // dynasty: value out and in, and a verdict for your contender-or-rebuilder lens
+  const dynEval = useMemo(() => {
+    if (!dyn?.data || !dyn.fc?.ok || !ev) return null;
+    const mine = dyn.data.picks[meRid] ?? [], theirs = dyn.data.picks[partner] ?? [];
+    return evaluateDynastyTrade({
+      give: [...send.map(dyn.playerAsset), ...mine.filter((p) => sendPicks.includes(p.key)).map(dyn.pickAsset)],
+      get: [...get.map(dyn.playerAsset), ...theirs.filter((p) => getPicks.includes(p.key)).map(dyn.pickAsset)],
+      lens: dyn.lensByRid[meRid]?.label ?? null, redraft: ev, oddsDelta: ready ? b1 - b0 : null,
+    });
+  }, [dyn, ev, send, get, sendPicks, getPicks, meRid, partner, ready, b0, b1]);
 
   return (
     <section className="card" aria-labelledby="analyzer-title" ref={analyzerRef}>
@@ -81,14 +108,20 @@ function Analyzer({ engine, analyzerRef, state }: {
             {others.map((t) => <option key={t.rid} value={t.rid}>{t.team}</option>)}
           </select>
         </label>
-        <button type="button" className="btn quiet" onClick={() => { state.setSend(() => []); state.setGet(() => []); }}>clear</button>
+        <button type="button" className="btn quiet" onClick={() => { state.setSend(() => []); state.setGet(() => []); state.setSendPicks(() => []); state.setGetPicks(() => []); }}>clear</button>
       </div>
       <div className="sidebyside">
-        <PickList title="you send" ids={myIds} checked={send} onToggle={toggle(state.setSend)} value={rosterValue(true)} idx={scope.idx.P} />
-        <PickList title={`you get from ${partnerName}`} ids={theirIds} checked={get} onToggle={toggle(state.setGet)} value={rosterValue(false)} idx={scope.idx.P} />
+        <div className="stack">
+          <PickList title="you send" ids={myIds} checked={send} onToggle={toggle(state.setSend)} value={rosterValue(true)} idx={scope.idx.P} />
+          {dyn?.data && <PickPicker title="you send: picks" picks={dyn.data.picks[meRid] ?? []} checked={sendPicks} onToggle={toggle(state.setSendPicks)} dyn={dyn} />}
+        </div>
+        <div className="stack">
+          <PickList title={`you get from ${partnerName}`} ids={theirIds} checked={get} onToggle={toggle(state.setGet)} value={rosterValue(false)} idx={scope.idx.P} />
+          {dyn?.data && <PickPicker title={`you get from ${partnerName}: picks`} picks={dyn.data.picks[partner] ?? []} checked={getPicks} onToggle={toggle(state.setGetPicks)} dyn={dyn} />}
+        </div>
       </div>
       {!ev ? (
-        <p className="note">tick players on both sides to score a deal, or load one of the handshake deals below.</p>
+        <p className="note">{dyn?.data ? 'tick players and picks on both sides to score a deal, or load one of the handshake deals below.' : 'tick players on both sides to score a deal, or load one of the handshake deals below.'}</p>
       ) : (
         <div className="stack" aria-live="polite">
           <div className="kpis">
@@ -106,6 +139,11 @@ function Analyzer({ engine, analyzerRef, state }: {
             </Kpi>
           </div>
           <p className="take">{ev.message}</p>
+          {dynEval ? (
+            <DynastyReadout ev={dynEval} me={dyn!.lensByRid[meRid]} partner={dyn!.lensByRid[partner]} partnerName={partnerName} />
+          ) : dyn?.fc && !dyn.fc.ok ? (
+            <p className="note" role="status">dynasty values are unavailable right now, so only this season is scored. {dyn.fc.reason}</p>
+          ) : dyn ? <p className="note" role="status">loading dynasty values…</p> : null}
         </div>
       )}
     </section>
@@ -133,6 +171,14 @@ function TradeBlock({ engine }: { engine: Engine }) {
   const [partner, setPartner] = useState(preset?.partner ?? others[0]?.rid ?? meRid);
   const [send, setSend] = useState<string[]>(preset?.send ?? []);
   const [get, setGet] = useState<string[]>(preset?.get ?? []);
+  const [sendPicks, setSendPicks] = useState<string[]>([]);
+  const [getPicks, setGetPicks] = useState<string[]>([]);
+  // dynasty mode is on in dynasty leagues; in a redraft league it is an opt-in "explore"
+  const { extras } = useModel();
+  const league = extras?.league ?? null;
+  const redraft = !!league && league.settings?.type !== 2;
+  const [explore, setExplore] = useState(false);
+  const dyn = useDynasty(engine, league, !!league && (!redraft || explore));
   const analyzerRef = useRef<HTMLElement | null>(null);
   const own = engine.me.ownerId === model.meta.userId;
 
@@ -143,12 +189,14 @@ function TradeBlock({ engine }: { engine: Engine }) {
     analyzerRef.current?.scrollIntoView?.({ block: 'start' });
   }
 
-  const changePartner = (r: number) => { setPartner(r); setGet([]); };
+  const changePartner = (r: number) => { setPartner(r); setGet([]); setGetPicks([]); };
 
   return (
     <>
       <ScenarioBar />
-      <Analyzer engine={engine} analyzerRef={analyzerRef} state={{ partner, send, get, setPartner: changePartner, setSend, setGet }} />
+      <Analyzer engine={engine} analyzerRef={analyzerRef} dyn={dyn}
+        state={{ partner, send, get, sendPicks: dyn ? sendPicks : [], getPicks: dyn ? getPicks : [], setPartner: changePartner, setSend, setGet, setSendPicks, setGetPicks }}
+      />
       <section className="card" aria-labelledby="ideas-title">
         <header>
           <div className="micro">trades both managers should take</div>
@@ -185,14 +233,8 @@ function TradeBlock({ engine }: { engine: Engine }) {
           </div>
         )}
       </section>
-      <section className="card" aria-labelledby="dynasty-title">
-        <header>
-          <div className="micro">dynasty mode</div>
-          <h2 id="dynasty-title">{FEATURE.contender}</h2>
-          <span className="pill mute milestone">milestone 5</span>
-        </header>
-        <p className="note">fantasycalc values, future picks and a contender versus rebuilder lens arrive in milestone 5.</p>
-      </section>
+      {league && <LensCard engine={engine} dyn={dyn} redraft={redraft} explore={explore} setExplore={setExplore} />}
+      {dyn && <PicksCard engine={engine} dyn={dyn} />}
     </>
   );
 }

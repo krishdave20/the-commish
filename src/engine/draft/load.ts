@@ -29,7 +29,8 @@ export async function loadDraftInputs(sleeper: SleeperClient, league: SleeperLea
     sleeper.seasonProjections(league.season, positionsFor(league.roster_positions), o),
     draftId ? sleeper.draftPicks(draftId, o) : Promise.resolve(null),
     draftId ? sleeper.draftTradedPicks(draftId, o) : Promise.resolve(null),
-    mode === 'redraft' ? Promise.resolve(null) : loadFantasyCalc(sleeper, league),
+    // startup and rookie drafts are priced with dynasty values whatever the league's own type is
+    mode === 'redraft' ? Promise.resolve(null) : loadFantasyCalc(sleeper, league, { force: opts.force, isDynasty: true }),
     mode === 'rookie' ? sleeper.players(o).catch(() => null) : Promise.resolve(null),
   ]);
   const times = [proj.asOf, draftF?.asOf, picks?.asOf, traded?.asOf, players?.asOf].filter((t): t is number => typeof t === 'number');

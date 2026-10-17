@@ -8,6 +8,7 @@
      expected lineup points → the 20,000-run season simulation → win-win 1-for-1 trade ideas → meta. */
 import { bestTotal } from './lineup.ts';
 import { ELIG, IDP_POS, OFFENSE_POS, startingSlots } from './lineup.ts';
+import { rulesFromLeagueSettings } from './bracket/rules.ts';
 import { SIM_RUNS, simulate } from './sim.ts';
 import { applyBaseSim, baseSimInput } from './simInput.ts';
 import { tradeIdeas } from './trades.ts';
@@ -316,7 +317,7 @@ export function buildModel(pull: LeaguePull, who: BuildOpts): Model {
     username: leagueUser?.display_name ?? who.userId, userId: who.userId,
     maeProjection: misses.length ? r2(mean(misses)) : null, bandCoverage: coverage == null ? null : r2(coverage),
     teamWeeklySd: teamSd, simRuns: SIM_RUNS, currentWeek: cur, lastRegularWeek: lastReg, maxWeek,
-    playoffWeeks: poWeeks, playoffTeams: nP, divisions: nDiv, waiverBudget: S.waiver_budget || 0, slots,
+    playoffWeeks: poWeeks, playoffTeams: nP, playoff: rulesFromLeagueSettings(S, teams.length), divisions: nDiv, waiverBudget: S.waiver_budget || 0, slots,
     scoring: (sc.rec == null ? 1 : sc.rec) + ' per catch', calibrationWeeks: calWeeks,
     floorCeil: RQ, ratioSamples, residualSd: SDP, positions: POS, asOf: pull.asOf, stale: pull.stale,
   };

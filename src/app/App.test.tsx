@@ -51,18 +51,13 @@ describe('app shell', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Half Point Keepers' })).toBeInTheDocument();
   });
 
-  it('renders a styled placeholder with the page header on the pages that come later', async () => {
-    for (const [route, title, kicker, milestone] of [
-      ['/draft', 'draft room', 'rankings, mock drafts, live assistant', 'Milestone 5'],
-    ] as const) {
-      const { unmount } = renderApp({ linked: [sampleAccount()], route });
-      expect(await screen.findByRole('heading', { level: 1, name: title })).toBeInTheDocument();
-      expect(screen.getByText(kicker)).toBeInTheDocument();
-      expect(screen.getByText(milestone)).toBeInTheDocument();
-      expect(await screen.findByText('Data as of Fri, Oct 16, 4:05 PM')).toBeInTheDocument();
-      expect(document.title).toBe(`${title} · the commish`);
-      unmount();
-    }
+  it('gives the draft room its page header, kicker and document title (no placeholder is left)', async () => {
+    renderApp({ linked: [sampleAccount()], route: '/draft' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'draft room' })).toBeInTheDocument();
+    expect(await screen.findByText(/^rankings, mock drafts, live assistant/)).toBeInTheDocument();
+    expect(await screen.findByText('Data as of Fri, Oct 16, 4:05 PM')).toBeInTheDocument();
+    expect(screen.queryByText('Milestone 5')).not.toBeInTheDocument();
+    expect(document.title).toBe('draft room · the commish');
   });
 
   it('sets the document title to the page name', async () => {

@@ -109,6 +109,22 @@ function Body({ engine }: { engine: Engine }) {
           </p>
         </section>
 
+        <section className="card" aria-labelledby="mth-bracket">
+          <header><h2 id="mth-bracket">brackets and title odds</h2></header>
+          <p>
+            the bracket is built from the seeds and your league’s own playoff settings: byes for the top seeds when the field is not a power of two
+            ({meta.playoffTeams} teams here), the usual 1v8, 4v5, 3v6, 2v7 pairings, and reseeding if the league reseeds. each round is scored like a regular-season
+            game, from each team’s expected lineup points in the round’s playoff week and the same weekly spread; a two-week round adds the two weeks’ points and
+            the variances. the title odds on the bracket are exact (every possible set of results is walked), so they add to 100% and move cleanly as you pick.
+          </p>
+          <p>
+            the standings’ title column comes from the season simulation: after every simulated regular season is seeded, its playoffs are played too, with the same
+            random stream, drawn after the regular season so no regular-season number moves. the non-playoff teams get a bracket as well: in the toilet bowl the loser of
+            each game advances and the team that loses every round is crowned the worst team; in the consolation style the winner advances. you choose in the front office.
+          </p>
+          <p className="note">when sleeper has published a bracket, real results are locked into it and only the open games are yours to pick.</p>
+        </section>
+
         <section className="card" aria-labelledby="mth-clinch">
           <header><h2 id="mth-clinch">clinch marks</h2></header>
           <p>

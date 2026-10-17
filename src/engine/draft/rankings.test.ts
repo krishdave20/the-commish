@@ -189,3 +189,40 @@ describe('dynasty modes', () => {
     expect(r.rows.map((x) => x.pid)).toContain('QB5');
   });
 });
+
+describe('explore modes in a redraft league (the mode wins over settings.type)', () => {
+  const redraft = leagueOf({ teams: 6 });
+  const rows = syntheticPool().map((r) => { r.stats.adp_dynasty_ppr = 40; r.stats.adp_ppr = 10; r.stats.adp_rookie = 999; return r; });
+  it('startup reads the dynasty ADP column and FantasyCalc blends in', () => {
+    const fc = { QB16: { sleeperId: 'QB16', name: 'q', position: 'QB', value: 99999, overallRank: 1, positionRank: 1, trend30Day: 0 } };
+    const s = buildRankings({ projections: rows, league: redraft, mode: 'startup', fantasyCalc: fc });
+    expect(s.mode).toBe('startup');
+    expect(s.adpField).toBe('adp_dynasty_ppr');
+    expect(s.byPid.WR1!.adp).toBe(40);
+    expect(s.byPid.QB16!.rank).toBeLessThan(buildRankings({ projections: rows, league: redraft, mode: 'startup' }).byPid.QB16!.rank);
+  });
+  it('rookie reads adp_rookie, and the redraft default still reads the redraft column', () => {
+    expect(buildRankings({ projections: rows, league: redraft, mode: 'rookie' }).adpField).toBe('adp_rookie');
+    const r = buildRankings({ projections: rows, league: redraft });
+    expect(r.adpField).toBe('adp_ppr');
+    expect(r.byPid.WR1!.adp).toBe(10);
+  });
+});
+
+describe('rookie mode leaves out kickers and defenses', () => {
+  it('K and DEF rookies never appear, and ranks close up with no gaps', () => {
+    const rows = syntheticPool();
+    for (const pid of ['K1', 'K2', 'DEF1', 'WR10', 'RB30']) {
+      const r = rows.find((x) => x.player_id === pid)!;
+      r.player!.years_exp = 0;
+      r.stats.adp_rookie = 5;
+    }
+    const r = buildRankings({ projections: rows, league: leagueOf({ teams: 6, type: 2 }), mode: 'rookie' });
+    expect(r.rows.map((x) => x.pid).sort()).toEqual(['RB30', 'WR10']);
+    expect(r.rows.map((x) => x.rank)).toEqual([1, 2]);
+    expect(r.byPid.K1).toBeUndefined();
+    // startup keeps them
+    const startup = buildRankings({ projections: rows, league: leagueOf({ teams: 6, type: 2 }), mode: 'startup' });
+    expect(startup.rows.some((x) => x.pos === 'K')).toBe(true);
+  });
+});

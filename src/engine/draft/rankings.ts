@@ -208,7 +208,8 @@ export function buildRankings(input: RankingsInput): Rankings {
         points: b.points, vor: b.points - replacement[b.pos]!, adp, fc: input.fantasyCalc?.[pid] ?? null,
       };
     });
-  if (mode === 'rookie') rows = rows.filter((r) => r.rookie);
+  // a rookie draft is for skill players: kickers and defenses would only show up with negative VOR
+  if (mode === 'rookie') rows = rows.filter((r) => r.rookie && r.pos !== 'K' && r.pos !== 'DEF');
 
   // overall order: VOR, or the VOR/FantasyCalc blend for dynasty drafts
   const byVor = rows.slice().sort((a, b) => b.vor - a.vor || b.points - a.points || (a.pid < b.pid ? -1 : 1));

@@ -24,7 +24,10 @@ import { PreDraft } from './home/PreDraft';
 import { RookieClass } from './home/RookieClass';
 import { TopTakes } from './home/TopTakes';
 import { WaiversCard } from './home/WaiversCard';
+import { PathCard } from './home/PathCard';
+import { PostseasonBrackets } from './home/PostseasonBrackets';
 import { AlertsCard } from './team/AlertsCard';
+import { useSleeperBrackets } from '../components/bracket/useBracketData';
 import { buildStandings, recordLabel } from './standings';
 import type { StandingRow } from './standings';
 import type { LeagueBundle } from '../data';
@@ -36,6 +39,7 @@ export default function Home() {
   const nfl = useNflState();
   const model = useModel();
   const nv = useNflverse();
+  const brackets = useSleeperBrackets();
   const { data: active } = useActive();
   const [params] = useSearchParams();
   const data = bundle.data;
@@ -54,7 +58,7 @@ export default function Home() {
   const inSeason = phase === 'in_season' || phase === 'postseason';
   const season = nfl.data?.league_season ?? nfl.data?.season ?? data?.league.season ?? '';
 
-  const header = { ...bundle, refresh: async () => { await Promise.all([bundle.refresh(), model.refresh(), nv.refresh()]); } };
+  const header = { ...bundle, refresh: async () => { await Promise.all([bundle.refresh(), model.refresh(), nv.refresh(), brackets.refresh()]); } };
 
   return (
     <div className="page page-fade">
@@ -79,7 +83,7 @@ export default function Home() {
       {data && phase === 'drafting' && <Drafting bundle={data} userId={userId} />}
       {data && phase === 'pre_draft' && <PreDraft bundle={data} userId={userId} />}
       {data && phase === 'offseason' && <OffseasonSections bundle={data} userId={userId} season={season} />}
-      {data && inSeason && <InSeasonSections engine={model.engine} loading={model.loading} error={model.error} />}
+      {data && inSeason && <InSeasonSections engine={model.engine} loading={model.loading} error={model.error} phase={phase} />}
 
       {data && (
         <div className="home-grid">
@@ -125,7 +129,7 @@ export default function Home() {
 }
 
 /** Playoff odds, this week's matchup, lineup alerts, injuries, the waiver wire's top three and the top takes for my players. */
-function InSeasonSections({ engine, loading, error }: { engine: Engine | null; loading: boolean; error: string | undefined }) {
+function InSeasonSections({ engine, loading, error, phase }: { engine: Engine | null; loading: boolean; error: string | undefined; phase: Phase | null }) {
   if (!engine) {
     return (
       <p className={`note${error && !loading ? ' neg-c' : ''}`} role="status">
@@ -135,10 +139,12 @@ function InSeasonSections({ engine, loading, error }: { engine: Engine | null; l
   }
   return (
     <>
+      {phase === 'postseason' && <PostseasonBrackets engine={engine} />}
       <div className="grid2">
         <OddsCard engine={engine} />
         <MatchupCard engine={engine} />
       </div>
+      {phase !== 'postseason' && <PathCard engine={engine} />}
       <div className="grid2">
         <AlertsCard engine={engine} withWire={false} />
         <InjuriesCard engine={engine} />
