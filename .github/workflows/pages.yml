@@ -60,6 +60,18 @@ jobs:
         with:
           path: dist
 
+  # GitHub disables scheduled workflows in public repos after 60 days without commits. Re-enabling the
+  # workflow through the API resets that timer, so the nightly refresh survives a quiet offseason.
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/pages.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   deploy:
     needs: build
     if: always() && needs.build.result == 'success'

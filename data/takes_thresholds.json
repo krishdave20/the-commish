@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "fit_season": null,
+  "max_per_player_week": 3,
+  "detectors": {
+    "usage_spike": { "snap_share_jump": 0.15, "baseline_weeks": 3, "min_team_snaps": 40 },
+    "target_hog": { "min_target_share": 0.25, "weeks": 3, "min_targets": 15 },
+    "buy_low": { "ay_share_rank_max": 24, "ppg_rank_min": 36, "min_games": 3 },
+    "sell_high": { "td_over_expected_min": 2, "min_opportunities": 20 },
+    "rz_role_change": { "i10_share_delta": 0.2, "weeks": 3, "min_team_i10_plays": 6 },
+    "box_count_edge": { "ypc_light_min": 5.0, "opp_light_rate_min": 0.35, "min_light_carries": 15 },
+    "blitz_beater": { "ypt_blitz_over_baseline": 2.0, "opp_blitz_rate_min": 0.35, "min_blitz_targets": 15 },
+    "soft_schedule": { "weeks": 3, "dvp_soft_min": 1.15 },
+    "waiver_riser": { "min_trending_adds": 1000, "usage_delta": 0.1 },
+    "dynasty_mover": { "tail_pct": 0.05 },
+    "coverage_note": { "yprr_gap_min": 0.6, "opp_rate_min": 0.6, "min_routes": 20 }
+  },
+  "evidence": { "note": "SPEC section 7 defaults; not yet tuned (see notebooks/takes_thresholds.ipynb)." }
+}
