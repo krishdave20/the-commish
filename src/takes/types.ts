@@ -42,6 +42,9 @@ export interface Take {
   dataLabel: string | null;
   sources: Array<'sleeper' | 'nflverse' | 'ftn' | 'fantasycalc'>;
   actions: TakeAction[];
+  /** what the 2025 backtest says about this kind of take (from data/takes_thresholds.json evidence), lowercase; null when
+      there is no evidence on file. Added by the takes engine. */
+  trackRecord?: string | null;
 }
 
 /** Everything the detectors read. The UI assembles it from the model, the nflverse client, trending adds
@@ -64,6 +67,9 @@ export interface TakeInputs {
   watchlist: string[];
   /** players you are looking at in the trade analyzer (optional) */
   tradeTargets: string[];
+  /** optional: pid -> lineup lift for the rest of season from the waiver board (src/engine/waivers.ts). When absent, the
+      engine computes the board itself, but only if some take is about a free agent. Added by the takes engine. */
+  waiverGains?: Record<string, number>;
 }
 
 /** Shape of data/takes_thresholds.json. Defaults are SPEC section 7's numbers; notebooks/takes_thresholds.ipynb

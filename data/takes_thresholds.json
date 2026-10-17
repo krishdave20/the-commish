@@ -1,19 +1,1196 @@
 {
   "version": 1,
-  "fit_season": null,
+  "fit_season": 2025,
   "max_per_player_week": 3,
   "detectors": {
-    "usage_spike": { "snap_share_jump": 0.15, "baseline_weeks": 3, "min_team_snaps": 40 },
-    "target_hog": { "min_target_share": 0.25, "weeks": 3, "min_targets": 15 },
-    "buy_low": { "ay_share_rank_max": 24, "ppg_rank_min": 36, "min_games": 3 },
-    "sell_high": { "td_over_expected_min": 2, "min_opportunities": 20 },
-    "rz_role_change": { "i10_share_delta": 0.2, "weeks": 3, "min_team_i10_plays": 6 },
-    "box_count_edge": { "ypc_light_min": 5.0, "opp_light_rate_min": 0.35, "min_light_carries": 15 },
-    "blitz_beater": { "ypt_blitz_over_baseline": 2.0, "opp_blitz_rate_min": 0.35, "min_blitz_targets": 15 },
-    "soft_schedule": { "weeks": 3, "dvp_soft_min": 1.15 },
-    "waiver_riser": { "min_trending_adds": 1000, "usage_delta": 0.1 },
-    "dynasty_mover": { "tail_pct": 0.05 },
-    "coverage_note": { "yprr_gap_min": 0.6, "opp_rate_min": 0.6, "min_routes": 20 }
+    "usage_spike": {
+      "snap_share_jump": 0.25,
+      "baseline_weeks": 3,
+      "min_team_snaps": 40
+    },
+    "target_hog": {
+      "min_target_share": 0.275,
+      "weeks": 3,
+      "min_targets": 15
+    },
+    "buy_low": {
+      "ay_share_rank_max": 24,
+      "ppg_rank_min": 36,
+      "min_games": 3
+    },
+    "sell_high": {
+      "td_over_expected_min": 2.5,
+      "min_opportunities": 20
+    },
+    "rz_role_change": {
+      "i10_share_delta": 0.2,
+      "weeks": 3,
+      "min_team_i10_plays": 6
+    },
+    "box_count_edge": {
+      "ypc_light_min": 5.0,
+      "opp_light_rate_min": 0.35,
+      "min_light_carries": 15
+    },
+    "blitz_beater": {
+      "ypt_blitz_over_baseline": 2.0,
+      "opp_blitz_rate_min": 0.35,
+      "min_blitz_targets": 15
+    },
+    "soft_schedule": {
+      "weeks": 3,
+      "dvp_soft_min": 1.15
+    },
+    "waiver_riser": {
+      "min_trending_adds": 1000,
+      "usage_delta": 0.1
+    },
+    "dynasty_mover": {
+      "tail_pct": 0.05
+    },
+    "coverage_note": {
+      "yprr_gap_min": 0.6,
+      "opp_rate_min": 0.6,
+      "min_routes": 20
+    }
   },
-  "evidence": { "note": "SPEC section 7 defaults; not yet tuned (see notebooks/takes_thresholds.ipynb)." }
+  "evidence": {
+    "usage_spike": {
+      "backtested": true,
+      "main_threshold": {
+        "snap_share_jump": {
+          "default": 0.15,
+          "chosen": 0.25
+        }
+      },
+      "why_chosen": "no clear signal anywhere; tightened only to fit the volume cap",
+      "n": 162,
+      "mean_over_projection": -0.119,
+      "ci90": [
+        -0.996,
+        0.749
+      ],
+      "excess_vs_universe": 0.362,
+      "excess_ci90": [
+        -0.541,
+        1.27
+      ],
+      "excess_in_take_direction": 0.362,
+      "hit_rate": 0.352,
+      "universe_hit_rate": 0.377,
+      "fires_per_team_week": 0.338,
+      "verdict": "none",
+      "positive_in_both_halves": true,
+      "suggested_tone": "watch",
+      "at_default": {
+        "n": 373,
+        "mean_over_projection": -0.548,
+        "ci90": [
+          -1.109,
+          0.016
+        ],
+        "excess_vs_universe": -0.131,
+        "hit_rate": 0.357,
+        "fires_per_team_week": 0.777
+      }
+    },
+    "target_hog": {
+      "backtested": true,
+      "main_threshold": {
+        "min_target_share": {
+          "default": 0.25,
+          "chosen": 0.275
+        }
+      },
+      "why_chosen": "no clear signal anywhere; tightened only to fit the volume cap",
+      "n": 119,
+      "mean_over_projection": -0.055,
+      "ci90": [
+        -1.336,
+        1.3
+      ],
+      "excess_vs_universe": 0.628,
+      "excess_ci90": [
+        -0.624,
+        1.937
+      ],
+      "excess_in_take_direction": 0.628,
+      "hit_rate": 0.454,
+      "universe_hit_rate": 0.37,
+      "fires_per_team_week": 0.248,
+      "verdict": "weak",
+      "positive_in_both_halves": true,
+      "suggested_tone": "good",
+      "at_default": {
+        "n": 207,
+        "mean_over_projection": -0.659,
+        "ci90": [
+          -1.719,
+          0.328
+        ],
+        "excess_vs_universe": -0.018,
+        "hit_rate": 0.386,
+        "fires_per_team_week": 0.431
+      }
+    },
+    "buy_low": {
+      "backtested": true,
+      "main_threshold": {
+        "ay_share_rank_max": {
+          "default": 24,
+          "chosen": 24
+        },
+        "ppg_rank_min": {
+          "default": 36,
+          "chosen": 36
+        }
+      },
+      "why_chosen": "no value shows a clear signal; default volume is within the cap",
+      "n": 127,
+      "mean_over_projection": 0.609,
+      "ci90": [
+        -0.598,
+        2.043
+      ],
+      "excess_vs_universe": 0.883,
+      "excess_ci90": [
+        -0.319,
+        2.334
+      ],
+      "excess_in_take_direction": 0.883,
+      "hit_rate": 0.433,
+      "universe_hit_rate": 0.385,
+      "fires_per_team_week": 0.265,
+      "verdict": "weak",
+      "positive_in_both_halves": true,
+      "suggested_tone": "good",
+      "at_default": {
+        "n": 127,
+        "mean_over_projection": 0.609,
+        "ci90": [
+          -0.598,
+          2.043
+        ],
+        "excess_vs_universe": 0.883,
+        "hit_rate": 0.433,
+        "fires_per_team_week": 0.265
+      }
+    },
+    "sell_high": {
+      "backtested": true,
+      "main_threshold": {
+        "td_over_expected_min": {
+          "default": 2,
+          "chosen": 2.5
+        }
+      },
+      "why_chosen": "closest value with a clear signal",
+      "n": 112,
+      "mean_over_projection": -2.146,
+      "ci90": [
+        -3.453,
+        -1.02
+      ],
+      "excess_vs_universe": -1.52,
+      "excess_ci90": [
+        -2.865,
+        -0.356
+      ],
+      "excess_in_take_direction": 1.52,
+      "hit_rate": 0.688,
+      "universe_hit_rate": 0.633,
+      "fires_per_team_week": 0.233,
+      "verdict": "signal",
+      "positive_in_both_halves": true,
+      "suggested_tone": "bad",
+      "at_default": {
+        "n": 182,
+        "mean_over_projection": -1.429,
+        "ci90": [
+          -2.4,
+          -0.527
+        ],
+        "excess_vs_universe": -0.872,
+        "hit_rate": 0.659,
+        "fires_per_team_week": 0.379
+      }
+    },
+    "rz_role_change": {
+      "backtested": true,
+      "main_threshold": {
+        "i10_share_delta": {
+          "default": 0.2,
+          "chosen": 0.2
+        }
+      },
+      "why_chosen": "no value shows a clear signal; default volume is within the cap",
+      "n": 191,
+      "mean_over_projection": null,
+      "ci90": null,
+      "excess_vs_universe": null,
+      "excess_ci90": null,
+      "excess_in_take_direction": -0.227,
+      "hit_rate": 0.476,
+      "universe_hit_rate": 0.482,
+      "fires_per_team_week": 0.398,
+      "verdict": "leans_wrong",
+      "positive_in_both_halves": false,
+      "suggested_tone": "watch",
+      "at_default": {
+        "n": 191,
+        "mean_over_projection": null,
+        "ci90": null,
+        "excess_vs_universe": null,
+        "hit_rate": 0.476,
+        "fires_per_team_week": 0.398
+      },
+      "by_direction": {
+        "up": {
+          "n": 109,
+          "mean_over_projection": -0.451,
+          "ci90": [
+            -1.644,
+            0.853
+          ],
+          "excess_vs_universe": -0.017,
+          "hit_rate": 0.394,
+          "fires_per_team_week": 0.227
+        },
+        "down": {
+          "n": 82,
+          "mean_over_projection": 0.246,
+          "ci90": [
+            -1.067,
+            1.711
+          ],
+          "excess_vs_universe": 0.506,
+          "hit_rate": 0.585,
+          "fires_per_team_week": 0.171
+        }
+      },
+      "note": "up and down takes are pooled: only excess_in_take_direction, hit_rate (in direction) and fires_per_team_week are meaningful at the top level; raw points are in by_direction"
+    },
+    "box_count_edge": {
+      "backtested": true,
+      "main_threshold": {
+        "ypc_light_min": {
+          "default": 5.0,
+          "chosen": 5.0
+        }
+      },
+      "why_chosen": "no value shows a clear signal; default volume is within the cap",
+      "n": 174,
+      "mean_over_projection": -0.779,
+      "ci90": [
+        -1.586,
+        -0.031
+      ],
+      "excess_vs_universe": -0.501,
+      "excess_ci90": [
+        -1.306,
+        0.251
+      ],
+      "excess_in_take_direction": -0.501,
+      "hit_rate": 0.356,
+      "universe_hit_rate": 0.387,
+      "fires_per_team_week": 0.362,
+      "verdict": "leans_wrong",
+      "positive_in_both_halves": false,
+      "suggested_tone": "watch",
+      "at_default": {
+        "n": 174,
+        "mean_over_projection": -0.779,
+        "ci90": [
+          -1.586,
+          -0.031
+        ],
+        "excess_vs_universe": -0.501,
+        "hit_rate": 0.356,
+        "fires_per_team_week": 0.362
+      }
+    },
+    "blitz_beater": {
+      "backtested": true,
+      "main_threshold": {
+        "ypt_blitz_over_baseline": {
+          "default": 2.0,
+          "chosen": 2.0
+        }
+      },
+      "why_chosen": "no value shows a clear signal; default volume is within the cap",
+      "n": 19,
+      "mean_over_projection": -2.466,
+      "ci90": [
+        -4.693,
+        -0.06
+      ],
+      "excess_vs_universe": -1.409,
+      "excess_ci90": [
+        -3.608,
+        0.999
+      ],
+      "excess_in_take_direction": -1.409,
+      "hit_rate": 0.263,
+      "universe_hit_rate": 0.352,
+      "fires_per_team_week": 0.04,
+      "verdict": "leans_wrong",
+      "positive_in_both_halves": false,
+      "suggested_tone": "watch",
+      "at_default": {
+        "n": 19,
+        "mean_over_projection": -2.466,
+        "ci90": [
+          -4.693,
+          -0.06
+        ],
+        "excess_vs_universe": -1.409,
+        "hit_rate": 0.263,
+        "fires_per_team_week": 0.04
+      }
+    },
+    "soft_schedule": {
+      "backtested": true,
+      "main_threshold": {
+        "dvp_soft_min": {
+          "default": 1.15,
+          "chosen": 1.15
+        }
+      },
+      "why_chosen": "no value shows a clear signal; default volume is within the cap",
+      "n": 24,
+      "mean_over_projection": 0.041,
+      "ci90": [
+        -1.174,
+        1.979
+      ],
+      "excess_vs_universe": 0.068,
+      "excess_ci90": [
+        -0.876,
+        1.504
+      ],
+      "excess_in_take_direction": 0.068,
+      "hit_rate": 0.542,
+      "universe_hit_rate": 0.419,
+      "fires_per_team_week": 0.058,
+      "verdict": "weak",
+      "positive_in_both_halves": false,
+      "suggested_tone": "watch",
+      "at_default": {
+        "n": 24,
+        "mean_over_projection": 0.041,
+        "ci90": [
+          -1.174,
+          1.979
+        ],
+        "excess_vs_universe": 0.068,
+        "hit_rate": 0.542,
+        "fires_per_team_week": 0.058
+      }
+    },
+    "coverage_note": {
+      "backtested": false,
+      "in_sample_only": true,
+      "kept_default": true,
+      "n": 542,
+      "mean_over_projection": -0.153,
+      "ci90": [
+        -0.583,
+        0.26
+      ],
+      "excess_vs_universe": 0.221,
+      "hit_rate": 0.417,
+      "fires_per_team_week": 1.129,
+      "note": "2025 participation only and full-season splits include the outcome week, so these numbers are optimistic and are not evidence for a threshold. No 2025 defense ran man coverage on 60% of dropbacks, so only the zone side can match at opp_rate_min 0.6."
+    },
+    "waiver_riser": {
+      "backtested": false,
+      "kept_default": true,
+      "reason": "needs Sleeper trending-adds history; the endpoint is a 24-hour snapshot with no history"
+    },
+    "dynasty_mover": {
+      "backtested": false,
+      "kept_default": true,
+      "reason": "needs FantasyCalc 30-day value history; none is kept"
+    },
+    "_method": {
+      "seasons": "2025 regular season, fire weeks 3-17, outcome week w+1 (soft_schedule: mean of the next 3 games)",
+      "outcome": "actual PPR points minus Sleeper projection (stats.pts_ppr); excess subtracts the universe mean for the same outcome week and position",
+      "universe": "players with a Sleeper PPR projection above 3 in the outcome week",
+      "bootstrap": "2,000 to 5,000 team-cluster resamples, 90% interval",
+      "selection_rule": "candidates fire <= 0.4 per team-week with n >= 40; clear signal = 90% CI of in-direction excess above 0.25 and hit rate above the universe; keep default if clear, else nearest clear value, else keep default unless over the volume cap",
+      "caveat": "tuned and tested on the same season; numbers at a chosen value are optimistic. See split_half.",
+      "split_half": {
+        "usage_spike": {
+          "first": {
+            "n": 64,
+            "signed_excess": 0.144
+          },
+          "second": {
+            "n": 98,
+            "signed_excess": 0.504
+          }
+        },
+        "target_hog": {
+          "first": {
+            "n": 62,
+            "signed_excess": 0.303
+          },
+          "second": {
+            "n": 57,
+            "signed_excess": 0.98
+          }
+        },
+        "buy_low": {
+          "first": {
+            "n": 73,
+            "signed_excess": 0.9
+          },
+          "second": {
+            "n": 54,
+            "signed_excess": 0.859
+          }
+        },
+        "sell_high": {
+          "first": {
+            "n": 37,
+            "signed_excess": 2.815
+          },
+          "second": {
+            "n": 75,
+            "signed_excess": 0.881
+          }
+        },
+        "rz_role_change": {
+          "first": {
+            "n": 88,
+            "signed_excess": 0.262
+          },
+          "second": {
+            "n": 103,
+            "signed_excess": -0.644
+          }
+        },
+        "box_count_edge": {
+          "first": {
+            "n": 80,
+            "signed_excess": -0.754
+          },
+          "second": {
+            "n": 94,
+            "signed_excess": -0.286
+          }
+        },
+        "blitz_beater": {
+          "first": {
+            "n": 5,
+            "signed_excess": -3.035
+          },
+          "second": {
+            "n": 14,
+            "signed_excess": -0.829
+          }
+        },
+        "soft_schedule": {
+          "first": {
+            "n": 10,
+            "signed_excess": 0.73
+          },
+          "second": {
+            "n": 14,
+            "signed_excess": -0.404
+          }
+        }
+      },
+      "feed_volume": {
+        "mean_per_team_week": 2.871,
+        "mean_excl_coverage_note": 1.933,
+        "p90_excl_coverage_note": 4.0,
+        "median": 3.0,
+        "p90": 5.0,
+        "max": 10,
+        "share_team_weeks_empty": 0.125,
+        "takes_total": 1470,
+        "player_weeks_over_3": 1,
+        "max_takes_one_player_week": 4
+      },
+      "grid_excess_in_direction": {
+        "usage_spike": [
+          {
+            "value": 0.1,
+            "n": 604,
+            "fires_per_team_week": 1.258,
+            "sx": -0.36,
+            "sx_ci90": [
+              -0.852,
+              0.128
+            ]
+          },
+          {
+            "value": 0.15,
+            "n": 373,
+            "fires_per_team_week": 0.777,
+            "sx": -0.131,
+            "sx_ci90": [
+              -0.697,
+              0.423
+            ]
+          },
+          {
+            "value": 0.2,
+            "n": 229,
+            "fires_per_team_week": 0.477,
+            "sx": 0.102,
+            "sx_ci90": [
+              -0.587,
+              0.801
+            ]
+          },
+          {
+            "value": 0.25,
+            "n": 162,
+            "fires_per_team_week": 0.338,
+            "sx": 0.362,
+            "sx_ci90": [
+              -0.509,
+              1.276
+            ]
+          },
+          {
+            "value": 0.3,
+            "n": 113,
+            "fires_per_team_week": 0.235,
+            "sx": 0.905,
+            "sx_ci90": [
+              -0.232,
+              2.049
+            ]
+          },
+          {
+            "value": 0.35,
+            "n": 74,
+            "fires_per_team_week": 0.154,
+            "sx": 0.849,
+            "sx_ci90": [
+              -0.218,
+              1.876
+            ]
+          }
+        ],
+        "target_hog": [
+          {
+            "value": 0.2,
+            "n": 484,
+            "fires_per_team_week": 1.008,
+            "sx": -0.309,
+            "sx_ci90": [
+              -0.883,
+              0.311
+            ]
+          },
+          {
+            "value": 0.225,
+            "n": 312,
+            "fires_per_team_week": 0.65,
+            "sx": -0.006,
+            "sx_ci90": [
+              -0.805,
+              0.676
+            ]
+          },
+          {
+            "value": 0.25,
+            "n": 207,
+            "fires_per_team_week": 0.431,
+            "sx": -0.018,
+            "sx_ci90": [
+              -1.069,
+              0.943
+            ]
+          },
+          {
+            "value": 0.275,
+            "n": 119,
+            "fires_per_team_week": 0.248,
+            "sx": 0.628,
+            "sx_ci90": [
+              -0.524,
+              1.949
+            ]
+          },
+          {
+            "value": 0.3,
+            "n": 67,
+            "fires_per_team_week": 0.14,
+            "sx": 1.522,
+            "sx_ci90": [
+              0.09,
+              3.051
+            ]
+          },
+          {
+            "value": 0.325,
+            "n": 31,
+            "fires_per_team_week": 0.065,
+            "sx": 0.733,
+            "sx_ci90": [
+              -1.046,
+              3.128
+            ]
+          }
+        ],
+        "sell_high": [
+          {
+            "value": 1.0,
+            "n": 420,
+            "fires_per_team_week": 0.875,
+            "sx": 0.548,
+            "sx_ci90": [
+              -0.056,
+              1.13
+            ]
+          },
+          {
+            "value": 1.5,
+            "n": 281,
+            "fires_per_team_week": 0.585,
+            "sx": 0.644,
+            "sx_ci90": [
+              -0.114,
+              1.354
+            ]
+          },
+          {
+            "value": 2.0,
+            "n": 182,
+            "fires_per_team_week": 0.379,
+            "sx": 0.872,
+            "sx_ci90": [
+              -0.015,
+              1.864
+            ]
+          },
+          {
+            "value": 2.5,
+            "n": 112,
+            "fires_per_team_week": 0.233,
+            "sx": 1.52,
+            "sx_ci90": [
+              0.333,
+              2.829
+            ]
+          },
+          {
+            "value": 3.0,
+            "n": 69,
+            "fires_per_team_week": 0.144,
+            "sx": 1.554,
+            "sx_ci90": [
+              0.267,
+              3.054
+            ]
+          },
+          {
+            "value": 3.5,
+            "n": 47,
+            "fires_per_team_week": 0.098,
+            "sx": 2.285,
+            "sx_ci90": [
+              1.201,
+              3.316
+            ]
+          }
+        ],
+        "rz_role_change": [
+          {
+            "value": 0.1,
+            "n": 634,
+            "fires_per_team_week": 1.321,
+            "sx": -0.377,
+            "sx_ci90": [
+              -0.814,
+              0.07
+            ]
+          },
+          {
+            "value": 0.15,
+            "n": 338,
+            "fires_per_team_week": 0.704,
+            "sx": -0.414,
+            "sx_ci90": [
+              -1.049,
+              0.244
+            ]
+          },
+          {
+            "value": 0.2,
+            "n": 191,
+            "fires_per_team_week": 0.398,
+            "sx": -0.227,
+            "sx_ci90": [
+              -1.078,
+              0.7
+            ]
+          },
+          {
+            "value": 0.25,
+            "n": 109,
+            "fires_per_team_week": 0.227,
+            "sx": -0.086,
+            "sx_ci90": [
+              -1.07,
+              0.854
+            ]
+          },
+          {
+            "value": 0.3,
+            "n": 55,
+            "fires_per_team_week": 0.115,
+            "sx": -0.118,
+            "sx_ci90": [
+              -1.516,
+              1.172
+            ]
+          },
+          {
+            "value": 0.4,
+            "n": 11,
+            "fires_per_team_week": 0.023,
+            "sx": 0.783,
+            "sx_ci90": [
+              -1.994,
+              3.996
+            ]
+          }
+        ],
+        "box_count_edge": [
+          {
+            "value": 4.5,
+            "n": 264,
+            "fires_per_team_week": 0.55,
+            "sx": 0.0,
+            "sx_ci90": [
+              -0.584,
+              0.572
+            ]
+          },
+          {
+            "value": 5.0,
+            "n": 174,
+            "fires_per_team_week": 0.362,
+            "sx": -0.501,
+            "sx_ci90": [
+              -1.341,
+              0.294
+            ]
+          },
+          {
+            "value": 5.5,
+            "n": 109,
+            "fires_per_team_week": 0.227,
+            "sx": -1.515,
+            "sx_ci90": [
+              -2.721,
+              -0.426
+            ]
+          },
+          {
+            "value": 6.0,
+            "n": 57,
+            "fires_per_team_week": 0.119,
+            "sx": -1.244,
+            "sx_ci90": [
+              -2.75,
+              -0.176
+            ]
+          },
+          {
+            "value": 6.5,
+            "n": 23,
+            "fires_per_team_week": 0.048,
+            "sx": -0.797,
+            "sx_ci90": [
+              -3.136,
+              1.143
+            ]
+          }
+        ],
+        "blitz_beater": [
+          {
+            "value": 1.0,
+            "n": 39,
+            "fires_per_team_week": 0.081,
+            "sx": -2.02,
+            "sx_ci90": [
+              -3.63,
+              -0.203
+            ]
+          },
+          {
+            "value": 1.5,
+            "n": 26,
+            "fires_per_team_week": 0.054,
+            "sx": -1.82,
+            "sx_ci90": [
+              -3.469,
+              0.087
+            ]
+          },
+          {
+            "value": 2.0,
+            "n": 19,
+            "fires_per_team_week": 0.04,
+            "sx": -1.409,
+            "sx_ci90": [
+              -3.552,
+              1.116
+            ]
+          },
+          {
+            "value": 2.5,
+            "n": 14,
+            "fires_per_team_week": 0.029,
+            "sx": -0.128,
+            "sx_ci90": [
+              -2.932,
+              2.842
+            ]
+          },
+          {
+            "value": 3.0,
+            "n": 10,
+            "fires_per_team_week": 0.021,
+            "sx": -2.413,
+            "sx_ci90": [
+              -6.245,
+              0.964
+            ]
+          }
+        ],
+        "soft_schedule": [
+          {
+            "value": 1.0,
+            "n": 282,
+            "fires_per_team_week": 0.678,
+            "sx": 0.182,
+            "sx_ci90": [
+              -0.39,
+              0.764
+            ]
+          },
+          {
+            "value": 1.05,
+            "n": 125,
+            "fires_per_team_week": 0.3,
+            "sx": 0.066,
+            "sx_ci90": [
+              -0.717,
+              0.966
+            ]
+          },
+          {
+            "value": 1.1,
+            "n": 51,
+            "fires_per_team_week": 0.123,
+            "sx": 0.041,
+            "sx_ci90": [
+              -0.955,
+              1.145
+            ]
+          },
+          {
+            "value": 1.15,
+            "n": 24,
+            "fires_per_team_week": 0.058,
+            "sx": 0.068,
+            "sx_ci90": [
+              -0.829,
+              1.474
+            ]
+          },
+          {
+            "value": 1.2,
+            "n": 6,
+            "fires_per_team_week": 0.014,
+            "sx": null,
+            "sx_ci90": [
+              null,
+              null
+            ]
+          },
+          {
+            "value": 1.25,
+            "n": 2,
+            "fires_per_team_week": 0.005,
+            "sx": null,
+            "sx_ci90": [
+              null,
+              null
+            ]
+          }
+        ],
+        "buy_low": [
+          {
+            "value": [
+              12,
+              24
+            ],
+            "n": 101,
+            "fires_per_team_week": 0.21,
+            "sx": 0.634,
+            "sx_ci90": [
+              -0.808,
+              2.221
+            ]
+          },
+          {
+            "value": [
+              12,
+              30
+            ],
+            "n": 80,
+            "fires_per_team_week": 0.167,
+            "sx": 0.919,
+            "sx_ci90": [
+              -0.641,
+              2.569
+            ]
+          },
+          {
+            "value": [
+              12,
+              36
+            ],
+            "n": 50,
+            "fires_per_team_week": 0.104,
+            "sx": 2.48,
+            "sx_ci90": [
+              0.203,
+              5.353
+            ]
+          },
+          {
+            "value": [
+              12,
+              42
+            ],
+            "n": 35,
+            "fires_per_team_week": 0.073,
+            "sx": 1.968,
+            "sx_ci90": [
+              0.081,
+              5.632
+            ]
+          },
+          {
+            "value": [
+              18,
+              24
+            ],
+            "n": 158,
+            "fires_per_team_week": 0.329,
+            "sx": 0.543,
+            "sx_ci90": [
+              -0.506,
+              1.665
+            ]
+          },
+          {
+            "value": [
+              18,
+              30
+            ],
+            "n": 122,
+            "fires_per_team_week": 0.254,
+            "sx": 0.744,
+            "sx_ci90": [
+              -0.396,
+              1.959
+            ]
+          },
+          {
+            "value": [
+              18,
+              36
+            ],
+            "n": 82,
+            "fires_per_team_week": 0.171,
+            "sx": 1.498,
+            "sx_ci90": [
+              -0.134,
+              3.261
+            ]
+          },
+          {
+            "value": [
+              18,
+              42
+            ],
+            "n": 59,
+            "fires_per_team_week": 0.123,
+            "sx": 0.528,
+            "sx_ci90": [
+              -1.094,
+              2.289
+            ]
+          },
+          {
+            "value": [
+              24,
+              24
+            ],
+            "n": 244,
+            "fires_per_team_week": 0.508,
+            "sx": 0.649,
+            "sx_ci90": [
+              -0.172,
+              1.509
+            ]
+          },
+          {
+            "value": [
+              24,
+              30
+            ],
+            "n": 188,
+            "fires_per_team_week": 0.392,
+            "sx": 0.529,
+            "sx_ci90": [
+              -0.333,
+              1.376
+            ]
+          },
+          {
+            "value": [
+              24,
+              36
+            ],
+            "n": 127,
+            "fires_per_team_week": 0.265,
+            "sx": 0.883,
+            "sx_ci90": [
+              -0.326,
+              2.416
+            ]
+          },
+          {
+            "value": [
+              24,
+              42
+            ],
+            "n": 91,
+            "fires_per_team_week": 0.19,
+            "sx": 0.018,
+            "sx_ci90": [
+              -1.099,
+              1.381
+            ]
+          },
+          {
+            "value": [
+              30,
+              24
+            ],
+            "n": 364,
+            "fires_per_team_week": 0.758,
+            "sx": 0.824,
+            "sx_ci90": [
+              0.201,
+              1.482
+            ]
+          },
+          {
+            "value": [
+              30,
+              30
+            ],
+            "n": 277,
+            "fires_per_team_week": 0.577,
+            "sx": 0.738,
+            "sx_ci90": [
+              0.09,
+              1.399
+            ]
+          },
+          {
+            "value": [
+              30,
+              36
+            ],
+            "n": 203,
+            "fires_per_team_week": 0.423,
+            "sx": 1.049,
+            "sx_ci90": [
+              0.206,
+              1.922
+            ]
+          },
+          {
+            "value": [
+              30,
+              42
+            ],
+            "n": 139,
+            "fires_per_team_week": 0.29,
+            "sx": 0.592,
+            "sx_ci90": [
+              -0.351,
+              1.601
+            ]
+          },
+          {
+            "value": [
+              36,
+              24
+            ],
+            "n": 490,
+            "fires_per_team_week": 1.021,
+            "sx": 0.61,
+            "sx_ci90": [
+              0.032,
+              1.19
+            ]
+          },
+          {
+            "value": [
+              36,
+              30
+            ],
+            "n": 379,
+            "fires_per_team_week": 0.79,
+            "sx": 0.632,
+            "sx_ci90": [
+              -0.029,
+              1.238
+            ]
+          },
+          {
+            "value": [
+              36,
+              36
+            ],
+            "n": 275,
+            "fires_per_team_week": 0.573,
+            "sx": 1.0,
+            "sx_ci90": [
+              0.27,
+              1.725
+            ]
+          },
+          {
+            "value": [
+              36,
+              42
+            ],
+            "n": 187,
+            "fires_per_team_week": 0.39,
+            "sx": 0.628,
+            "sx_ci90": [
+              -0.163,
+              1.474
+            ]
+          }
+        ]
+      }
+    }
+  }
 }
