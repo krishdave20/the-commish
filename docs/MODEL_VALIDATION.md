@@ -9,8 +9,8 @@ single constant fixes most of it.
 
 | What | Notebook | Verdict |
 |---|---|---|
-| Player projections (Sleeper) | `projection_bakeoff.ipynb` (earlier) | Best available; no ML candidate beats them |
-| Floor / ceiling bands | `projection_bakeoff.ipynb` (earlier) | 58.6% coverage vs 60% target: fine |
+| Player projections (Sleeper) | `projection_bakeoff_2025.ipynb`, `projection_bakeoff_refresh.ipynb` | Keep. Full 2025 season: MAE 4.37; two light corrections beat it by only 0.03 (0.7%). 2026 wk 4-5: 4.39, best of four |
+| Floor / ceiling bands | same | 58.9% coverage over 2025 (app's 4-week window), 58.6% in 2026, vs 60% target: fine |
 | xTD model | `xtd_model.ipynb` (earlier) | Calibrated out of sample (455 predicted vs 450 TDs) |
 | Weekly matchup win chance | `live_winprob_calibration.ipynb` | Useful, **overconfident** (slope 0.78) |
 | Live (in-game) win chance | `live_winprob_calibration.ipynb` | Useful, **overconfident** by the same amount; the clock rule itself is right |
@@ -32,16 +32,18 @@ How to read the numbers: **Brier score** is the mean squared error of a probabil
   - Only aggregates are reported, and other leagues show up as hashes.
   - Raw API responses are cached in `notebooks/.cache/`, which is git-ignored.
 - **Sample size.** 8,422 weekly matchups, 182,933 in-game states and 16,780 team-week playoff predictions.
-- **Projection bake-off refresh (task 4): not run.** Sleeper's NFL state is still week 6 of 2026 and week 6 is in progress (9 of 14
-  games complete today). So there is no completed week beyond the fixture's weeks 4-5. Re-run it after Monday night (Oct 19) to
-  add week 6.
+- **Projection bake-off.** A full 2025 season (14 held-out weeks, 4,706 player-weeks), plus the 2026 weeks 4-5 re-run on fresh data.
+  2026 week 6 was not final on October 18 (10 of 14 games complete), so it is not a test week yet;
+  `projection_bakeoff_refresh.ipynb` adds it on a re-run after Monday night (October 19).
 
 **Important data caveat: Sleeper rewrites old projections.** For a past week, Sleeper's projection endpoint returns a projection
-that already knows who sat out. Across 2023, 2025 and the 2026 fixture, *zero* players projected above 0.5 points failed to play,
-and the rows carry `last_modified` dates after the games. Consequences:
+that already knows who sat out. Across 2023, 2025 and the 2026 fixture, almost no players projected above 0.5 points failed to play
+(5 of 6,174 in 2025), and the rows carry `last_modified` dates after the games. Before kickoff it is different: of the players the
+fixture's Friday projection had above 0.5 points for week 6, 3.0% did not play. Consequences:
 
-- every backtest here, the earlier bake-off (MAE 4.39) and the app's own residual-SD calibration see slightly better projections
-  than existed before kickoff;
+- every backtest here, the projection bake-offs and the app's own residual-SD calibration see slightly better projections
+  than existed before kickoff. Measured on 2026 week 6: about **0.07 points of MAE** (4.80 before kickoff vs 4.72 rewritten, on the
+  same players; see section 5);
 - the real-time overconfidence is therefore a little **worse** than measured below;
 - the correlation notebook estimates starters who sit add about 2.7% to team variance.
 
@@ -184,10 +186,40 @@ multiplier (difference -0.0006, CI -0.0013 to +0.0002). Adding only the teammate
 **Bias.** Starters score 2.3 points per team-week under projection on average (9 points under in 2025). This cancels inside a
 matchup, so it does not affect win chances.
 
+## 5. Player projections and floor / ceiling bands
+
+The question: does anything beat Sleeper's own weekly projection as the player mean? Four candidates from the reference notebook, rolling
+origin (each test week predicted from earlier weeks only), MAE in fantasy points per player-week, players projected above 0.5.
+
+| Candidate | 2025, weeks 4-17 (14 weeks) | 2026, weeks 4-5 (fresh data) |
+|---|---|---|
+| Plain projection | 4.365 (won 1 of 14 weeks) | **4.390** |
+| Projection + 0.3 × GBM residual fix | 4.340 (won 2) | 4.424 |
+| Shrink toward season average, `gp / (gp + 10)` | **4.334** (won 7) | 4.468 |
+| Gradient boosting on form, snaps, matchup | 4.367 (won 4) | 4.667 |
+
+![2025 by week](validation/projection_bakeoff_2025_by_week.png)
+
+- **Over a full season the plain projection does not win, but nothing beats it by much.** Shrink-to-average and the residual fix are
+  better by 0.033 and 0.025 points. Resampling whole weeks, both intervals exclude zero (−0.056 to −0.008 and −0.040 to −0.010).
+- **The gain is too small to matter.** 0.03 points per player is about 0.3 points per 9-man lineup per week, inside a team SD of about 19.
+  Some 40% of it comes from quarterbacks, where Sleeper's 2025 projections were weakest (MAE 6.58).
+- **Early season favours the projection.** The full GBM is worst in weeks 4-9 and best of all in weeks 10, 12, 13 and 14, as its training set grows. The
+  2026 result (projection first) is the early-season picture.
+- **2026 weeks 4-5 reproduce exactly from fresh data.** Sleeper had not changed those projections since the fixture was captured (0 of 690).
+- **Floors and ceilings are fine.** Over 2025, with the app's own last-4-weeks fit, 58.9% of actuals land inside the 20th-80th band
+  (target 60%). 21.3% fall below the floor and 20.3% above the ceiling, and every position is between 57% and 61%. 2026 weeks 4-5: 58.6%.
+- **Caveat: all of these MAEs are on rewritten projections** (see Data). On 2026 week 6 the rewrite is worth about 0.07 points of MAE,
+  more than the 0.03 any candidate gains. So the ranking is a fair comparison on equal inputs, but the level is optimistic. Whether
+  shrink-to-average still helps on real pre-kickoff projections is unknown until snapshots exist (recommendation 5).
+
+**Verdict: keep the plain projection.** If the app ever wants a correction, shrink-to-average is the one to try (one line, no model), after
+a re-test on pre-kickoff snapshots.
+
 ## What's trustworthy, what isn't
 
 **Trust**
-- The projections and the floor/ceiling bands.
+- The projections (no candidate beats them by more than 0.7% over a full season) and the floor/ceiling bands.
 - The ranking information in every probability. Favourites, contenders and likely flushes are identified well above baseline, and
   title odds especially early in the season.
 - The live clock logic, `sd × sqrt(R)`.
@@ -230,20 +262,24 @@ matchup, so it does not affect win chances.
    start.
    - *Expected impact:* honest real-time backtests. Today's bake-off MAE and every calibration here are flattered by Sleeper's
      after-the-fact revisions.
-6. **Re-run the bake-off once 2026 week 6 is final, and run a full-season 2025 bake-off.** The current verdict rests on two
-   weeks (4-5 of 2026).
+6. **Re-run `projection_bakeoff_refresh.ipynb` once 2026 week 6 is final** (after Monday night, October 19) to add week 6 as a
+   2026 test week and complete the rewrite measurement on all 14 games. The full-season 2025 bake-off is done (section 5).
 
 ## Reproduce
 
-All three notebooks run end to end with saved outputs:
+All five notebooks run end to end with saved outputs:
 
 ```
 cd notebooks
 /opt/anaconda3/bin/jupyter nbconvert --to notebook --execute --inplace odds_calibration.ipynb
 /opt/anaconda3/bin/jupyter nbconvert --to notebook --execute --inplace live_winprob_calibration.ipynb
 /opt/anaconda3/bin/jupyter nbconvert --to notebook --execute --inplace score_correlation.ipynb
+/opt/anaconda3/bin/jupyter nbconvert --to notebook --execute --inplace projection_bakeoff_2025.ipynb
+/opt/anaconda3/bin/jupyter nbconvert --to notebook --execute --inplace projection_bakeoff_refresh.ipynb
 ```
 
 - **Run time:** the first run downloads about 2,900 small API responses into the cache (about 3.5 minutes). Then they take about
-  1.5-3 minutes, 2 minutes and 20 seconds.
+  1.5-3 minutes, 2 minutes and 20 seconds; the two bake-offs take about 1 minute and 15 seconds (the 2025 one reuses the same cache).
+- `projection_bakeoff_refresh.ipynb` always fetches the NFL state and scores live, and caches a week's stats and projections only once
+  every game that week is final. Its results change as the 2026 season goes on.
 - **Charts** are written to `docs/validation/`.
