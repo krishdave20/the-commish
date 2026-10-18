@@ -6,6 +6,7 @@ import { useTryWaiver } from '../../app/tryWaiver';
 import { useComputed } from '../../app/useComputed';
 import { useDebounced } from '../../app/useSimulation';
 import { PlayerLink } from '../../components/PlayerLink';
+import { SectionHeader } from '../../components/SectionHeader';
 import type { Engine } from '../../engine';
 import { PlayerTags } from '../team/PlayerTags';
 
@@ -18,10 +19,10 @@ export function WaiversCard({ engine }: { engine: Engine }) {
 
   return (
     <section className="card" aria-labelledby="home-waivers-title">
-      <header>
-        <div className="micro">{FEATURE.lift}, rest of season</div>
-        <h2 id="home-waivers-title">{FEATURE.waiverAdds}</h2>
-      </header>
+      <SectionHeader
+        id="home-waivers-title" title={FEATURE.waiverAdds} tip={`${FEATURE.lift}: the points an add brings to your best lineup, rest of season.`}
+        action={<Link to={PAGES.waivers.path}>open the {PAGES.waivers.name} →</Link>}
+      />
       {board.value === null ? <p className="note" role="status">working out lineup lift for every free agent…</p>
         : board.value.length === 0 ? <p className="note">nobody on the wire beats your bench right now.</p>
         : (
@@ -40,7 +41,6 @@ export function WaiversCard({ engine }: { engine: Engine }) {
             ))}
           </ol>
         )}
-      <p><Link to={PAGES.waivers.path}>open the {PAGES.waivers.name} →</Link></p>
     </section>
   );
 }

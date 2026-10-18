@@ -10,7 +10,7 @@ import type { Limiter } from './limiter.ts';
 import { shapes, type Guard } from './shapes.ts';
 import type { Transport } from './transport.ts';
 import type {
-  BracketRow, DraftPick, FantasyCalcRow, Matchup, PlayersMap, ProjectionRow, ScheduleGame, Transaction, TrendingRow, TrendingType, WeekStats,
+  BracketRow, DraftPick, FantasyCalcRow, Matchup, PlayersMap, ProjectionRow, ScheduleGame, ScoreGame, Transaction, TrendingRow, TrendingType, WeekStats,
 } from './types.ts';
 import { fantasyCalcUrl, OFFENSE_POSITIONS, SLEEPER_BASE, sleeperUrls, type FantasyCalcParams } from './urls.ts';
 
@@ -20,6 +20,8 @@ export const TTL = {
   default: 6 * 3_600_000,
   /** the playoff brackets change as games finish (Sleeper's own CDN caches them for 5 minutes) */
   bracket: 5 * 60_000,
+  /** game day: matchup points and NFL game clocks change every few seconds, so a copy is fresh for 30 s */
+  live: 30_000,
 };
 
 /** Fetched plus what the network call cost; health checks and the Settings screen read the extras. */
@@ -120,6 +122,9 @@ export function createSleeperClient(deps: SleeperClientDeps) {
     load<LeagueUser[]>({ url: sleeperUrls.users(id), label: 'league users', guard: shapes.leagueUsers, o });
   const matchups = (id: string, week: number, o?: FetchOpts) =>
     list<Matchup>(sleeperUrls.matchups(id, week), `week ${week} matchups`, shapes.matchups, o);
+  /** the same URL (and cache entry) as `matchups`, but fresh for only 30 s; the game day poller passes `force` */
+  const liveMatchups = (id: string, week: number, o?: FetchOpts) =>
+    load<Matchup[]>({ url: sleeperUrls.matchups(id, week), label: `week ${week} matchups`, guard: shapes.matchups, ttl: TTL.live, nullAs: [], o });
   const transactions = (id: string, week: number, o?: FetchOpts) =>
     list<Transaction>(sleeperUrls.transactions(id, week), `week ${week} transactions`, shapes.transactions, o);
   const tradedPicks = (id: string, o?: FetchOpts) =>
@@ -154,6 +159,10 @@ export function createSleeperClient(deps: SleeperClientDeps) {
   const schedule = (season: string, o?: FetchOpts) =>
     load<ScheduleGame[]>({ url: sleeperUrls.schedule(season), label: 'NFL schedule', guard: shapes.schedule, o });
 
+  /** NFL game status, quarter, clock, score and kickoff time for a week (undocumented) */
+  const scores = (season: string, week: number, o?: FetchOpts) =>
+    load<ScoreGame[]>({ url: sleeperUrls.scores(season, week), label: `week ${week} NFL scores`, guard: shapes.scores, ttl: TTL.live, nullAs: [], o });
+
   /* ---------- FantasyCalc ---------- */
 
   const fantasyCalc = (p: FantasyCalcParams, o?: FetchOpts) =>
@@ -177,9 +186,9 @@ export function createSleeperClient(deps: SleeperClientDeps) {
   }
 
   return {
-    nflState, user, userFetched, userLeagues, league, rosters, users, matchups, transactions, tradedPicks,
+    nflState, user, userFetched, userLeagues, league, rosters, users, matchups, liveMatchups, transactions, tradedPicks,
     drafts, draft, draftPicks, draftTradedPicks, players, trending, winnersBracket, losersBracket,
-    stats, projections, seasonProjections, schedule, fantasyCalc, leagueBundle,
+    stats, projections, seasonProjections, schedule, scores, fantasyCalc, leagueBundle,
   };
 }
 

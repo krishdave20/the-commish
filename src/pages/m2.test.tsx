@@ -46,21 +46,26 @@ describe('a model built without its first simulation (oddsPending)', () => {
   const pendingLoad = sampleLoadModel(() => ({ ...sampleModel(), oddsPending: true }));
 
   it('renders at once with quiet "simming…" odds, then fills them from the worker run', async () => {
-    renderApp({ linked, route: '/race', loadModel: pendingLoad });
+    const { user } = renderApp({ linked, route: '/race', loadModel: pendingLoad });
     const table = await screen.findByRole('table', { name: 'Playoff picture standings' });
     expect(within(table).getAllByText('simming…')).toHaveLength(4);
-    expect(screen.getByText('simming seeding odds…')).toBeInTheDocument();
     // strict-math marks and records do not wait for the simulation
     expect(rowOf(table, 'Sunday Scaries')).toBeInTheDocument();
 
     await waitFor(() => expect(within(table).queryAllByText('simming…')).toHaveLength(0), { timeout: 4000 });
-    // playoffs, title and flush odds all fill in
-    expect(within(rowOf(table, 'Sunday Scaries')).getAllByText(/^(>99|<1|\d+)%$/).length).toBeGreaterThanOrEqual(3);
+    // playoff and title odds fill in (the flush odds wait behind "more columns")
+    expect(within(rowOf(table, 'Sunday Scaries')).getAllByText(/^(>99|<1|\d+)%$/).length).toBeGreaterThanOrEqual(2);
+    await user.click(screen.getByRole('radio', { name: 'odds detail' }));
     expect(await screen.findByRole('img', { name: 'Seed odds for 4 teams' })).toBeInTheDocument();
   });
 
+  it('says the seeding odds are simming on the odds detail tab', async () => {
+    renderApp({ linked, route: '/race?tab=odds', loadModel: pendingLoad });
+    expect(await screen.findByText('simming seeding odds…')).toBeInTheDocument();
+  });
+
   it('also fills the Lab odds', async () => {
-    renderApp({ linked, route: '/team', loadModel: pendingLoad });
+    renderApp({ linked, route: '/team?tab=lab', loadModel: pendingLoad });
     const lab = (await screen.findByRole('heading', { level: 2, name: 'the lab' })).closest('section')!;
     await waitFor(() => expect(within(lab).queryByText('…')).not.toBeInTheDocument(), { timeout: 4000 });
     expect(within(lab).getByText('no changes yet')).toBeInTheDocument();
@@ -74,28 +79,67 @@ describe('a model built without its first simulation (oddsPending)', () => {
 });
 
 describe('locker room (/team)', () => {
-  it('shows roster, lineup, start/sit alerts, the lab and the weekly projection', async () => {
-    const { container } = renderApp({ linked, route: '/team' });
+  it('opens with a strip and the lineup; the roster and the lab are their own tabs', async () => {
+    const { container, user } = renderApp({ linked, route: '/team' });
     expect(await screen.findByRole('heading', { level: 1, name: 'locker room' })).toBeInTheDocument();
     expect(screen.getByText('your roster and lineup · week 5')).toBeInTheDocument();
 
+    const strip = await screen.findByRole('group', { name: 'This week' });
+    expect(within(strip).getAllByText(/./, { selector: '.kpi .micro' }).map((e) => e.textContent)).toEqual(['projected points', 'win chance', 'lineup status']);
+    expect(within(strip).getByText('lineup status').closest('.kpi')).toHaveTextContent('set');
+    expect(within(strip).getByText('win chance').closest('.kpi')).toHaveTextContent(/\d+%/);
+
+    const tabs = screen.getByRole('radiogroup', { name: 'Locker room sections' });
+    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['lineup', 'roster', 'the lab']);
+    expect(within(tabs).getByRole('radio', { name: 'lineup' })).toBeChecked();
+
+    // lineup tab: the lineup, the start/sit alerts and the weekly chart (folded away until asked for)
+    const lineup = screen.getByRole('table', { name: 'Lineup for week 5' });
+    expect(within(lineup).getByText('total')).toBeInTheDocument();
+    expect(screen.getByText(/best possible/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'start/sit alerts' })).toBeInTheDocument();
+    expect(await screen.findByText(/consider adding Free Agent Fran for Backup Wideout/)).toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'Roster' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'the lab' })).not.toBeInTheDocument();
+    const weekly = screen.getByRole('heading', { level: 2, name: 'weekly projection' }).closest('details')!;
+    expect(weekly).not.toHaveAttribute('open');
+    await user.click(screen.getByRole('heading', { level: 2, name: 'weekly projection' }));
+    await waitFor(() => expect(container.querySelectorAll('.actual-dot')).toHaveLength(4));
+    expect(container.querySelectorAll('.po-shade')).toHaveLength(2);
+
+    // roster tab
+    await user.click(within(tabs).getByRole('radio', { name: 'roster' }));
     const roster = await screen.findByRole('table', { name: 'Roster' });
     expect(within(roster).getAllByRole('row')).toHaveLength(1 + 4);
     expect(within(roster).getByText('Alex Arm')).toBeInTheDocument();
     expect(within(roster).getByText('Questionable')).toBeInTheDocument();
     expect(screen.getByText(/open a name on the scouting report for usage, trade value and takes/)).toBeInTheDocument();
     expect(screen.queryByText(/milestone/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'Lineup for week 5' })).not.toBeInTheDocument();
 
-    const lineup = screen.getByRole('table', { name: 'Lineup for week 5' });
-    expect(within(lineup).getByText('total')).toBeInTheDocument();
-    expect(screen.getByText(/best possible/)).toBeInTheDocument();
+    // the lab tab
+    await user.click(within(tabs).getByRole('radio', { name: 'the lab' }));
+    expect(await screen.findByRole('heading', { level: 2, name: 'the lab' })).toBeInTheDocument();
+  });
 
-    expect(screen.getByRole('heading', { level: 2, name: 'start/sit alerts' })).toBeInTheDocument();
-    expect(await screen.findByText(/consider adding Free Agent Fran for Backup Wideout/)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'the lab' })).toBeInTheDocument();
+  it('roster: the secondary columns wait behind “more columns”', async () => {
+    const { user } = renderApp({ linked, route: '/team?tab=roster' });
+    const roster = await screen.findByRole('table', { name: 'Roster' });
+    expect(within(roster).queryByRole('columnheader', { name: /avg/ })).not.toBeInTheDocument();
+    expect(within(roster).queryByRole('columnheader', { name: /team/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /more columns/ }));
+    expect(within(roster).getByRole('columnheader', { name: /avg/ })).toBeInTheDocument();
+    expect(within(roster).getByRole('columnheader', { name: /team/ })).toBeInTheDocument();
+  });
 
-    await waitFor(() => expect(container.querySelectorAll('.actual-dot')).toHaveLength(4));
-    expect(container.querySelectorAll('.po-shade')).toHaveLength(2);
+  it('lineup: the opponent and range columns wait behind “more columns”', async () => {
+    const { user } = renderApp({ linked, route: '/team' });
+    const lineup = await screen.findByRole('table', { name: 'Lineup for week 5' });
+    expect(within(lineup).queryByRole('columnheader', { name: 'range' })).not.toBeInTheDocument();
+    expect(within(lineup).queryByRole('columnheader', { name: 'opp' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /more columns/ }));
+    expect(within(lineup).getByRole('columnheader', { name: 'range' })).toBeInTheDocument();
+    expect(within(lineup).getByRole('columnheader', { name: 'opp' })).toBeInTheDocument();
   });
 
   it('switches the lineup week and pins a bench player, which costs points and raises the banner', async () => {
@@ -113,7 +157,7 @@ describe('locker room (/team)', () => {
   });
 
   it('the lab: points per game, drop, add a free agent, preset and save', async () => {
-    const { user } = renderApp({ linked, route: '/team' });
+    const { user } = renderApp({ linked, route: '/team?tab=lab' });
     const lab = (await screen.findByRole('heading', { level: 2, name: 'the lab' })).closest('section')!;
     expect(within(lab).getByText('no changes yet')).toBeInTheDocument();
 
@@ -133,6 +177,8 @@ describe('locker room (/team)', () => {
 
     // odds arrive from the worker-backed simulation
     await waitFor(() => expect(within(lab).getByText(/points$/)).toBeInTheDocument(), { timeout: 4000 });
+    // saved what-ifs fold away until opened
+    await user.click(within(lab).getByRole('heading', { level: 3, name: 'saved what-ifs' }));
     await user.type(within(lab).getByLabelText('name'), 'rex out');
     await user.click(within(lab).getByRole('button', { name: 'save this what-if' }));
     expect(within(lab).getByText('rex out')).toBeInTheDocument();
@@ -145,31 +191,51 @@ describe('locker room (/team)', () => {
   }, 15000);
 
   it('offers a preset for an injured player', async () => {
-    const { user } = renderApp({ linked, route: '/team' });
+    const { user } = renderApp({ linked, route: '/team?tab=lab' });
     await user.click(await screen.findByRole('button', { name: 'Backup Wideout out until week 9' }));
     expect(screen.getByText(/Backup Wideout back week 9/)).toBeInTheDocument();
   });
 });
 
 describe('playoff picture (/race)', () => {
-  it('shows standings, seeding odds, magic number and the format note', async () => {
-    const { container } = renderApp({ linked, route: '/race' });
+  it('opens with your odds, seed and magic number, then the standings; the rest is on tabs', async () => {
+    renderApp({ linked, route: '/race' });
     expect(await screen.findByRole('heading', { level: 1, name: 'playoff picture' })).toBeInTheDocument();
     expect(screen.getByText('standings, odds, clinch marks')).toBeInTheDocument();
-    expect(screen.getByText('the top 2 teams by record make it, points for breaking ties.')).toBeInTheDocument();
+    const strip = await screen.findByRole('group', { name: 'Your playoff picture' });
+    expect(within(strip).getAllByText(/./, { selector: '.kpi .micro' }).map((e) => e.textContent)).toEqual(['your playoff odds', 'projected seed', 'magic number']);
+    expect(within(strip).getByText('magic number').closest('.kpi')).toHaveTextContent(/\d|—/);
+
+    const tabs = screen.getByRole('radiogroup', { name: 'Playoff picture sections' });
+    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['standings', 'brackets', 'playoff machine', 'odds detail']);
 
     const table = await screen.findByRole('table', { name: 'Playoff picture standings' });
     expect(within(table).getAllByRole('row')).toHaveLength(1 + 4);
     expect(rowOf(table, 'Sunday Scaries')).toHaveClass('me');
+    // the how-it-works notes sit behind the "?"
+    expect(screen.getByText(/the top 2 teams by record make it, points for breaking ties\./)).toBeInTheDocument();
     expect(screen.getByText(/no team has clinched or been eliminated yet/)).toBeInTheDocument();
     expect(screen.getByLabelText('Clinch marks')).toBeInTheDocument();
+    // the default columns: rank, team, record, pf, playoffs, title
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''))).toEqual(['#', 'team', 'record', 'pf', 'playoffs', 'title']);
+    expect(screen.queryByRole('heading', { level: 2, name: 'magic number' })).not.toBeInTheDocument();
+  });
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Seeding Odds'.toLowerCase() })).toBeInTheDocument();
+  it('standings: “more columns” adds all-play, luck, expected wins and status (and division in a divisional league)', async () => {
+    const { user } = renderApp({ linked, route: '/race' });
+    const table = await screen.findByRole('table', { name: 'Playoff picture standings' });
+    await user.click(screen.getByRole('button', { name: /more columns/ }));
+    const heads = within(table).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''));
+    for (const h of ['all-play', 'luck', 'exp wins', 'status']) expect(heads).toContain(h);
+  });
+
+  it('odds detail tab: seeding odds and the magic number', async () => {
+    const { container } = renderApp({ linked, route: '/race?tab=odds' });
+    expect(await screen.findByRole('heading', { level: 2, name: 'Seeding Odds'.toLowerCase() })).toBeInTheDocument();
     await waitFor(() => expect(container.querySelectorAll('rect.heat-cell')).toHaveLength(4 * 3));
-
     expect(screen.getByRole('heading', { level: 2, name: 'magic number' })).toBeInTheDocument();
-    expect(screen.getByText(/^(magic number: \d|no number of your own wins|you have clinched)/)).toBeInTheDocument();
     expect(await screen.findByRole('img', { name: /Chance of making the playoffs by final win total/ })).toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'Playoff picture standings' })).not.toBeInTheDocument();
   });
 
   it('opens a team drawer from a row and closes it with Escape', async () => {
@@ -196,7 +262,7 @@ describe('playoff picture (/race)', () => {
 
   describe('playoff machine', () => {
     async function machine() {
-      const utils = renderApp({ linked, route: '/race' });
+      const utils = renderApp({ linked, route: '/race?tab=machine' });
       const section = (await screen.findByRole('heading', { level: 2, name: 'playoff machine' })).closest('section')!;
       const table = within(section).getByRole('table', { name: 'Playoff machine standings' });
       return { ...utils, section, table };
@@ -261,26 +327,39 @@ describe('waiver wire (/waivers)', () => {
     expect(within(table).getByText('Free Agent Fran')).toBeInTheDocument();
     expect(within(table).getByText('Wire Runner')).toBeInTheDocument();
     expect(within(table).getByRole('columnheader', { name: /lineup lift/ })).toBeInTheDocument();
+    // the default columns: player, pos, lineup lift, bid, drop, try
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''))).toEqual(['player', 'pos', 'lineup lift', 'faab bid', 'drop', 'try']);
     const fran = rowOf(table, 'Free Agent Fran');
     expect(within(fran).getByText('+16.0')).toBeInTheDocument();
-    expect(within(fran).getByText('4/4')).toBeInTheDocument();
-    expect(within(fran).getByText('12k')).toBeInTheDocument();
     expect(within(fran).getByText('Backup Wideout')).toBeInTheDocument();
     expect(within(fran).getByText(/^\$\d+$/)).toBeInTheDocument();
+    expect(within(fran).queryByText('4/4')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /more columns/ }));
+    expect(within(fran).getByText('4/4')).toBeInTheDocument();
+    expect(within(fran).getByText('12k')).toBeInTheDocument();
 
     await user.click(screen.getByRole('radio', { name: 'playoff weeks' }));
-    await waitFor(() => expect(screen.queryByText('Wire Runner')).not.toBeInTheDocument());
-    expect(screen.getByText('Free Agent Fran')).toBeInTheDocument();
+    await waitFor(() => expect(within(table).queryByText('Wire Runner')).not.toBeInTheDocument());
+    expect(within(table).getByText('Free Agent Fran')).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'next week' }));
-    expect(await screen.findByText('Wire Runner')).toBeInTheDocument();
+    expect(await within(table).findByText('Wire Runner')).toBeInTheDocument();
+  });
+
+  it('opens with the best add, its lineup lift and bid', async () => {
+    renderApp({ linked, route: '/waivers' });
+    const strip = await screen.findByRole('group', { name: 'Best add' });
+    await waitFor(() => expect(within(strip).getByText('best add').closest('.kpi')).toHaveTextContent('Free Agent Fran'));
+    expect(within(strip).getByText('lineup lift').closest('.kpi')).toHaveTextContent('+16.0');
+    expect(within(strip).getByText('faab bid').closest('.kpi')).toHaveTextContent(/\$\d+/);
   });
 
   it('filters by position', async () => {
     const { user } = renderApp({ linked, route: '/waivers' });
-    await screen.findByText('Free Agent Fran'); // the board has resolved
+    const table = await screen.findByRole('table', { name: 'Waiver wire' });
+    await within(table).findByText('Free Agent Fran'); // the board has resolved
     await user.click(await screen.findByRole('radio', { name: /^rb$/i }));
-    expect(screen.queryByText('Free Agent Fran')).not.toBeInTheDocument();
-    expect(screen.getByText('Wire Runner')).toBeInTheDocument();
+    expect(within(table).queryByText('Free Agent Fran')).not.toBeInTheDocument();
+    expect(within(table).getByText('Wire Runner')).toBeInTheDocument();
   });
 
   it('sorts from the headers', async () => {
@@ -305,8 +384,11 @@ describe('waiver wire (/waivers)', () => {
       m.players = m.players.filter((p) => p.ownerRid !== 0);
       return m;
     });
-    renderApp({ linked, route: '/waivers', loadModel });
+    const { user } = renderApp({ linked, route: '/waivers', loadModel });
     expect(await screen.findByText('nobody on the wire beats your bench this window.')).toBeInTheDocument();
+    // usage risers are the second tab
+    expect(screen.queryByRole('heading', { level: 2, name: 'usage risers' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: 'trending & risers' }));
     expect(screen.getByRole('heading', { level: 2, name: 'usage risers' })).toBeInTheDocument();
     expect(screen.getByText('nflverse data arrives with the nightly update.')).toBeInTheDocument();
   });
@@ -328,13 +410,27 @@ describe('trade block (/trades)', () => {
   }, 10000);
 
   it('lists handshake deals and Load fills the analyzer', async () => {
-    const { user } = renderApp({ linked, route: '/trades' });
+    const { user } = renderApp({ linked, route: '/trades?tab=deals' });
     await user.click(await screen.findByRole('button', { name: 'Load Backup Wideout for Reed Receiver' }));
     expect(screen.getByLabelText('trade partner')).toHaveValue('2');
     expect(screen.getByRole('checkbox', { name: 'you send: Backup Wideout' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'you get from Reed Between the Lines: Reed Receiver' })).toBeChecked();
     expect(await screen.findByText('your lineup, wks 6–8')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'handshake deals' })).toBeInTheDocument();
+    // loading a deal switches to the analyzer tab
+    expect(screen.getByRole('radio', { name: 'analyzer' })).toBeChecked();
+  });
+
+  it('is three tabs: analyzer, handshake deals and dynasty', async () => {
+    const { user } = renderApp({ linked, route: '/trades' });
+    const tabs = await screen.findByRole('radiogroup', { name: 'Trade block sections' });
+    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['analyzer', 'handshake deals', 'dynasty']);
+    expect(screen.getByRole('heading', { level: 2, name: 'the analyzer' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'handshake deals' })).not.toBeInTheDocument();
+    await user.click(within(tabs).getByRole('radio', { name: 'handshake deals' }));
+    expect(await screen.findByRole('heading', { level: 2, name: 'handshake deals' })).toBeInTheDocument();
+    // the deal table: send, get, partner, my lift and load; the rest behind more columns
+    const deals = screen.getByRole('table', { name: 'Handshake deals' });
+    expect(within(deals).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''))).toEqual(['you send', 'you get', 'partner', 'your lineup lift', 'load']);
   });
 
   it('explains that ideas are for your own team when viewing another team', async () => {
@@ -343,12 +439,12 @@ describe('trade block (/trades)', () => {
       m.teams.find((t) => t.rid === m.meRid)!.ownerId = 'someone-else';
       return m;
     });
-    renderApp({ linked, route: '/trades', loadModel });
+    renderApp({ linked, route: '/trades?tab=deals', loadModel });
     expect(await screen.findByText(/deal ideas are worked out for your own team/)).toBeInTheDocument();
   });
 
   it('offers dynasty mode as a quiet explore switch in a redraft league (details in dynasty.test.tsx)', async () => {
-    renderApp({ linked, route: '/trades' });
+    renderApp({ linked, route: '/trades?tab=dynasty' });
     expect(await screen.findByRole('heading', { level: 2, name: 'contender or rebuilder' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'dynasty mode: explore' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByText(/this league is redraft/)).toBeInTheDocument();
@@ -368,12 +464,12 @@ describe('what-if scenario', () => {
     await user.click(screen.getByRole('link', { name: 'waiver wire' }));
     expect(await screen.findByText(/looking at a what-if/)).toBeInTheDocument();
     await screen.findByRole('table', { name: 'Waiver wire' });
-    expect(screen.queryByText('Free Agent Fran')).not.toBeInTheDocument(); // already added in the what-if
+    expect(screen.queryByRole('button', { name: /try adding Free Agent Fran/ })).not.toBeInTheDocument(); // already added in the what-if
 
     await user.click(screen.getByRole('button', { name: 'Reset' }));
     expect(screen.queryByText(/looking at a what-if/)).not.toBeInTheDocument();
     expect(window.localStorage.getItem('wr.scenario.L1')).toBeNull();
-    expect(await screen.findByText('Free Agent Fran')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /try adding Free Agent Fran/ })).toBeInTheDocument();
   });
 
   it('is restored from localStorage for the league', async () => {

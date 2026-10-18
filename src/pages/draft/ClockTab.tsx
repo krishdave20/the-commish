@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PlayerLink } from '../../components/PlayerLink';
+import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
 import { bestAvailable } from '../../engine';
 import type { DraftPick } from '../../data';
@@ -97,7 +98,7 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
   if (room.mode !== room.draftMode) {
     return (
       <section className="card" aria-labelledby="clock-title">
-        <header><div className="micro">follows your league’s draft</div><h2 id="clock-title">on the clock</h2></header>
+        <SectionHeader id="clock-title" title="on the clock" tip="follows your league’s draft" />
         <p className="note">your league’s draft is a {room.draftMode} draft, but the room is showing {room.mode} values.</p>
         <div><button type="button" className="btn solid" onClick={() => room.setMode(room.draftMode)}>use {room.draftMode} rankings</button></div>
       </section>
@@ -107,7 +108,7 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
   if (!source || !snapshot) {
     return (
       <section className="card" aria-labelledby="clock-title">
-        <header><div className="micro">live draft assistant</div><h2 id="clock-title">on the clock</h2></header>
+        <SectionHeader id="clock-title" title="on the clock" tip="live draft assistant" />
         {canReplay ? (
           <>
             <p className="note">your league’s draft is complete ({draftPicks} picks). you can replay it pick by pick to see what the assistant shows during a draft.</p>
@@ -132,10 +133,7 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
   return (
     <div className="stack">
       <section className="card" aria-labelledby="clock-title">
-        <header>
-          <div className="micro">{source === 'replay' ? 'a saved draft, replayed' : 'polling sleeper'}</div>
-          <h2 id="clock-title">on the clock</h2>
-        </header>
+        <SectionHeader id="clock-title" title="on the clock" kicker={source === 'replay' ? 'a saved draft, replayed' : 'polling sleeper'} />
         <Status feed={feed} source={source} plan={plan} announce={announce} />
         {source === 'replay' && <ReplayBar replay={replay} />}
         <p className="take" aria-live={announce ? 'polite' : 'off'}>
@@ -148,20 +146,14 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
 
       <div className="grid2">
         <section className="card" aria-labelledby="best-title">
-          <header>
-            <div className="micro">by value over replacement · drafted players are hidden</div>
-            <h2 id="best-title">best available</h2>
-          </header>
+          <SectionHeader id="best-title" title="best available" tip="by value over replacement · drafted players are hidden" />
           <Segmented label="Best available position" value={pos} onChange={setPos} options={[{ value: 'all', label: 'all' }, ...positions.map((p) => ({ value: p, label: p.toLowerCase() }))]} />
           <BestAvailable rows={best} caption="Best available players" showFc={fcUsed && room.mode !== 'redraft'} />
         </section>
 
         <div className="stack">
           <section className="card" aria-labelledby="runs-title">
-            <header>
-              <div className="micro">the last {recent} picks by position</div>
-              <h2 id="runs-title">positional runs</h2>
-            </header>
+            <SectionHeader id="runs-title" title="positional runs" tip={<>the last {recent} picks by position</>} />
             {activeRuns.length === 0 ? <p className="note">no run right now.</p> : (
               <ul className="plain" aria-label="Positional runs">
                 {activeRuns.map((r) => <li key={r.pos} className="gold-c">{r.pos.toLowerCase()} run: {r.observed} of the last {recent} picks</li>)}
@@ -173,10 +165,7 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
           </section>
 
           <section className="card" aria-labelledby="needs-title">
-            <header>
-              <div className="micro">starting slots you have not filled</div>
-              <h2 id="needs-title">your needs</h2>
-            </header>
+            <SectionHeader id="needs-title" title="your needs" tip="starting slots you have not filled" />
             {needs.openSlots.length === 0 ? <p className="note">every starting slot is filled. depth from here.</p> : (
               <div className="chips" aria-label="Open starting slots">
                 {needs.openSlots.map((s, i) => <span key={`${s}${i}`} className="chip">{s.replace(/_/g, ' ').toLowerCase()}</span>)}
@@ -188,10 +177,7 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
 
       <div className="grid2">
         <section className="card" aria-labelledby="gone-title">
-          <header>
-            <div className="micro">{turn.nextPickNo === null ? 'you have no picks left' : `by your pick at #${turn.nextPickNo}, adp says`}</div>
-            <h2 id="gone-title">likely gone</h2>
-          </header>
+          <SectionHeader id="gone-title" title="likely gone" tip={<>{turn.nextPickNo === null ? 'you have no picks left' : `by your pick at #${turn.nextPickNo}, adp says`}</>} />
           {turn.nextPickNo === null ? <p className="note">nothing to wait for.</p>
             : turn.picksBetween === 0 ? <p className="note">you’re up: take your player now.</p>
             : gone.length === 0 ? <p className="note">nobody on the board is likely to go before you pick.</p>
@@ -208,10 +194,7 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
         </section>
 
         <section className="card" aria-labelledby="roster-title">
-          <header>
-            <div className="micro">{needs.roster.length} drafted</div>
-            <h2 id="roster-title">your roster so far</h2>
-          </header>
+          <SectionHeader id="roster-title" title="your roster so far" kicker={`${needs.roster.length} drafted`} />
           {needs.roster.length === 0 ? <p className="note">no picks yet.</p> : (
             <ol className="mypicks" aria-label="Your picks">
               {needs.roster.map((r) => <li key={r.pid}><PlayerLink pid={r.pid} name={r.name} /> <span className="dim">{r.pos.toLowerCase()}{r.posRank} · {r.team ?? 'fa'}</span></li>)}
@@ -221,10 +204,7 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
       </div>
 
       <section className="card" aria-labelledby="feed-title">
-        <header>
-          <div className="micro">newest first · value is the pick number against adp</div>
-          <h2 id="feed-title">pick feed</h2>
-        </header>
+        <SectionHeader id="feed-title" title="pick feed" tip="newest first · value is the pick number against adp" />
         {feedRows.length === 0 ? <p className="note">no picks yet.</p> : (
           <ol className="feed" aria-label="Pick feed">
             {listed.map((v) => {
@@ -245,10 +225,7 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
       </section>
 
       <section className="card" aria-labelledby="live-board-title">
-        <header>
-          <div className="micro">your column is highlighted</div>
-          <h2 id="live-board-title">the board</h2>
-        </header>
+        <SectionHeader id="live-board-title" title="the board" tip="your column is highlighted" />
         <DraftBoard order={plan.order} picks={board} rankings={rankings} teams={teams} myRosterId={room.myRosterId} onClockNo={turn.currentPickNo} caption="Draft board" />
       </section>
     </div>

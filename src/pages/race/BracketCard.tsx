@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useModel, useScenario } from '../../app/modelContext';
 import { FEATURE, LOSERS_COPY } from '../../app/names';
+import { InfoTip } from '../../components/InfoTip';
+import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
 import { BlockSkeleton } from '../../components/Skeleton';
 import { useMediaQuery } from '../../components/useMediaQuery';
@@ -21,13 +23,12 @@ type Which = 'ship' | 'field';
 const WIDE = '(min-width: 1100px)';
 
 /** The championship bracket and the non-playoff bracket, seeded three ways, with live title and flush odds. */
-export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks }) {
+export function BracketCard({ engine, picks, seeding, setSeeding }: { engine: Engine; picks: Picks; seeding: SeedingMode; setSeeding: (m: SeedingMode) => void }) {
   const { model } = useModel();
   const { live } = useScenario();
   const inputs = useBracketInputs(engine);
   const { mode, leagueMode, differs } = useLosersSetting();
   const { losers } = useSleeperBrackets();
-  const [seeding, setSeeding] = useState<SeedingMode>('projected');
   const [which, setWhich] = useState<Which>('ship');
   const wide = useMediaQuery(WIDE);
   const lc = LOSERS_COPY[mode];
@@ -40,7 +41,7 @@ export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks })
   if (!model || engine.model.oddsPending && seeding === 'projected') {
     return (
       <section className="card" aria-labelledby="bracket-title">
-        <header><div className="micro">{FEATURE.bracketKicker}</div><h2 id="bracket-title">{FEATURE.bracket}</h2></header>
+        <SectionHeader id="bracket-title" title={FEATURE.bracket} kicker={FEATURE.bracketKicker} />
         <p className="note" role="status">simming the season for the projected seeds…</p>
         <BlockSkeleton height="22rem" />
       </section>
@@ -52,8 +53,8 @@ export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks })
   const sideBySide = wide && (brackets.title?.rounds ?? 0) <= 2 && (brackets.field?.rounds ?? 0) <= 2;
   return (
     <div className="stack" id="bracket">
-      <div className="row">
-        <span className="micro">seed the brackets</span>
+ <div className="row">
+        <span className="title-row"><span className="micro">seed the brackets</span><InfoTip label="seeding">{NOTE[seeding]}</InfoTip></span>
         <Segmented label="Bracket seeding" value={seeding} onChange={setSeeding} options={(Object.keys(SEEDING_LABEL) as SeedingMode[]).map((v) => ({ value: v, label: SEEDING_LABEL[v] }))} />
         {!wide && (
           <Segmented
@@ -62,14 +63,10 @@ export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks })
           />
         )}
       </div>
-      <p className="note">{NOTE[seeding]}</p>
       <div className={`br-pair${sideBySide ? ' wide' : ''}`}>
         {showShip && (
           <section className="card" aria-labelledby="bracket-title">
-            <header>
-              <div className="micro">{FEATURE.bracketKicker}</div>
-              <h2 id="bracket-title">{FEATURE.bracket}</h2>
-            </header>
+            <SectionHeader id="bracket-title" title={FEATURE.bracket} kicker={FEATURE.bracketKicker} />
             {brackets.title
               ? <Bracket key={`ship-${seeding}`} bracket={brackets.title} ctx={inputs.ctx} names={inputs.names} meRid={engine.meRid} />
               : <p className="note">fewer than two teams make the playoffs, so there is no bracket.</p>}
@@ -77,10 +74,7 @@ export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks })
         )}
         {showField && (
           <section className="card" aria-labelledby="field-title">
-            <header>
-              <div className="micro">{lc.kicker}</div>
-              <h2 id="field-title">{lc.name}</h2>
-            </header>
+            <SectionHeader id="field-title" title={lc.name} kicker={lc.kicker} />
             {brackets.field
               ? <Bracket key={`field-${seeding}-${mode}`} bracket={brackets.field} ctx={inputs.ctx} names={inputs.names} meRid={engine.meRid} />
               : <p className="note">{`fewer than two teams miss the playoffs, so there is no ${lc.name}.`}</p>}

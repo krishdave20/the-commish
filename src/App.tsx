@@ -7,6 +7,7 @@ import { ScenarioProvider } from './app/ScenarioProvider';
 import type { LoadModel } from './app/loadModel';
 import Method from './pages/Method';
 import Draft from './pages/Draft';
+import GameDay from './pages/GameDay';
 import Home from './pages/Home';
 import LeagueRace from './pages/LeagueRace';
 import MyTeam from './pages/MyTeam';
@@ -25,6 +26,7 @@ export function AppRoutes() {
       <Route path="/signin" element={<SignIn />} />
       <Route element={<AppShell />}>
         <Route index element={<Home />} />
+        <Route path="/gameday" element={<GameDay />} />
         <Route path="/takes" element={<Takes />} />
         <Route path="/players" element={<Players />} />
         <Route path="/players/:pid" element={<PlayerProfile />} />

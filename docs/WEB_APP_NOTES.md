@@ -14,7 +14,7 @@ Everything in SPEC.md still applies except where this table says otherwise.
 | Season sim in a Web Worker | Same. |
 | Unsigned `.dmg` | Static build (`npm run dist` → `dist/`), hosted free on GitHub Pages (owner decision, Oct 16, 2026). `base: './'` + `HashRouter`. |
 | "Check for updates" menu item | About screen compares the version with an optional `version.json` URL. |
-| Bundled fonts | `@fontsource/dm-mono` and `@fontsource/instrument-serif` (both SIL OFL), bundled by Vite. |
+| Bundled fonts | `@fontsource/instrument-serif` (SIL OFL), bundled by Vite. Body text uses the device's system font (San Francisco on Apple devices); see the hybrid look below. |
 | Playwright launches the built app | Playwright runs against `vite preview` (milestone 6). |
 
 ## Names: fantasy football DNA (owner request, Oct 16, 2026)
@@ -62,6 +62,20 @@ counts a DEF row as played when `gp > 0`. On the Oct 16 fixture this moves playo
   `buildModel(pull, { referenceCompat: true })`, which reproduces the reference to 0.005 points.
 - The default model is checked separately: same top-3, every team within ±3 points, and the drift must be explained
   by DEF actuals.
+
+## Apple design principles, hybrid look (owner request, Oct 18, 2026)
+The owner asked for Apple's design principles and chose a **hybrid** look, overriding SPEC section 8's type and
+corner rules:
+- **Body text and UI controls:** the system San Francisco font via the system stack
+  (`-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif`), with
+  tabular figures for numbers. Nothing is bundled (SF can't be redistributed), so other platforms get their system UI font.
+- **Display:** Instrument Serif stays for page titles, section titles and big numbers.
+- **DM Mono:** removed (package uninstalled); `<code>` uses the system monospace.
+- **Corners:** 8 px radius (was 3 px max).
+- **Palette:** unchanged (parchment, ink, green, warm red, gold).
+- **Principles applied everywhere:** clarity, deference, depth; strong hierarchy; an 8-point spacing grid;
+  44 px touch targets; one primary action per view; progressive disclosure; brief spring-like motion; short copy;
+  consistent patterns. See `docs/DECLUTTER.md`.
 
 ## CORS (checked Oct 16, 2026)
 - Sleeper (`api.sleeper.app`, documented and undocumented) and FantasyCalc send `Access-Control-Allow-Origin: *`, so the browser calls them directly.
@@ -117,3 +131,26 @@ picture (`pages/race/BracketCard.tsx`), the huddle (`pages/home/PathCard.tsx`, `
   `mulberry32` unchanged), `engine/simInput.ts`, `app/results.ts`, `app/prefs.ts` (+ `losers`, and a `wr-prefs` event), `components/OddsCell.tsx` (`invert`),
   `test/fakes.ts` (bracket endpoints on the fake Sleeper client); `lib.test.ts` and `m2.test.tsx` now allow for the new pref and the extra odds columns.
 - Not done: no health-check row for the bracket endpoints (`src/data/health.ts` was not in scope).
+
+## Game day (owner request, Oct 18, 2026)
+Pure engine in `src/engine/live/` (scores parsing, live projection, live win probability, derived stats, feed diffing, the poller, the live and replay sources),
+the shared poller in `src/app/live/` (one `LiveProvider` in `AppShell`: the ticker, the nav's live dot and `/gameday` all read it), the ticker in `src/components/ticker/`,
+the page in `src/pages/GameDay.tsx` + `src/pages/gameday/`. Names: `PAGES.gameday` ("game day") and the section names in `FEATURE`.
+
+**What Sleeper sends (checked on Sunday Oct 18, 2026 with games on, CORS `*` on all of them)**
+- `GET /v1/league/{id}/matchups/{week}`: per team `points`, `starters`, `starters_points`, `players_points` (league scoring applied, bench included). Updates live.
+- `GET /scores/nfl/regular/{season}/{week}` (undocumented; `/v1/scores/...` answers too): 14 games, 62 KB. Per game `status` (`pre_game` | `in_game` | `complete`), `start_time` (epoch ms),
+  `metadata.{home_team, away_team, home_score, away_score, quarter, time_remaining, is_in_progress, is_over, date_time, canceled}`. `quarter` is "" before kickoff, "1" to "4", "F" or "F/OT" when over;
+  the halftime and overtime labels were not on screen while checking, so the parser also accepts "H" and "OT" (unverified).
+- `GET /schedule/nfl/regular/{season}`: only `status`, `date`, `home`, `away`, `week`, `game_id`. No kickoff time and no clock; it is the fallback when `scores` is down.
+- `GET /v1/stats/nfl/regular/{season}/{week}`: 1,786 players, 312 KB; not polled (the matchups endpoint already carries each player's league-scored points).
+
+**Rules**
+- Polls every 30 s while a game is on or within 5 minutes of kickoff (2 requests per poll: matchups and scores); before that it sleeps until 5 minutes before the next kickoff (30 minutes at most per sleep);
+  when every game is final it rests until 5 minutes before the next kickoff (next week's scores, else the schedule; at most 3 h per sleep), re-reads the NFL state on waking and rebuilds the model when the week rolls over. Paused while the tab is hidden, back-off 2 s, 4 s, … up to 2 minutes after errors. `force` only on the game day page; elsewhere the 30 s TTL (`TTL.live`) does the same job.
+- Live projection per player: final → actual; not started → projection (league-scored, injury multipliers for the current week only); in progress → actual + projection × (1 − elapsed), elapsed from quarter and clock;
+  no readable clock → half the game is assumed left (marked `*`).
+- Live win chance: `winProb(projA, projB, sd × sqrt((Ra + Rb) / 2))`, R = a team's share of starter-minutes left; final is 1 / 0 / ½.
+- Upset alert: pre-game chance under 35% and ahead now. Nail-biter: closest matchup within 12 points with players left. Blowout: biggest margin from 35 points. Game balls: top 5 starters. Left on the sideline: best lineup of the roster (actual points) minus the started lineup.
+- Replay of last week: same `LiveSource` interface and same reducer. Kickoffs keep their order, gaps longer than a game + 20 minutes are squeezed (a Sunday takes about 2 minutes at 1×); each player's final points arrive in 3 to 6 chunks during his game.
+- The ticker's collapsed state is kept under `wr.ticker.v1` in localStorage (not in `prefs.ts`).

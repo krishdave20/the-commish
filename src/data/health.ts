@@ -37,6 +37,8 @@ interface Spec {
   /** an empty (or null) answer is normal for now and is healthy, with this text (brackets before the playoffs) */
   emptyOk?: () => string;
   onBody?: (body: unknown) => void;
+  /** the ok message, from the body, when "N items." does not say enough */
+  describe?: (body: unknown) => string;
 }
 
 const size = (b: unknown) => (Array.isArray(b) ? b.length : b && typeof b === 'object' ? Object.keys(b).length : 0);
@@ -79,7 +81,7 @@ export function createHealth(deps: HealthDeps) {
     // a single object (state, user, league) has no meaningful count; say it answered as expected
     if (!Array.isArray(res.body) && s.noun === 'account') return result(s, { ...base, level: 'ok', message: 'Account found.' });
     if (!Array.isArray(res.body) && s.noun === 'fields') return result(s, { ...base, level: 'ok', message: 'Answered in the expected shape.' });
-    return result(s, { ...base, level: 'ok', message: `${n} ${s.noun ?? 'items'}.` });
+    return result(s, { ...base, level: 'ok', message: s.describe ? s.describe(res.body) : `${n} ${s.noun ?? 'items'}.` });
   }
 
   const skipped = (s: Pick<Spec, 'id' | 'label' | 'documented' | 'source'>, why: string): HealthResult =>
@@ -241,6 +243,14 @@ export function createHealth(deps: HealthDeps) {
     addSpec({ id: 'sleeper.projections', label: `Weekly projections, week ${week}`, url: sleeperUrls.projections(season, week), ...un, guard: shapes.projections, noun: 'projections', impact: 'Player means (every projected point total) depend on this.', emptyWarn: 'No projections published for this week yet.' });
     addSpec({ id: 'sleeper.seasonProjections', label: 'Season projections and ADP', url: sleeperUrls.seasonProjections(season), ...un, guard: shapes.projections, noun: 'projections', impact: 'Draft rankings and ADP depend on this.', emptyWarn: 'No season projections published yet.' });
     addSpec({ id: 'sleeper.schedule', label: 'NFL schedule', url: sleeperUrls.schedule(season), ...un, guard: shapes.schedule, noun: 'games', impact: 'Matchup grades and opponents depend on this.', emptyWarn: 'No schedule published yet.' });
+    addSpec({
+      id: 'sleeper.scores', label: `NFL scores, week ${week}`, url: sleeperUrls.scores(season, week), ...un, guard: shapes.scores, noun: 'games',
+      impact: 'Live clock and kickoff times fall back to the schedule; game day still shows scores.', emptyWarn: 'No games published for this week yet.',
+      describe: (b) => {
+        const games = b as Array<{ status?: unknown }>;
+        return `${games.length} games, ${games.filter((g) => g.status === 'in_game').length} live.`;
+      },
+    });
 
     /* FantasyCalc */
     addSpec({ id: 'fantasycalc.dynasty', label: 'FantasyCalc dynasty values', url: fantasyCalcUrl({ isDynasty: true, numQbs: 1, numTeams: 12, ppr: 1 }), ...fc, guard: shapes.fantasyCalc, noun: 'players', impact: 'Dynasty trade values and rookie ranks depend on this; everything else keeps working.' });

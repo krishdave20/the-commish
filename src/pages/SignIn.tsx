@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AccountList } from '../components/AccountList';
+import { InfoTip } from '../components/InfoTip';
 import { SkipLink } from '../components/SkipLink';
 import { useAccountStore, useAccounts, useActive, useApi } from '../app/hooks';
 import { PAGES } from '../app/names';
@@ -104,10 +105,12 @@ export default function SignIn() {
           <header className="page-head">
             <div className="micro">the commish · {PAGES.signin.kicker}</div>
             <h1>{PAGES.signin.name}</h1>
-            <p className="note">
-              Enter a Sleeper username to follow your leagues. There is no password: Sleeper does not offer one to
-              third-party apps, and this app only reads public league data.
-            </p>
+            <div className="title-row">
+              <p className="note">Enter a Sleeper username to follow your leagues.</p>
+              <InfoTip label="no password">
+                There is no password: Sleeper does not offer one to third-party apps, and this app only reads public league data.
+              </InfoTip>
+            </div>
           </header>
 
           <form className="stack" onSubmit={(e) => { void find(e); }}>
@@ -145,8 +148,8 @@ export default function SignIn() {
                         <span>{lg.season}</span>
                         <span>{statusLabel(lg.status)}</span>
                         <span>{lg.total_rosters} teams</span>
-                        <span className="pill ok">{leagueScoring(lg)}</span>
-                        <span className="pill mute">{leagueTypeLabel(lg.settings.type)}</span>
+                        <span>{leagueScoring(lg)}</span>
+                        <span>{leagueTypeLabel(lg.settings.type)}</span>
                       </span>
                     </span>
                   </label>

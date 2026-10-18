@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useScenario } from '../../app/modelContext';
 import { FEATURE } from '../../app/names';
 import { WinsNeededChart } from '../../components/charts/WinsNeededChart';
+import { SectionHeader } from '../../components/SectionHeader';
 import { BlockSkeleton } from '../../components/Skeleton';
 import type { Engine } from '../../engine';
 import { magicLine } from './magicLine';
@@ -17,10 +18,10 @@ export function MagicNumber({ engine }: { engine: Engine }) {
 
   return (
     <section className="card" aria-labelledby="magic-title">
-      <header>
-        <div className="micro">wins you need to clinch</div>
-        <h2 id="magic-title">{FEATURE.magic}</h2>
-      </header>
+      <SectionHeader
+        id="magic-title" title={FEATURE.magic}
+        tip="wins you need to clinch. each bar is the chance of making the playoffs if your team finishes with that many wins; the small number under it is how many simulated seasons ended there."
+      />
       <p className="take">{line}</p>
       {buckets.length > 0 ? <WinsNeededChart buckets={buckets} /> : (
         <>
@@ -28,7 +29,6 @@ export function MagicNumber({ engine }: { engine: Engine }) {
           <BlockSkeleton height="13rem" />
         </>
       )}
-      <p className="note">each bar is the chance of making the playoffs if your team finishes with that many wins; the small number under it is how many simulated seasons ended there.</p>
     </section>
   );
 }

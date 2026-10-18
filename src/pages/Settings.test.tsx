@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { renderApp } from '../app/testUtils';
-import { createFakeAccountStore, createFakeApi, sampleAccount, sampleHealth } from '../test/fakes';
+import { FAKE_AS_OF, createFakeAccountStore, createFakeApi, sampleAccount, sampleBundle, sampleHealth } from '../test/fakes';
 import { PREFS_KEY } from '../app/prefs';
 import { summarize } from '../app/health';
 
@@ -11,17 +11,52 @@ afterEach(() => {
 });
 
 describe('Settings', () => {
-  it('has the six sections and the attribution text', async () => {
+  it('has its sections as an accordion (linked accounts open, the rest closed) and the attribution text', async () => {
     renderApp({ linked: [sampleAccount()], route: '/settings' });
-    for (const name of ['Linked accounts', 'Refresh schedule', 'Cache', 'injury report', 'Attribution', 'About']) {
+    for (const name of ['Linked accounts', 'The league', 'Refresh schedule', 'the toilet bowl', 'Cache', 'injury report', 'Attribution', 'About']) {
       expect(await screen.findByRole('heading', { level: 2, name })).toBeInTheDocument();
     }
     expect(screen.getByText('Play-by-play and snap data: nflverse. Charting data: FTN Data via nflverse.')).toBeInTheDocument();
     expect(screen.getByText('Values: FantasyCalc.')).toBeInTheDocument();
     expect(screen.getByText('League data: Sleeper public API.')).toBeInTheDocument();
     expect(screen.getByText('Free public data only. No AI or paid services at runtime.')).toBeInTheDocument();
-    expect(screen.getByText('Refreshes on open when data is older than 6 hours; the players file at most once a day.')).toBeInTheDocument();
+    expect(screen.getByText(/Refreshes on open when data is older than 6 hours; the players file at most once a day\./)).toBeInTheDocument();
     expect(screen.getByText('nflverse data arrives with the nightly update.')).toBeInTheDocument();
+  });
+
+  it('opens only the linked accounts by default; the other sections open from their titles', async () => {
+    const { user } = renderApp({ linked: [sampleAccount()], route: '/settings' });
+    const accounts = (await screen.findByRole('heading', { level: 2, name: 'Linked accounts' })).closest('details')!;
+    expect(accounts).toHaveAttribute('open');
+    const cache = screen.getByRole('heading', { level: 2, name: 'Cache' }).closest('details')!;
+    expect(cache).not.toHaveAttribute('open');
+    await user.click(screen.getByRole('heading', { level: 2, name: 'Cache' }));
+    expect(cache).toHaveAttribute('open');
+  });
+
+  it('shows the league’s rules (they moved here from the huddle)', async () => {
+    renderApp({ linked: [sampleAccount()], route: '/settings' });
+    const panel = (await screen.findByRole('heading', { level: 2, name: 'The league' })).closest('details')!;
+    expect(panel).toHaveTextContent('Sample League');
+    expect(panel).toHaveTextContent('2026 · In season');
+    expect(panel).toHaveTextContent('PPR · Redraft');
+    expect(panel).toHaveTextContent('Divisions2');
+    expect(panel).toHaveTextContent('Playoff teams4');
+    expect(panel).toHaveTextContent('Week 15');
+    expect(panel).toHaveTextContent('$100');
+    const chips = within(panel).getByLabelText('Roster slots');
+    expect(chips).toHaveTextContent('RB ×2');
+    expect(chips).toHaveTextContent('BN ×3');
+  });
+
+  it('formats a large FAAB budget with a thousands separator', async () => {
+    const api = createFakeApi();
+    const b = sampleBundle();
+    b.league.settings.waiver_budget = 1800;
+    api.leagueBundle.mockResolvedValue({ data: b, asOf: FAKE_AS_OF, fromCache: false, stale: false });
+    renderApp({ linked: [sampleAccount()], api, route: '/settings' });
+    const panel = (await screen.findByRole('heading', { level: 2, name: 'The league' })).closest('details')!;
+    expect(panel).toHaveTextContent('$1,800');
   });
 
   it('saves Auto-refresh on open in localStorage', async () => {
@@ -36,7 +71,7 @@ describe('Settings', () => {
     const { user, api } = renderApp({ linked: [sampleAccount()], route: '/settings' });
     await screen.findByText('Data as of Fri, Oct 16, 4:05 PM');
     await user.click(screen.getByRole('button', { name: 'Run checks' }));
-    expect(await screen.findByText('3 healthy · 1 questionable · 1 out')).toBeInTheDocument();
+    expect(await screen.findByText('3 healthy · 1 questionable · 1 out', { selector: 'strong' })).toBeInTheDocument();
     expect(api.healthChecks).toHaveBeenCalledWith({
       season: '2026', week: 6, username: 'sampleuser', userId: 'u1', leagueId: 'L1', draftId: 'L1-draft',
     });

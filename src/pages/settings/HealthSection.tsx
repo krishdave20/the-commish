@@ -5,6 +5,8 @@ import { UnmatchedTable } from './UnmatchedTable';
 import { formatBytes, formatMs } from '../../app/format';
 import { summarize } from '../../app/health';
 import { FEATURE, HEALTH_LABEL } from '../../app/names';
+import { Disclosure } from '../../components/Disclosure';
+import { InfoTip } from '../../components/InfoTip';
 import type { HealthResult } from '../../data';
 
 export function HealthSection() {
@@ -39,16 +41,13 @@ export function HealthSection() {
   }
 
   return (
-    <section className="section" aria-labelledby="set-health">
-      <h2 id="set-health">{FEATURE.injuryReport}</h2>
-      <p className="note">
-        Data health: checks every source this app reads. Sleeper’s undocumented endpoints are marked, since they can change without notice.
-      </p>
+    <Disclosure title={FEATURE.injuryReport} id="set-health" hint={results ? summarize(results) : 'data health'}>
       <div className="row">
         <button type="button" className="btn" onClick={() => { void run(); }} disabled={running}>
           {running ? 'Running…' : 'Run checks'}
         </button>
         {results && <strong aria-live="polite">{summarize(results)}</strong>}
+        <InfoTip label="data health">Data health: checks every source this app reads. Sleeper’s undocumented endpoints are marked, since they can change without notice.</InfoTip>
       </div>
       {error && <p className="msg err" role="alert">Could not run the checks. {error}</p>}
       {results && (
@@ -88,6 +87,6 @@ export function HealthSection() {
         <h3>Unmatched player IDs</h3>
         <UnmatchedTable players={nv.bundle?.unmatched ?? null} matched={nv.bundle?.manifest.matched} season={nv.bundle?.manifest.season} loading={nv.loading} />
       </div>
-    </section>
+    </Disclosure>
   );
 }

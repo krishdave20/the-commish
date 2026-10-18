@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { PlayerLink } from '../../components/PlayerLink';
+import { SectionHeader } from '../../components/SectionHeader';
 import { ordinal, signed, formatNum, formatPoints1 } from '../../app/format';
 import { pickValues } from '../../engine';
 import type { Mock, MockGrade, MockState, Rankings } from '../../engine';
@@ -31,10 +32,7 @@ export function GradeCard({ grade, state, mock, rankings, teams }: Props) {
 
   return (
     <section className="card grade-card" aria-labelledby="grade-title">
-      <header>
-        <div className="micro">your projected starting lineup, against every other team’s</div>
-        <h2 id="grade-title">your draft grade</h2>
-      </header>
+      <SectionHeader id="grade-title" title="your draft grade" tip="your projected starting lineup, against every other team’s" />
       <div className="grade-top">
         <div className="grade-letter" aria-label={`Grade ${grade.letter}`}>{grade.letter}</div>
         <div className="stack">

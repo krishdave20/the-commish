@@ -12,19 +12,21 @@ interface Props {
   };
 }
 
-/** Kicker, display title, "Data as of" stamp, cached/stale chips and a Refresh button.
-    A thin progress bar runs while a fetch is in flight. */
+/** Compact header: the title with its kicker beside it, and "data as of" with Refresh as a small line at the right (about 60 px tall,
+    never more than ~110). A thin progress bar runs while a fetch is in flight. */
 export function PageHeader({ kicker, title, data }: Props) {
   const { asOf, fromCache, stale, error, loading, refresh, progress } = data;
   return (
     <header className="page-head">
-      <div className="micro">{kicker}</div>
-      <h1>{title}</h1>
+      <div className="head-title">
+        <h1>{title}</h1>
+        <span className="micro">{kicker}</span>
+      </div>
       <div className="stamp-row">
         <span>{asOf !== null ? `Data as of ${formatAsOf(asOf)}` : loading ? 'Loading data…' : 'No data yet'}</span>
         {fromCache && <span className="chip flat">cached</span>}
         {stale && <span className="chip gold">stale</span>}
-        <button type="button" className="btn" onClick={() => { void refresh(); }} disabled={loading}>
+        <button type="button" className="btn quiet" onClick={() => { void refresh(); }} disabled={loading}>
           {loading && asOf !== null ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>

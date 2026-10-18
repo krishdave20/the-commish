@@ -6,6 +6,7 @@ import { AboutSection } from './settings/AboutSection';
 import { AttributionSection } from './settings/AttributionSection';
 import { CacheSection } from './settings/CacheSection';
 import { HealthSection } from './settings/HealthSection';
+import { LeagueSection } from './settings/LeagueSection';
 import { LinkedAccountsSection } from './settings/LinkedAccountsSection';
 import { LosersSection } from './settings/LosersSection';
 import { ScheduleSection } from './settings/ScheduleSection';
@@ -16,13 +17,16 @@ export default function Settings() {
   return (
     <div className="page page-fade">
       <PageHeader kicker={PAGES.settings.kicker} title={PAGES.settings.name} data={bundle} />
-      <LinkedAccountsSection />
+      <div className="accordion">
+        <LinkedAccountsSection />
+        <LeagueSection />
       <ScheduleSection />
       <LosersSection />
       <CacheSection />
       <HealthSection />
       <AttributionSection />
       <AboutSection />
+      </div>
     </div>
   );
 }

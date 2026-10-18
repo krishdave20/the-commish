@@ -146,6 +146,9 @@ export function Bracket({ bracket, ctx, names, meRid, caption, compact = false, 
     .map(([rid, v]) => ({ rid: Number(rid), v, seed: bracket.seeds[Number(rid)] ?? 99 }))
     .sort((a, b) => b.v.crowned - a.v.crowned || b.v.final - a.v.final || a.seed - b.seed), [odds, bracket]);
 
+  const maxFinal = Math.max(0.01, ...rows.map((r) => r.v.final));
+  const maxCrowned = Math.max(0.01, ...rows.map((r) => r.v.crowned));
+
   if (bracket.matches.length === 0) return <p className="note">not enough teams for a bracket.</p>;
 
   const columns = Array.from({ length: bracket.rounds }, (_, i) => i + 1);
@@ -283,8 +286,8 @@ export function Bracket({ bracket, ctx, names, meRid, caption, compact = false, 
                   <tr key={rid} className={rid === meRid ? 'me' : undefined}>
                     <td><span className="pname">{nameOf(names, rid)}</span>{rid === meRid && <span className="you">you</span>}</td>
                     <td className="n dim">{seed === 99 ? '' : seed}</td>
-                    <td><OddsCell value={v.final} /></td>
-                    <td><OddsCell value={v.crowned} invert={toilet} /></td>
+                    <td><OddsCell value={v.final} tone="scale" max={maxFinal} /></td>
+                    <td>{toilet ? <OddsCell value={v.crowned} invert /> : <OddsCell value={v.crowned} tone="scale" max={maxCrowned} />}</td>
                   </tr>
                 ))}
               </tbody>

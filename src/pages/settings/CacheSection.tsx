@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useApi } from '../../app/hooks';
 import { useData } from '../../app/dataContext';
 import { formatAsOf, formatBytes } from '../../app/format';
+import { Disclosure } from '../../components/Disclosure';
 import type { CacheStats } from '../../data';
 
 export function CacheSection() {
@@ -36,8 +37,7 @@ export function CacheSection() {
   }
 
   return (
-    <section className="section" aria-labelledby="set-cache">
-      <h2 id="set-cache">Cache</h2>
+    <Disclosure title="Cache" id="set-cache" hint={stats ? formatBytes(stats.totalBytes) : undefined}>
       {error && <p className="msg err" role="alert">Could not read the cache. {error}</p>}
       {stats && (
         <>
@@ -80,6 +80,6 @@ export function CacheSection() {
           {done && <span className="note pos-c" role="status">Cache cleared.</span>}
         </div>
       )}
-    </section>
+    </Disclosure>
   );
 }

@@ -65,7 +65,7 @@ export function TeamDrawer({ engine, rid, onClose }: Props) {
       </div>
       <div className="stat">
         <span className="micro">title odds</span>
-        <OddsCell value={res.title} pending={engine.model.oddsPending} />
+        <OddsCell value={res.title} pending={engine.model.oddsPending} tone="scale" max={Math.max(0.01, ...engine.model.teams.map((t) => teamResult(model, live, t.rid).title))} />
         <span className="note">
           {engine.model.oddsPending ? 'odds are still simming.'
             : <>{formatOdds(res.finals)} to reach the final · {formatOdds(fieldOdds)} to be crowned {LOSERS_COPY[mode].champ}</>}

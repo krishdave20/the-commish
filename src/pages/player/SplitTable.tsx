@@ -31,7 +31,7 @@ export function SplitTable({ rows, caption }: { rows: SplitRow[]; caption: strin
       <table>
         <caption className="sr-only">{caption}</caption>
         <thead>
-          <tr><th scope="col">stat</th><th scope="col" className="n">value</th><th scope="col" className="n">sample</th><th scope="col" className="hide-sm">note</th></tr>
+          <tr><th scope="col">stat</th><th scope="col" className="n">value</th><th scope="col" className="n">sample</th></tr>
         </thead>
         <tbody>
           {rows.map((r) => {
@@ -42,9 +42,11 @@ export function SplitTable({ rows, caption }: { rows: SplitRow[]; caption: strin
                   {r.label}{r.tag && <> <span className="pill mute">{r.tag}</span></>}
                 </td>
                 <td className="n pname">{r.value ?? '—'}</td>
-                <td className="n dim">{r.sample === null ? '—' : `${formatCount(r.sample)} ${r.unit}`}</td>
-                <td className="hide-sm dim">
-                  {under ? `hidden: under ${minimumFor(r.gate as Gate)} ${r.unit}` : r.value === null ? (r.missing ?? 'not available') : r.note}
+                <td className="n dim">
+                  {r.sample === null ? '—' : `${formatCount(r.sample)} ${r.unit}`}
+                  {(under || r.value === null || r.note) && (
+                    <span className="sub-note">{under ? `hidden: under ${minimumFor(r.gate as Gate)} ${r.unit}` : r.value === null ? (r.missing ?? 'not available') : r.note}</span>
+                  )}
                 </td>
               </tr>
             );

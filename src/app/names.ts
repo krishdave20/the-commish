@@ -2,7 +2,7 @@
    The name carries the flavor; the kicker says plainly what the page does. Routes do not change. */
 
 export type PageKey =
-  | 'home' | 'takes' | 'players' | 'team' | 'race' | 'waivers' | 'trades' | 'draft' | 'settings' | 'method' | 'signin';
+  | 'home' | 'gameday' | 'takes' | 'players' | 'team' | 'race' | 'waivers' | 'trades' | 'draft' | 'settings' | 'method' | 'signin';
 
 export interface PageName {
   path: string;
@@ -16,6 +16,7 @@ export interface PageName {
 
 export const PAGES: Record<PageKey, PageName> = {
   home: { path: '/', name: 'huddle', kicker: 'this week at a glance', blurb: 'your league, your record and where you stand.' },
+  gameday: { path: '/gameday', name: 'game day', kicker: 'live scores · your matchup · around the league', blurb: 'your matchup live, every other matchup in the league, and the plays that moved them.' },
   takes: { path: '/takes', name: 'hot takes', kicker: 'rule-based reads from real numbers', blurb: 'a short-form feed in the voice of a sharp fantasy writer: quick, specific, numbers first. rules and templates only; no ai.' },
   players: { path: '/players', name: 'scouting report', kicker: 'every player, every split', blurb: 'search every player and open a profile built from free play-by-play, snap and charting data.' },
   team: { path: '/team', name: 'locker room', kicker: 'your roster and lineup', blurb: 'your roster with usage and value, and the lineup that gives you the best shot each week.' },
@@ -28,11 +29,32 @@ export const PAGES: Record<PageKey, PageName> = {
   signin: { path: '/signin', name: 'check in', kicker: 'follow your sleeper leagues', blurb: 'enter a sleeper username to follow your leagues.' },
 };
 
-/** The nine pages in the sidebar, in order. */
-export const NAV_KEYS: PageKey[] = ['home', 'takes', 'players', 'team', 'race', 'waivers', 'trades', 'draft', 'settings'];
+/** The sidebar and the phone menu, in groups (docs/DECLUTTER.md). Labels are small and quiet. */
+export const NAV_GROUPS: ReadonlyArray<{ label: string; keys: PageKey[] }> = [
+  { label: 'this week', keys: ['home', 'gameday', 'team'] },
+  { label: 'league', keys: ['race', 'takes'] },
+  { label: 'moves', keys: ['waivers', 'trades'] },
+  { label: 'players', keys: ['players', 'draft'] },
+];
+
+/** Every page in the grouped navigation, in order. */
+export const NAV_KEYS: PageKey[] = NAV_GROUPS.flatMap((g) => g.keys);
+
+/** The two pages that sit quietly at the bottom of the menu. */
+export const FOOTER_KEYS: PageKey[] = ['settings', 'method'];
 
 /** Feature and section names inside pages. */
 export const FEATURE = {
+  /* game day: football and broadcast flavor */
+  mainEvent: 'the main event',
+  onDeck: 'on deck',
+  finalWhistle: 'final whistle',
+  aroundLeague: 'around the league',
+  gameBalls: 'game balls',
+  sideline: 'left on the sideline',
+  driveChart: 'the drive chart',
+  winMeter: 'win probability',
+  winOverTime: 'win probability over time',
   lab: 'the lab',
   alerts: 'start/sit alerts',
   machine: 'playoff machine',

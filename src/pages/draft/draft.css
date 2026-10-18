@@ -4,17 +4,17 @@
 }
 
 .mode-bar .seg { flex-wrap: wrap; }
-.check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); padding-bottom: 7px; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--ink-2); padding-bottom: 7px; }
 
 /* rankings */
 .rank-table tr.tier-break > td { padding: 10px 8px 2px; border-bottom: 0; border-top: 1px solid var(--rule); background: var(--sheet); }
 .rank-table tr.tier-break:first-child > td { border-top: 0; }
-.tog.star { font-size: 13px; line-height: 1; padding: 2px 6px; }
-.tog.star[aria-pressed='true'] { color: var(--gold-text); border-color: var(--gold); background: var(--gold-soft); }
+.tog.star { font-size: var(--fs-sm); line-height: 1; padding: 2px var(--s-2); }
+.tog.star[aria-pressed='true'] { color: var(--gold-text); background: var(--gold-soft); }
 
 /* the board */
-.board-wrap { max-height: 70vh; overflow: auto; border: 1px solid var(--rule); border-radius: var(--r); background: var(--sheet); }
-.board { border-collapse: separate; border-spacing: 0; font-size: 11px; table-layout: fixed; min-width: max-content; width: 100%; }
+.board-wrap { max-height: 70vh; overflow: auto; border-radius: var(--r); box-shadow: 0 0 0 1px var(--rule-2); background: var(--sheet); }
+.board { border-collapse: separate; border-spacing: 0; font-size: var(--fs-micro); table-layout: fixed; min-width: max-content; width: 100%; }
 .board th { position: sticky; top: 0; z-index: 2; background: var(--sheet); padding: 6px 6px; white-space: normal; width: 7.4rem; min-width: 7.4rem; max-width: 7.4rem; vertical-align: bottom; line-height: 1.25; }
 .board th.rd { left: 0; z-index: 3; width: 2.4rem; min-width: 2.4rem; text-align: center; }
 .board tbody th.rd { position: sticky; top: auto; left: 0; z-index: 1; background: var(--sheet); border-bottom: 1px solid var(--rule-2); }
@@ -23,7 +23,7 @@
 .board td { padding: 4px 6px; height: 2.9rem; vertical-align: top; border-bottom: 1px solid var(--rule-2); border-right: 1px solid var(--rule-2); overflow: hidden; }
 .board td.cell { display: table-cell; }
 .board .cn { display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.board .cm { display: block; color: var(--ink-2); font-size: 10px; white-space: nowrap; }
+.board .cm { display: block; color: var(--ink-2); font-size: var(--fs-micro); white-space: nowrap; }
 .board td.empty { background: var(--paper); }
 .board td.pos-qb { background: var(--pos-qb); } .board td.pos-rb { background: var(--pos-rb); } .board td.pos-wr { background: var(--pos-wr); }
 .board td.pos-te { background: var(--pos-te); } .board td.pos-k { background: var(--pos-k); } .board td.pos-def { background: var(--pos-def); }
@@ -33,7 +33,7 @@
 .board td.otc .cm { color: var(--green); }
 
 /* grade */
-.grade-top { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; }
+.grade-top { display: flex; flex-wrap: wrap; gap: var(--s-4); align-items: center; }
 .grade-letter { font-family: var(--serif); font-size: clamp(96px, 16vw, 150px); line-height: 0.9; color: var(--green); min-width: 1.3em; }
 .pv { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
 .mypicks { margin: 0; padding-left: 1.6em; display: grid; gap: 4px; }
@@ -44,7 +44,7 @@
 .otc-banner p { color: #e5eee0; }
 .otc-line { color: var(--green); }
 .feed { list-style: none; margin: 0; padding: 0; display: grid; }
-.feed li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) minmax(0, 1.3fr) 7rem; gap: 10px; align-items: baseline; padding: 6px 4px; border-bottom: 1px solid var(--rule-2); font-size: 12.5px; }
+.feed li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) minmax(0, 1.3fr) 7rem; gap: 10px; align-items: baseline; padding: 6px 4px; border-bottom: 1px solid var(--rule-2); font-size: var(--fs-sm); }
 .feed li.mine { background: var(--gold-soft); }
 .feed .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
 .feed li > :last-child { text-align: right; white-space: nowrap; }

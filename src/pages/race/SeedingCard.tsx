@@ -3,6 +3,7 @@ import { useModel, useScenario } from '../../app/modelContext';
 import { FEATURE } from '../../app/names';
 import { teamResult } from '../../app/results';
 import { SeedHeatmap } from '../../components/charts/SeedHeatmap';
+import { SectionHeader } from '../../components/SectionHeader';
 import { BlockSkeleton } from '../../components/Skeleton';
 import type { Engine } from '../../engine';
 
@@ -17,19 +18,16 @@ export function SeedingCard({ engine }: { engine: Engine }) {
   const divSeeds = Math.min(divisions, playoffTeams);
   return (
     <section className="card" aria-labelledby="seeding-title">
-      <header>
-        <div className="micro">chance of each final seed</div>
-        <h2 id="seeding-title">{FEATURE.seeding}</h2>
-      </header>
+      <SectionHeader
+        id="seeding-title" title={FEATURE.seeding}
+        tip={`chance of each final seed. ${divSeeds > 0 ? `seeds 1 to ${divSeeds} go to division winners. ` : ''}darker means likelier.`}
+      />
       {engine.model.oddsPending ? (
         <>
           <p className="note" role="status">simming seeding odds…</p>
           <BlockSkeleton height={`${(rows.length || 12) * 1.625 + 4}rem`} />
         </>
       ) : <SeedHeatmap rows={rows} divisionSeeds={divSeeds} />}
-      <p className="note">
-        {divSeeds > 0 ? `seeds 1 to ${divSeeds} go to division winners. ` : ''}darker means likelier.
-      </p>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PlayerLink } from '../../components/PlayerLink';
+import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
 import { bestAvailable } from '../../engine';
 import type { DraftMode, RankedPlayer } from '../../engine';
@@ -45,10 +46,7 @@ export function MockTab({ room, plan }: Props) {
   return (
     <div className="stack">
       <section className="card" aria-labelledby="mock-title">
-        <header>
-          <div className="micro">bots draft by adp, a little noise and roster need · {plan.type} · {plan.teams} teams · {plan.rounds} rounds</div>
-          <h2 id="mock-title">mock draft</h2>
-        </header>
+        <SectionHeader id="mock-title" title="mock draft" kicker={`${plan.type} · ${plan.teams} teams · ${plan.rounds} rounds`} tip="bots draft by adp, a little noise and roster need." />
 
         {plan.note && <p className="note">{plan.note}</p>}
         {m.elsewhere && (
@@ -96,10 +94,7 @@ export function MockTab({ room, plan }: Props) {
       {!state.complete && (
         <div className="grid2">
           <section className="card" aria-labelledby="mock-best-title">
-            <header>
-              <div className="micro">{state.userOnClock ? 'pick one' : 'by value over replacement'}</div>
-              <h2 id="mock-best-title">best available</h2>
-            </header>
+            <SectionHeader id="mock-best-title" title="best available" kicker={state.userOnClock ? 'pick one' : undefined} tip="ranked by value over replacement." />
             <Segmented label="Best available position" value={pos} onChange={setPos} options={[{ value: 'all', label: 'all' }, ...positions.map((p) => ({ value: p, label: p.toLowerCase() }))]} />
             <BestAvailable
               rows={best} caption="Best available players" showFc={fcUsed && room.mode !== 'redraft'}
@@ -107,10 +102,7 @@ export function MockTab({ room, plan }: Props) {
             />
           </section>
           <section className="card" aria-labelledby="mock-mine-title">
-            <header>
-              <div className="micro">{mine.length} of {plan.rounds} picks</div>
-              <h2 id="mock-mine-title">your picks</h2>
-            </header>
+            <SectionHeader id="mock-mine-title" title="your picks" kicker={`${mine.length} of ${plan.rounds} picks`} />
             {mine.length === 0 ? <p className="note">nobody yet. your first pick is #{plan.order.find((o) => o.rosterId === m.userRosterId)?.pickNo ?? '—'}.</p> : (
               <ol className="mypicks">
                 {mine.map((p) => {
@@ -124,10 +116,7 @@ export function MockTab({ room, plan }: Props) {
       )}
 
       <section className="card" aria-labelledby="mock-board-title">
-        <header>
-          <div className="micro">your column is highlighted</div>
-          <h2 id="mock-board-title">the board</h2>
-        </header>
+        <SectionHeader id="mock-board-title" title="the board" tip="your column is highlighted" />
         <DraftBoard order={plan.order} picks={board} rankings={rankings} teams={teams} myRosterId={m.userRosterId} onClockNo={next?.pickNo ?? null} caption="Mock draft board" />
       </section>
     </div>

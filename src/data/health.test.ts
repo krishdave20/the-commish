@@ -54,6 +54,7 @@ function healthy(): FakeTransport {
     [sleeperUrls.projections('2026', 6), ok([{ player_id: '1', stats: { pts_ppr: 12 } }])],
     [sleeperUrls.seasonProjections('2026'), ok([{ player_id: '1', stats: { adp_ppr: 4 } }])],
     [sleeperUrls.schedule('2026'), ok([{ week: 1, home: 'KC', away: 'BUF' }])],
+    [sleeperUrls.scores('2026', 6), ok([{ game_id: 'g1', status: 'in_game' }, { game_id: 'g2', status: 'complete' }, { game_id: 'g3', status: 'pre_game' }])],
     [fantasyCalcUrl({ isDynasty: true, numQbs: 1, numTeams: 12, ppr: 1 }), ok([{ player: { sleeperId: '1' }, value: 9000 }])],
     [fantasyCalcUrl({ isDynasty: false, numQbs: 1, numTeams: 12, ppr: 1 }), ok([{ player: { sleeperId: '1' }, value: 8000 }])],
     [MANIFEST_URL, ok(manifest())],
@@ -65,7 +66,7 @@ beforeEach(() => { clock = NOW; t = healthy(); });
 describe('health checks', () => {
   it('everything works: ok across Sleeper, FantasyCalc and nflverse; 2025 participation is a warn', async () => {
     const rs = byId(await mk().api.healthChecks(ctx));
-    expect(Object.keys(rs)).toHaveLength(32);
+    expect(Object.keys(rs)).toHaveLength(33);
     for (const r of Object.values(rs)) {
       if (r.id === 'nflverse.participation') continue;
       expect(r.level, `${r.id}: ${r.message}`).toBe('ok');
@@ -181,6 +182,21 @@ describe('health checks', () => {
     expect(rs['sleeper.league'].level).toBe('ok');
   });
 
+  it('the undocumented scores endpoint says how many games and how many are live', async () => {
+    const r = byId(await mk().api.healthChecks(ctx))['sleeper.scores'];
+    expect(r).toMatchObject({ level: 'ok', documented: false, source: 'sleeper', url: sleeperUrls.scores('2026', 6) });
+    expect(r.message).toBe('3 games, 1 live.');
+  });
+
+  it('a broken scores endpoint is a fail that says game day falls back to the schedule', async () => {
+    for (const broken of [status(500), ok({ not: 'a list' }), ok([{ nope: 1 }])]) {
+      t.set(sleeperUrls.scores('2026', 6), broken);
+      const r = byId(await mk().api.healthChecks(ctx))['sleeper.scores'];
+      expect(r.level).toBe('fail');
+      expect(r.message).toMatch(/live clock and kickoff times fall back to the schedule; game day still shows scores/i);
+    }
+  });
+
   it('well-formed but empty stats are a warn, not a fail', async () => {
     t.set(sleeperUrls.stats('2026', 5), ok({}));
     const rs = byId(await mk().api.healthChecks(ctx));
@@ -267,8 +283,8 @@ describe('health checks', () => {
     const layer = mk();
     const spy = vi.spyOn(layer.limiter, 'run');
     await layer.api.healthChecks(ctx);
-    // 23 direct Sleeper/FantasyCalc probes (two of them the brackets) + the players file + the nflverse manifest
-    expect(spy).toHaveBeenCalledTimes(25);
+    // 24 direct Sleeper/FantasyCalc probes (two of them the brackets, one the NFL scores) + the players file + the nflverse manifest
+    expect(spy).toHaveBeenCalledTimes(26);
   });
 
   describe('the 14 MB players file', () => {

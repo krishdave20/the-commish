@@ -15,6 +15,8 @@ export interface Column<T> {
   value?: (row: T) => number | string | null | undefined;
   render?: (row: T) => ReactNode;
   className?: string;
+  /** a secondary column: hidden until "more columns" is on (needs a `tableId` on the table) */
+  more?: boolean;
 }
 
 function compare(a: number | string, b: number | string): number {

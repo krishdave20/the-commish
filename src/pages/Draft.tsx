@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { useData } from '../app/dataContext';
 import { useActive, useLeagueBundle } from '../app/hooks';
 import type { Freshness } from '../app/hooks';
@@ -11,7 +10,7 @@ import { useWantsReducedMotion } from '../components/motion';
 import { Attribution } from '../components/Attribution';
 import { PageHeader } from '../components/PageHeader';
 import { PageSkeleton } from '../components/Skeleton';
-import { Segmented } from '../components/Segmented';
+import { PageTabs } from '../components/PageTabs';
 import { inferDraftMode, liveSnapshot } from '../engine';
 import type { DraftMode } from '../engine';
 import { ClockBanner } from './draft/ClockBanner';
@@ -34,7 +33,6 @@ const TABS: Array<{ value: TabKey; label: string }> = [
 ];
 const WATCH_MS = 30_000;
 
-const isTab = (v: string | null): v is TabKey => v === 'rankings' || v === 'mock' || v === 'clock';
 
 /** Draft room: rankings, a mock draft and the live assistant (with a replay of a finished draft). One league at a time:
     switching leagues starts the page over (mode, replay and feed state belong to a league). */
@@ -48,7 +46,6 @@ function DraftPage() {
   const { sleeper } = useData();
   const bundle = useLeagueBundle();
   const { data: active } = useActive();
-  const [params, setParams] = useSearchParams();
   const userId = active?.account.userId ?? null;
   const data = bundle.data;
   const league = data?.league ?? null;
@@ -111,12 +108,7 @@ function DraftPage() {
     setPaused,
   };
 
-  /* ---------- tabs ---------- */
-  // 'live' is accepted as an alias for the on-the-clock tab (older links and the huddle used it)
-  const rawTab = params.get('tab');
-  const tabParam = rawTab === 'live' ? 'clock' : rawTab;
-  const tab: TabKey = isTab(tabParam) ? tabParam : live ? 'clock' : 'rankings';
-  const setTab = useCallback((t: TabKey) => { setParams((p) => { const n = new URLSearchParams(p); n.set('tab', t); return n; }, { replace: true }); }, [setParams]);
+  /* ---------- tabs: `?tab=`; 'live' is accepted as an alias for the on-the-clock tab (older links and the huddle used it) ---------- */
   const leagueId = league?.league_id ?? null;
   const setMode = useCallback((m: DraftMode) => { if (leagueId) setPicked({ leagueId, mode: m }); }, [leagueId, setPicked]);
 
@@ -169,16 +161,20 @@ function DraftPage() {
         <>
           {onClock && source && <ClockBanner pickNo={onClock.pickNo} round={onClock.round} slot={onClock.slot} replay={source.kind === 'replay'} />}
           <ModeBar league={room.league} draftMode={draftMode} shown={room.mode} wanted={wanted} rankings={room.rankings} inputs={room.inputs} onChange={setMode} />
-          <Segmented label="Draft room section" value={tab} onChange={setTab} options={TABS} />
-
-          {tab === 'rankings' && <RankingsTab room={room} picks={hidePicks} />}
-          {tab === 'mock' && <MockTab key={`${room.mode}:${inputs.asOf}`} room={room} plan={mockPlan} />}
-          {tab === 'clock' && livePlan && (
-            <ClockTab
-              room={room} plan={livePlan} feed={feed.state} source={source?.kind ?? null} snapshot={snapshot} replay={replay}
-              canReplay={draft?.status === 'complete' && (savedPicks?.length ?? 0) > 0} draftPicks={savedPicks?.length ?? 0}
-            />
-          )}
+          <PageTabs label="Draft room section" tabs={TABS} defaultTab={live ? 'clock' : 'rankings'} aliases={{ live: 'clock' }}>
+            {(tab) => (
+              <>
+                {tab === 'rankings' && <RankingsTab room={room} picks={hidePicks} />}
+                {tab === 'mock' && <MockTab key={`${room.mode}:${inputs.asOf}`} room={room} plan={mockPlan} />}
+                {tab === 'clock' && livePlan && (
+                  <ClockTab
+                    room={room} plan={livePlan} feed={feed.state} source={source?.kind ?? null} snapshot={snapshot} replay={replay}
+                    canReplay={draft?.status === 'complete' && (savedPicks?.length ?? 0) > 0} draftPicks={savedPicks?.length ?? 0}
+                  />
+                )}
+              </>
+            )}
+          </PageTabs>
           <Attribution sources={room.fcUsed ? ['sleeper', 'fantasycalc'] : ['sleeper']} />
         </>
       )}

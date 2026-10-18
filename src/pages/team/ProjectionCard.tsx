@@ -4,7 +4,7 @@ import { WeeklyProjectionChart } from '../../components/charts/WeeklyProjectionC
 import type { WeekProjection } from '../../components/charts/WeeklyProjectionChart';
 import type { Engine } from '../../engine';
 
-/** My weekly expected points with floor to ceiling, actuals for finished weeks, playoff weeks shaded. */
+/** My weekly expected points with floor to ceiling, actuals for finished weeks, playoff weeks shaded. The title lives on the disclosure that holds it. */
 export function ProjectionCard({ engine }: { engine: Engine }) {
   const { scenario } = useScenario();
   const { currentWeek: cur, maxWeek, playoffWeeks } = engine.model.meta;
@@ -28,13 +28,5 @@ export function ProjectionCard({ engine }: { engine: Engine }) {
     return out;
   }, [engine, scenario, cur, maxWeek, playoffWeeks]);
 
-  return (
-    <section className="card" aria-labelledby="proj-title">
-      <header>
-        <div className="micro">expected points, floor to ceiling</div>
-        <h2 id="proj-title">weekly projection</h2>
-      </header>
-      <WeeklyProjectionChart weeks={weeks} />
-    </section>
-  );
+  return <WeeklyProjectionChart weeks={weeks} />;
 }

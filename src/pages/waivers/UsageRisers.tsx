@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PlayerLink } from '../../components/PlayerLink';
+import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
 import type { PlayerWeek } from '../../data/nflverseTypes';
 import { MIN_RISER_SNAPS, MIN_RISER_TARGETS, RISER_WINDOW, usageRisers } from './risers';
@@ -27,10 +28,10 @@ export function UsageRisers({ weeks, through, freeAgents, loading }: Props) {
   );
   return (
     <section className="card" aria-labelledby="risers-title">
-      <header>
-        <div className="micro">who is gaining snaps and targets</div>
-        <h2 id="risers-title">usage risers</h2>
-      </header>
+      <SectionHeader
+        id="risers-title" title="usage risers"
+        tip={`who is gaining snaps and targets: free agents compared over the last ${RISER_WINDOW} weeks with the same player’s average before that. needs ${MIN_RISER_SNAPS} snaps in the window, and ${MIN_RISER_TARGETS} targets for target share. snap share and target share come from nflverse.`}
+      />
       {!weeks || through === null ? (
         <p className="note" role="status">{loading ? 'loading the nightly nflverse data…' : 'nflverse data arrives with the nightly update.'}</p>
       ) : (
@@ -69,10 +70,6 @@ export function UsageRisers({ weeks, through, freeAgents, loading }: Props) {
               </table>
             </div>
           )}
-          <p className="note">
-            compares the last {RISER_WINDOW} weeks with the same player’s average before that. needs {MIN_RISER_SNAPS} snaps in the window, and {MIN_RISER_TARGETS} targets for target share.
-            snap share and target share come from nflverse.
-          </p>
         </>
       )}
     </section>

@@ -50,6 +50,40 @@ export interface Matchup {
   points: number;
   starters?: string[];
   players?: string[];
+  /** points of each starter, aligned with `starters` (updates live during games) */
+  starters_points?: number[];
+  /** points of every rostered player, league scoring applied (updates live during games) */
+  players_points?: Record<string, number>;
+  [k: string]: unknown;
+}
+
+/** One NFL game of Sleeper's undocumented `scores` endpoint (/scores/nfl/regular/{season}/{week}).
+    Checked Oct 18, 2026: CORS `*`, 14 games for week 6, 62 KB. `status` is pre_game | in_game | complete; the clock,
+    quarter and scores live in `metadata`. Loose on purpose. */
+export interface ScoreGame {
+  game_id: string;
+  status: string;
+  /** local game day, "2026-10-18" */
+  date?: string;
+  week?: number;
+  /** kickoff, epoch ms */
+  start_time?: number;
+  metadata?: {
+    away_team?: string;
+    home_team?: string;
+    away_score?: number | null;
+    home_score?: number | null;
+    /** "" before kickoff, "1" to "4", "OT", "F" or "F/OT" when over (halftime is read from `status` words too) */
+    quarter?: string | number;
+    /** game clock of the quarter, "7:21"; "15:00" before kickoff */
+    time_remaining?: string;
+    quarter_num?: number | string;
+    is_in_progress?: boolean;
+    is_over?: boolean;
+    /** ISO kickoff time */
+    date_time?: string;
+    [k: string]: unknown;
+  } | null;
   [k: string]: unknown;
 }
 

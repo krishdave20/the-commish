@@ -27,6 +27,8 @@
     "https://api.sleeper.app/projections/nfl/2026/8?season_type=regular&position[]=QB&position[]=RB&position[]=WR&position[]=TE&position[]=K&position[]=DEF": "projections_w08.json.gz",
     "https://api.sleeper.app/projections/nfl/2026/9?season_type=regular&position[]=QB&position[]=RB&position[]=WR&position[]=TE&position[]=K&position[]=DEF": "projections_w09.json.gz",
     "https://api.sleeper.app/schedule/nfl/regular/2026": "schedule.json.gz",
+    "https://api.sleeper.app/scores/nfl/regular/2026/5": "scores_w05.json.gz",
+    "https://api.sleeper.app/scores/nfl/regular/2026/6": "scores_w06.json.gz",
     "https://api.sleeper.app/v1/draft/1392645751871406080": "draft_1392645751871406080.json.gz",
     "https://api.sleeper.app/v1/draft/1392645751871406080/picks": "draft_picks_1392645751871406080.json.gz",
     "https://api.sleeper.app/v1/draft/1392645751871406080/traded_picks": "draft_traded_picks_1392645751871406080.json.gz",

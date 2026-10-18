@@ -6,7 +6,7 @@ import type {
   LeagueUser, NflState, SleeperDraft, SleeperLeague, SleeperRoster, SleeperUser, TradedPick,
 } from './contract.ts';
 import type {
-  BracketRow, DraftPick, FantasyCalcRow, Matchup, PlayersMap, ProjectionRow, ScheduleGame, Transaction, TrendingRow, WeekStats,
+  BracketRow, DraftPick, FantasyCalcRow, Matchup, PlayersMap, ProjectionRow, ScheduleGame, ScoreGame, Transaction, TrendingRow, WeekStats,
 } from './types.ts';
 
 export type Guard<T> = (x: unknown) => x is T;
@@ -42,6 +42,7 @@ const player = (x: unknown) => isObj(x) && (x.player_id === undefined || isStr(x
 const statLine = (x: unknown) => isObj(x);
 const projection = (x: unknown) => isObj(x) && isStr(x.player_id) && isObj(x.stats);
 const game = (x: unknown) => isObj(x) && isNum(x.week) && isStr(x.home) && isStr(x.away);
+const scoreGame = (x: unknown) => isObj(x) && isStr(x.game_id) && isStr(x.status);
 const trending = (x: unknown) => isObj(x) && isStr(x.player_id) && isNum(x.count);
 const matchup = (x: unknown) => isObj(x) && isNum(x.roster_id) && isNum(x.points);
 const transaction = (x: unknown) => isObj(x) && isStr(x.transaction_id) && isStr(x.type) && isStr(x.status);
@@ -65,6 +66,7 @@ export const shapes = {
   weekStats: mapOf<WeekStats[string]>(statLine) as Guard<WeekStats>,
   projections: arrayOf<ProjectionRow>(projection),
   schedule: arrayOf<ScheduleGame>(game),
+  scores: arrayOf<ScoreGame>(scoreGame),
   trending: arrayOf<TrendingRow>(trending),
   matchups: arrayOf<Matchup>(matchup),
   transactions: arrayOf<Transaction>(transaction),

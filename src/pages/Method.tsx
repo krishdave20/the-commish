@@ -3,6 +3,7 @@ import { formatAsOf, formatCount, formatMoney, formatNum, formatPct, formatPoint
 import { MIN_CAL_SAMPLES } from '../engine';
 import type { Engine } from '../engine';
 import { MarkLegend } from '../components/ClinchMark';
+import { Disclosure } from '../components/Disclosure';
 import { useGrown } from '../components/motion';
 import { LIVE_INTERVAL_MS } from './draft/pickFeed';
 
@@ -38,9 +39,8 @@ function Body({ engine }: { engine: Engine }) {
       <p className="note">
         built from your league’s sleeper data: rosters, schedule, weekly stats, injury tags, and sleeper’s weekly projections through week {meta.maxWeek}.
       </p>
-      <div className="grid2">
-        <section className="card" aria-labelledby="mth-data">
-          <header><h2 id="mth-data">where the data comes from</h2></header>
+      <div className="accordion">
+        <Disclosure title="where the data comes from" id="mth-data">
           <p className="note">
             three free public sources and no server of ours. your browser pulls sleeper and fantasycalc itself; nflverse comes through a nightly job.
             nothing here is written by an ai, and the copy that is kept lives only on this device.
@@ -54,10 +54,9 @@ function Body({ engine }: { engine: Engine }) {
             <li><b>your league’s rules.</b> scoring is {meta.scoring}, with passing-touchdown and tight-end bonuses read from the league settings; roster slots ({meta.slots.join(', ')}), {meta.playoffTeams} playoff teams, {meta.divisions} {meta.divisions === 1 ? 'division' : 'divisions'} and the {formatMoney(meta.waiverBudget)} faab budget all come from the league itself.</li>
             <li><b>player means.</b> sleeper’s projection, scored with those league settings.</li>
           </ul>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-check">
-          <header><h2 id="mth-check">projection check</h2></header>
+        <Disclosure title="projection check" id="mth-check">
           <p className="note">
             {meta.maeProjection !== null
               ? `in this league, sleeper’s projection missed by ${formatPoints(meta.maeProjection)} points per player on average over weeks ${meta.calibrationWeeks.join(', ') || '—'}, scored with your league’s settings.`
@@ -69,10 +68,9 @@ function Body({ engine }: { engine: Engine }) {
             mean absolute error in points. gradient boosting on form, snap share and matchup, a residual correction and a season-average blend all missed by more than the projection,
             so player means use the projection and the modeling goes where it holds up: floors and ceilings, matchup grades and the season simulation.
           </p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-bands">
-          <header><h2 id="mth-bands">floors and ceilings</h2></header>
+        <Disclosure title="floors and ceilings" id="mth-bands">
           <p>
             20th and 80th percentile of actual-to-projected points by position over the last finished weeks.
             held out on the latest week, they caught{' '}
@@ -101,10 +99,9 @@ function Body({ engine }: { engine: Engine }) {
             </table>
           </div>
           <p className="note">positions with fewer than {MIN_CAL_SAMPLES} samples use fixed fallback ratios.</p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-sim">
-          <header><h2 id="mth-sim">season simulation</h2></header>
+        <Disclosure title="season simulation" id="mth-sim">
           <p>
             each team’s weekly score is its best lineup’s expected points plus noise of <b>{formatPoints1(meta.teamWeeklySd)}</b> points,
             the spread of real results around projections (×0.85 for the week in progress). the first run is <b>{formatCount(meta.simRuns)}</b> simulated seasons;
@@ -113,10 +110,9 @@ function Body({ engine }: { engine: Engine }) {
           <p className="note">
             seeding: {meta.divisions > 0 ? 'division winners first, then wildcards by record, points for breaking ties' : 'by record, points for breaking ties'}.
           </p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-bracket">
-          <header><h2 id="mth-bracket">brackets and title odds</h2></header>
+        <Disclosure title="brackets and title odds" id="mth-bracket">
           <p>
             the bracket is built from the seeds and your league’s own playoff settings: byes for the top seeds when the field is not a power of two
             ({meta.playoffTeams} teams here), the usual 1v8, 4v5, 3v6, 2v7 pairings, and reseeding if the league reseeds. each round is scored like a regular-season
@@ -129,20 +125,18 @@ function Body({ engine }: { engine: Engine }) {
             each game advances and the team that loses every round is crowned the worst team; in the consolation style the winner advances. you choose in the front office.
           </p>
           <p className="note">when sleeper has published a bracket, real results are locked into it and only the open games are yours to pick.</p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-clinch">
-          <header><h2 id="mth-clinch">clinch marks</h2></header>
+        <Disclosure title="clinch marks" id="mth-clinch">
           <p>
             strict math, never simulation. a mark appears only when it is guaranteed whatever the remaining results and whatever the tiebreakers.
             real results plus any playoff-machine picks feed it.
           </p>
           <MarkLegend />
           <p className="note">a division winner never takes a wildcard spot, which the math accounts for.</p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-takes">
-          <header><h2 id="mth-takes">hot takes</h2></header>
+        <Disclosure title="hot takes" id="mth-takes">
           <p>
             every take is a template filled with real numbers. fixed detectors (usage spike, target hog, buy low, sell high, red-zone role, box-count edge, blitz beater,
             soft schedule, waiver riser, dynasty mover, coverage note) run over the nightly nflverse data, your rosters and the waiver wire. each has a threshold tuned
@@ -151,10 +145,9 @@ function Body({ engine }: { engine: Engine }) {
           <p className="note">
             headlines run twelve words or fewer, every card shows its sample size, no player gets more than three takes a week, and cards on your own players come first.
           </p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-draft">
-          <header><h2 id="mth-draft">draft room</h2></header>
+        <Disclosure title="draft room" id="mth-draft">
           <p>
             rankings score sleeper’s season projections with your league’s settings, set a replacement level from the league’s starting slots, rank by value over replacement and cut
             tiers where the gaps are natural. adp comes from the matching sleeper field (ppr, half, standard, 2qb, dynasty or rookie).
@@ -164,10 +157,9 @@ function Body({ engine }: { engine: Engine }) {
             with the league’s. on the clock polls sleeper every {LIVE_INTERVAL_MS / 1000} seconds during a live draft and shows best available, positional runs, your open slots, who is likely gone
             and each pick against its adp. a finished draft can be replayed pick by pick.
           </p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-dynasty">
-          <header><h2 id="mth-dynasty">dynasty trade block</h2></header>
+        <Disclosure title="dynasty trade block" id="mth-dynasty">
           <p>
             in a dynasty league (or when you explore it in a redraft one) trades are also priced in fantasycalc value, with future picks included: the next draft is priced by early,
             mid or late slot from each pick’s original owner’s projected finish, later drafts by round alone.
@@ -176,10 +168,9 @@ function Body({ engine }: { engine: Engine }) {
             the contender-or-rebuilder lens scores every team on now (expected points, rest of season) and later (dynasty value), then reads each as a contender (strong now and later),
             all-in (strong now, thin later), retool (weak now, strong later) or rebuilder (weak now and thin later). the trade verdict weighs the value moved against your lens.
           </p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-def">
-          <header><h2 id="mth-def">team defenses</h2></header>
+        <Disclosure title="team defenses" id="mth-def">
           <p>
             sleeper marks a team defense’s weekly stat row with games played (gp), not the active-games field players use. the original reference engine only read that field, so a defense never
             got actual points, locked points, calibration samples or matchup grades. this app counts a defense row as played when gp is above zero.
@@ -188,26 +179,25 @@ function Body({ engine }: { engine: Engine }) {
             on the saved oct 16 league that moves playoff odds by at most 2.7 points (one team; nine of twelve move half a point or less) and leaves the top three waiver adds the same.
             a reference-compatible build still reproduces the original to 0.005 points, and a test holds it there.
           </p>
-        </section>
+        </Disclosure>
 
-        <section className="card" aria-labelledby="mth-assume">
-          <header><h2 id="mth-assume">assumptions</h2></header>
+        <Disclosure title="assumptions" id="mth-assume">
           <ul className="plain">
             <li>other managers set their best lineup from next week on.</li>
             <li>questionable players count at 85%, doubtful at 30%, out at zero for the current week.</li>
             <li>ir players count again four weeks out unless you set a return week.</li>
             <li>trades take effect next week; the weekly lineup optimizer fills fixed slots first, then flex slots.</li>
           </ul>
-        </section>
-      </div>
-      <section className="card" aria-labelledby="mth-credit">
-        <header><h2 id="mth-credit">credits</h2></header>
+        </Disclosure>
+
+        <Disclosure title="credits" id="mth-credit">
         <ul className="plain">
           <li>league data: sleeper public api.</li>
           <li>play-by-play and snap data: nflverse. charting data: ftn data via nflverse.</li>
           <li>values: fantasycalc.</li>
         </ul>
-      </section>
+        </Disclosure>
+      </div>
     </>
   );
 }

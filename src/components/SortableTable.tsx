@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import { MoreColumns } from './MoreColumns';
+import { useMoreColumns } from './useMoreColumns';
 import { useSort } from './useSort';
 import type { Column, SortState } from './useSort';
 
@@ -12,11 +15,21 @@ interface Props<T> {
   rowClassName?: (row: T) => string | undefined;
   /** makes rows focusable; Enter or Space on a row calls it */
   onRowActivate?: (row: T) => void;
+  /** names this table for "more columns": columns marked `more` show only when it is on, remembered per id on this device */
+  tableId?: string;
+  /** whether a desktop shows the `more` columns with no saved choice (phones never do) */
+  defaultMore?: boolean;
+  /** draw this many rows at first (after sorting); "show more" adds as many again */
+  pageSize?: number;
 }
 
 /** A table with sortable column headers. Headers are buttons (Enter and Space work) and carry aria-sort. */
-export function SortableTable<T>({ columns, rows, rowKey, caption, initialSort = null, rowClassName, onRowActivate }: Props<T>) {
-  const { sorted, toggle, ariaSort, sort } = useSort(rows, columns, initialSort);
+export function SortableTable<T>({ columns: all, rows, rowKey, caption, initialSort = null, rowClassName, onRowActivate, tableId, defaultMore = false, pageSize }: Props<T>) {
+  const [limit, setLimit] = useState(pageSize ?? Infinity);
+  const hasMore = !!tableId && all.some((c) => c.more);
+  const more = useMoreColumns(hasMore ? tableId : undefined, defaultMore);
+  const columns = hasMore && !more.on ? all.filter((c) => !c.more) : all;
+  const { sorted, toggle, ariaSort, sort } = useSort(rows, all, initialSort);
 
   function onRowKey(e: KeyboardEvent<HTMLTableRowElement>, row: T) {
     if (e.target !== e.currentTarget) return;
@@ -27,6 +40,8 @@ export function SortableTable<T>({ columns, rows, rowKey, caption, initialSort =
   }
 
   return (
+    <>
+    {hasMore && <MoreColumns on={more.on} onToggle={more.toggle} label={caption.toLowerCase()} />}
     <div className="tw">
       <table>
         <caption className="sr-only">{caption}</caption>
@@ -51,7 +66,7 @@ export function SortableTable<T>({ columns, rows, rowKey, caption, initialSort =
           </tr>
         </thead>
         <tbody>
-          {sorted.map((row) => (
+          {sorted.slice(0, limit).map((row) => (
             <tr
               key={rowKey(row)}
               className={[onRowActivate ? 'click' : '', rowClassName?.(row) ?? ''].filter(Boolean).join(' ') || undefined}
@@ -68,5 +83,12 @@ export function SortableTable<T>({ columns, rows, rowKey, caption, initialSort =
         </tbody>
       </table>
     </div>
+    {sorted.length > limit && (
+      <div className="row">
+        <button type="button" className="btn" onClick={() => setLimit((n) => n + (pageSize ?? n))}>show {Math.min(pageSize ?? 0, sorted.length - limit)} more</button>
+        <span className="note">showing {limit} of {sorted.length}</span>
+      </div>
+    )}
+    </>
   );
 }

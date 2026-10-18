@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useDraftInputs, useRankings } from '../../app/draftInputs';
 import { FEATURE } from '../../app/names';
 import { PlayerLink } from '../../components/PlayerLink';
+import { SectionHeader } from '../../components/SectionHeader';
 import type { SleeperLeague } from '../../data';
 import { formatNum, formatPoints1 } from '../../app/format';
 
@@ -15,10 +16,10 @@ export function RookieClass({ league, season }: { league: SleeperLeague; season:
   const rows = useMemo(() => rankings?.rows.filter((r) => r.pos !== 'K' && r.pos !== 'DEF').slice(0, TOP) ?? [], [rankings]);
   return (
     <section className="card" aria-labelledby="rookies-title">
-      <header>
-        <div className="micro">{rankings ? `${rankings.adpField.replace(/_/g, ' ')} · ${season} season projections scored with your league` : `${season} season projections`}</div>
-        <h2 id="rookies-title">{FEATURE.rookies}</h2>
-      </header>
+      <SectionHeader
+        id="rookies-title" title={FEATURE.rookies}
+        tip={rankings ? `${rankings.adpField.replace(/_/g, ' ')} · ${season} season projections scored with your league.` : `${season} season projections.`}
+      />
       {inputs.loading && !rankings ? <p className="note" role="status">loading the rookie rankings…</p>
         : inputs.error && !rankings ? <p className="note neg-c" role="status">could not load the rookie rankings. {inputs.error}</p>
         : rows.length === 0 ? <p className="note">no rookie projections are out yet.</p>
@@ -48,7 +49,6 @@ export function RookieClass({ league, season }: { league: SleeperLeague; season:
             </table>
           </div>
         )}
-      {rankings && Object.values(rankings.byPid).some((r) => r.fc) && <p className="note">Values: FantasyCalc.</p>}
     </section>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { APP_VERSION } from '../../app/appInfo';
 import { loadPrefs, savePrefs } from '../../app/prefs';
 import { checkForUpdate } from '../../app/version';
+import { Disclosure } from '../../components/Disclosure';
 import type { UpdateCheck } from '../../app/version';
 
 export function AboutSection() {
@@ -16,8 +17,7 @@ export function AboutSection() {
   }
 
   return (
-    <section className="section" aria-labelledby="set-about">
-      <h2 id="set-about">About</h2>
+    <Disclosure title="About" id="set-about" hint={`version ${APP_VERSION}`}>
       <dl className="defs">
         <dt>Version</dt><dd>{APP_VERSION}</dd>
       </dl>
@@ -37,6 +37,6 @@ export function AboutSection() {
           {result.message}
         </p>
       )}
-    </section>
+    </Disclosure>
   );
 }

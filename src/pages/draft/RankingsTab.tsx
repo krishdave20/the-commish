@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { PlayerLink } from '../../components/PlayerLink';
+import { SectionHeader } from '../../components/SectionHeader';
+import { MoreColumns } from '../../components/MoreColumns';
 import { Segmented } from '../../components/Segmented';
+import { useMoreColumns } from '../../components/useMoreColumns';
 import { useSort } from '../../components/useSort';
 import type { Column } from '../../components/useSort';
 import { POS_ORDER } from '../../engine';
@@ -10,7 +13,7 @@ import { TierBadge, WatchStar } from './BestAvailable';
 import type { DraftRoom } from './model';
 import { formatCount, formatNum, formatPoints1 } from '../../app/format';
 
-const PAGE = 100;
+const PAGE = 25;
 
 interface Props {
   room: DraftRoom;
@@ -26,6 +29,7 @@ export function RankingsTab({ room, picks }: Props) {
   const [rookiesOnly, setRookiesOnly] = useState(false);
   const [hideDrafted, setHideDrafted] = useState(false);
   const [shown, setShown] = useState(PAGE);
+  const more = useMoreColumns('rankings');
 
   const positions = useMemo(() => {
     const have = new Set(rankings.rows.map((r) => r.pos));
@@ -47,16 +51,16 @@ export function RankingsTab({ room, picks }: Props) {
     { key: 'rank', header: '#', numeric: true, value: (r) => r.rank, className: 'dim' },
     { key: 'name', header: 'player', value: (r) => r.name, render: (r) => <><PlayerLink pid={r.pid} name={r.name} />{r.rookie && <> <span className="pill mute">rookie</span></>}</>, className: 'nowrap' },
     { key: 'pos', header: 'pos', value: (r) => `${r.pos}${String(r.posRank).padStart(3, '0')}`, render: (r) => <>{r.pos.toLowerCase()}{r.posRank}</>, className: 'dim' },
-    { key: 'team', header: 'team', value: (r) => r.team ?? '', render: (r) => r.team ?? 'fa', className: 'dim hide-sm' },
+    { key: 'team', header: 'team', more: true, value: (r) => r.team ?? '', render: (r) => r.team ?? 'fa', className: 'dim' },
     { key: 'points', header: 'proj pts', numeric: true, value: (r) => r.points, render: (r) => formatPoints1(r.points) },
-    { key: 'vor', header: 'vor', numeric: true, value: (r) => r.vor, render: (r) => formatPoints1(r.vor) },
-    { key: 'tier', header: 'tier', value: (r) => r.tier, render: (r) => <TierBadge tier={r.tier} /> },
+    { key: 'vor', header: 'vor', more: true, numeric: true, value: (r) => r.vor, render: (r) => formatPoints1(r.vor) },
+    { key: 'tier', header: 'tier', more: true, value: (r) => r.tier, render: (r) => <TierBadge tier={r.tier} /> },
     { key: 'adp', header: 'adp', numeric: true, value: (r) => r.adp, render: (r) => (r.adp == null ? '—' : formatNum(r.adp)), className: 'dim' },
     {
       key: 'value', header: 'vs adp', numeric: true, value: (r) => r.valueVsAdp,
       render: (r) => (r.valueVsAdp == null ? '—' : <span className={r.valueVsAdp > 0 ? 'pos-c' : r.valueVsAdp < 0 ? 'neg-c' : 'dim'}>{r.valueVsAdp > 0 ? '+' : r.valueVsAdp < 0 ? '−' : ''}{formatNum(Math.abs(r.valueVsAdp))}</span>),
     },
-    ...(showFc ? [{ key: 'fc', header: 'fc value', numeric: true, value: (r: RankedPlayer) => r.fc?.value ?? null, render: (r: RankedPlayer) => (r.fc ? formatCount(r.fc.value) : '—'), className: 'dim' } satisfies Column<RankedPlayer>] : []),
+    ...(showFc ? [{ key: 'fc', header: 'fc value', more: true, numeric: true, value: (r: RankedPlayer) => r.fc?.value ?? null, render: (r: RankedPlayer) => (r.fc ? formatCount(r.fc.value) : '—'), className: 'dim' } satisfies Column<RankedPlayer>] : []),
     { key: 'watch', header: 'watch', sortable: false, render: (r) => <WatchStar pid={r.pid} name={r.name} /> },
   ], [showFc]);
 
@@ -74,22 +78,22 @@ export function RankingsTab({ room, picks }: Props) {
     const label = byRank && first && (pos !== 'all' || r.tier > 1) ? `${r.pos.toLowerCase()} tier ${r.tier}` : null;
     return { r, label };
   });
-  const colSpan = columns.length;
+  const shownCols = more.on ? columns : columns.filter((c) => !c.more);
+  const colSpan = shownCols.length;
   const repl = POS_ORDER.filter((p) => rankings.replacement[p] != null);
 
   return (
     <div className="stack">
       <section className="card" aria-labelledby="rank-title">
-        <header>
-          <div className="micro">{formatCount(rankings.rows.length)} players · projections scored with your league’s settings</div>
-          <h2 id="rank-title">rankings</h2>
-        </header>
-
-        <div className="chips" aria-label="Replacement level by position">
-          {repl.map((p) => (
-            <span key={p} className="chip" title={`${rankings.starters[p] ?? 0} ${p.toLowerCase()} start across the league`}>replacement: {p.toLowerCase()} {formatPoints1(rankings.replacement[p]!)} pts</span>
-          ))}
-        </div>
+        <SectionHeader
+          id="rank-title" title="rankings"
+          tip={<>
+            {formatCount(rankings.rows.length)} players · projections scored with your league’s settings. replacement level by position:{' '}
+            {repl.map((p, i) => (
+              <span key={p}>{i > 0 && ', '}<span title={`${rankings.starters[p] ?? 0} ${p.toLowerCase()} start across the league`}>replacement: {p.toLowerCase()} {formatPoints1(rankings.replacement[p]!)} pts</span></span>
+            ))}.
+          </>}
+        />
 
         <div className="form-row">
           <label className="ctl">
@@ -101,7 +105,10 @@ export function RankingsTab({ room, picks }: Props) {
             <label className="check"><input type="checkbox" checked={hideDrafted} onChange={(e) => { setHideDrafted(e.target.checked); setShown(PAGE); }} /> hide drafted ({picks.length})</label>
           )}
         </div>
-        <Segmented label="Position filter" value={pos} onChange={(p) => { setPos(p); setShown(PAGE); }} options={[{ value: 'all', label: 'all' }, ...positions.map((p) => ({ value: p, label: p.toLowerCase() }))]} />
+        <div className="row between">
+          <Segmented label="Position filter" value={pos} onChange={(p) => { setPos(p); setShown(PAGE); }} options={[{ value: 'all', label: 'all' }, ...positions.map((p) => ({ value: p, label: p.toLowerCase() }))]} />
+          <MoreColumns on={more.on} onToggle={more.toggle} label="rankings" />
+        </div>
 
         {rows.length === 0 ? <p className="note" role="status">{rankings.rows.length === 0 ? 'no projections yet: sleeper has not published this season’s numbers.' : 'nobody matches those filters.'}</p> : (
           <div className="tw">
@@ -109,7 +116,7 @@ export function RankingsTab({ room, picks }: Props) {
               <caption className="sr-only">Draft rankings</caption>
               <thead>
                 <tr>
-                  {columns.map((c) => {
+                  {shownCols.map((c) => {
                     const sortable = c.sortable !== false && !!c.value;
                     return (
                       <th key={c.key} scope="col" className={c.numeric ? 'n' : undefined} aria-sort={sortable ? ariaSort(c.key) : undefined}>
@@ -131,7 +138,7 @@ export function RankingsTab({ room, picks }: Props) {
                     </tr>
                   ),
                   <tr key={r.pid} data-pid={r.pid}>
-                    {columns.map((c) => {
+                    {shownCols.map((c) => {
                       const cls = [c.numeric ? 'n' : '', c.className ?? ''].filter(Boolean).join(' ') || undefined;
                       return <td key={c.key} className={cls}>{c.render ? c.render(r) : (c.value?.(r) ?? '')}</td>;
                     })}

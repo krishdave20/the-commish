@@ -8,6 +8,10 @@ import { FEATURE } from '../app/names';
 import { teamResult } from '../app/results';
 import { useSimulation } from '../app/useSimulation';
 import { CountUp } from '../components/CountUp';
+import { PageTabs } from '../components/PageTabs';
+import { SectionHeader } from '../components/SectionHeader';
+import { SortableTable } from '../components/SortableTable';
+import type { Column } from '../components/useSort';
 import { Kpi } from '../components/Kpi';
 import { PlayerLink } from '../components/PlayerLink';
 import type { Engine, ModelPlayer, TradeIdea, TradeProposal } from '../engine';
@@ -97,10 +101,7 @@ function Analyzer({ engine, analyzerRef, state, dyn }: {
 
   return (
     <section className="card" aria-labelledby="analyzer-title" ref={analyzerRef}>
-      <header>
-        <div className="micro">tick players on both sides</div>
-        <h2 id="analyzer-title">the analyzer</h2>
-      </header>
+      <SectionHeader id="analyzer-title" title="the analyzer" tip="tick players on both sides of a deal; it scores your lineup, theirs, your playoff weeks and your playoff odds live." />
       <div className="form-row">
         <label className="ctl">
           trade partner
@@ -158,6 +159,35 @@ export default function Trades() {
   );
 }
 
+/** Win-win one-for-one ideas, ranked. "load" puts one into the analyzer. */
+function HandshakeDeals({ engine, own, onLoad }: { engine: Engine; own: boolean; onLoad: (x: TradeIdea) => void }) {
+  const { model } = engine;
+  const columns: Column<TradeIdea>[] = [
+    { key: 'idea', header: '#', more: true, numeric: true, value: (x) => x.idea, className: 'dim' },
+    { key: 'give', header: 'you send', value: (x) => x.give, render: (x) => <PlayerLink pid={x.givePid} name={x.give} /> },
+    { key: 'get', header: 'you get', value: (x) => x.get, render: (x) => <PlayerLink pid={x.getPid} name={x.get} /> },
+    { key: 'partner', header: 'partner', value: (x) => x.partner, className: 'dim' },
+    { key: 'mine', header: `your ${FEATURE.lift}`, numeric: true, value: (x) => x.myGain, render: (x) => <span className="pos-c">{signed(x.myGain)}</span> },
+    { key: 'theirs', header: `their ${FEATURE.lift}`, more: true, numeric: true, value: (x) => x.theirGain, render: (x) => <span className="pos-c">{signed(x.theirGain)}</span> },
+    { key: 'starts', header: 'starts for you', more: true, numeric: true, value: (x) => x.startsForMe },
+    { key: 'load', header: 'load', sortable: false, render: (x) => <button type="button" className="btn" aria-label={`Load ${x.give} for ${x.get}`} onClick={() => onLoad(x)}>load</button> },
+  ];
+  return (
+    <section className="card" aria-labelledby="ideas-title">
+      <SectionHeader id="ideas-title" title={FEATURE.handshake} tip="trades both managers should take: one for one, each side better off." />
+      {!own ? (
+        <p className="note">
+          deal ideas are worked out for your own team. you are looking at {engine.me.team}, so build deals in the analyzer; it scores any trade live.
+        </p>
+      ) : model.ideas.length === 0 ? (
+        <p className="note">no win-win one-for-one ideas right now.</p>
+      ) : (
+        <SortableTable caption="Handshake deals" columns={columns} rows={model.ideas} rowKey={(x) => x.idea} tableId="handshake" />
+      )}
+    </section>
+  );
+}
+
 function TradeBlock({ engine }: { engine: Engine }) {
   const { model, meRid } = engine;
   const others = useMemo(() => model.teams.filter((t) => t.rid !== meRid).sort((a, b) => a.team.localeCompare(b.team)), [model, meRid]);
@@ -194,47 +224,23 @@ function TradeBlock({ engine }: { engine: Engine }) {
   return (
     <>
       <ScenarioBar />
-      <Analyzer engine={engine} analyzerRef={analyzerRef} dyn={dyn}
-        state={{ partner, send, get, sendPicks: dyn ? sendPicks : [], getPicks: dyn ? getPicks : [], setPartner: changePartner, setSend, setGet, setSendPicks, setGetPicks }}
-      />
-      <section className="card" aria-labelledby="ideas-title">
-        <header>
-          <div className="micro">trades both managers should take</div>
-          <h2 id="ideas-title">{FEATURE.handshake}</h2>
-        </header>
-        {!own ? (
-          <p className="note">
-            deal ideas are worked out for your own team. you are looking at {engine.me.team}, so build deals in the analyzer above; it scores any trade live.
-          </p>
-        ) : model.ideas.length === 0 ? (
-          <p className="note">no win-win one-for-one ideas right now.</p>
+      <PageTabs
+        label="Trade block sections" defaultTab="analyzer"
+        tabs={[{ value: 'analyzer', label: 'analyzer' }, { value: 'deals', label: FEATURE.handshake }, ...(league ? [{ value: 'dynasty', label: 'dynasty' }] : [])]}
+      >
+        {(tab, setTab) => tab === 'analyzer' ? (
+          <Analyzer engine={engine} analyzerRef={analyzerRef} dyn={dyn}
+            state={{ partner, send, get, sendPicks: dyn ? sendPicks : [], getPicks: dyn ? getPicks : [], setPartner: changePartner, setSend, setGet, setSendPicks, setGetPicks }}
+          />
+        ) : tab === 'deals' ? (
+          <HandshakeDeals engine={engine} own={own} onLoad={(x) => { load(x); setTab('analyzer'); }} />
         ) : (
-          <div className="tw">
-            <table>
-              <caption className="sr-only">Handshake deals</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="n">#</th><th scope="col">you send</th><th scope="col">you get</th><th scope="col">partner</th>
-                  <th scope="col" className="n">your {FEATURE.lift}</th><th scope="col" className="n">their {FEATURE.lift}</th>
-                  <th scope="col" className="n hide-sm">starts for you</th><th scope="col"><span className="sr-only">load</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {model.ideas.map((x) => (
-                  <tr key={x.idea}>
-                    <td className="n dim">{x.idea}</td><td><PlayerLink pid={x.givePid} name={x.give} /></td><td><PlayerLink pid={x.getPid} name={x.get} /></td><td className="dim">{x.partner}</td>
-                    <td className="n pos-c">{signed(x.myGain)}</td><td className="n pos-c">{signed(x.theirGain)}</td>
-                    <td className="n hide-sm">{x.startsForMe}</td>
-                    <td><button type="button" className="btn" aria-label={`Load ${x.give} for ${x.get}`} onClick={() => load(x)}>load</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {league && <LensCard engine={engine} dyn={dyn} redraft={redraft} explore={explore} setExplore={setExplore} />}
+            {dyn && <PicksCard engine={engine} dyn={dyn} />}
+          </>
         )}
-      </section>
-      {league && <LensCard engine={engine} dyn={dyn} redraft={redraft} explore={explore} setExplore={setExplore} />}
-      {dyn && <PicksCard engine={engine} dyn={dyn} />}
+      </PageTabs>
     </>
   );
 }

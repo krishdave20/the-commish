@@ -5,6 +5,8 @@ import { useScenario } from '../../app/modelContext';
 import { teamResult } from '../../app/results';
 import { PlayerLink } from '../../components/PlayerLink';
 import { CountUp } from '../../components/CountUp';
+import { Disclosure } from '../../components/Disclosure';
+import { SectionHeader } from '../../components/SectionHeader';
 import { emptyScenario, toggleIn, withOverride } from '../../engine';
 import type { Engine, ModelPlayer, PlayerOverride, Scenario } from '../../engine';
 import { PlayerTags } from './PlayerTags';
@@ -85,14 +87,10 @@ export function LabCard({ engine }: { engine: Engine }) {
 
   return (
     <section className="card" aria-labelledby="lab-title">
-      <header>
-        <div className="micro">what if…?</div>
-        <h2 id="lab-title">{FEATURE.lab}</h2>
-        <p className="note">
-          change a player’s return week or points per game, add a free agent, drop someone, or turn the weekly swing up or down.
-          the season is re-simulated off the main thread after each change.
-        </p>
-      </header>
+      <SectionHeader
+        id="lab-title" title={FEATURE.lab} kicker="what if…?"
+        tip="change a player’s return week or points per game, add a free agent, drop someone, or turn the weekly swing up or down (1.00× is the spread of real results around projections; higher means more upsets). the season is re-simulated off the main thread after each change."
+      />
 
       <div className="stack" aria-live="polite">
         <div className="micro">your playoff odds</div>
@@ -214,15 +212,13 @@ export function LabCard({ engine }: { engine: Engine }) {
               onChange={(e) => setScenario((s) => ({ ...s, volatility: Number(e.target.value) }))}
             />
           </label>
-          <p className="note">1.00× is the spread of real results around projections. higher means more upsets.</p>
           <div className="row">
             <button type="button" className="btn warn" onClick={reset} disabled={!active}>reset what-if</button>
           </div>
         </div>
       </div>
 
-      <div className="stack">
-        <h3>saved what-ifs</h3>
+      <Disclosure title="saved what-ifs" level={3} hint={saved.list.length ? `${saved.list.length} saved` : undefined}>
         <div className="form-row">
           <label className="ctl">
             name
@@ -253,7 +249,7 @@ export function LabCard({ engine }: { engine: Engine }) {
             </tbody>
           </table>
         </div>
-      </div>
+      </Disclosure>
     </section>
   );
 }

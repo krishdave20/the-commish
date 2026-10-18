@@ -35,8 +35,8 @@ export function ModeBar({ league, draftMode, shown, wanted, rankings, inputs, on
     <div className="stack mode-bar">
       <div className="row">
         {open && <Segmented label="Draft mode" value={wanted} onChange={onChange} options={OPTIONS} />}
-        {!open && <span className="chip flat">mode: {draftMode}</span>}
-        <span className="chip">adp: {rankings.adpField}</span>
+        {!open && <span className="note">mode: {draftMode}</span>}
+        <span className="note">adp: {rankings.adpField}</span>
         {shown !== 'redraft' && fc.ok && <span className="chip up">{DRAFT_TEXT.fantasycalc}</span>}
         {!dynasty && !open && (
           <button type="button" className="btn quiet" aria-expanded={false} onClick={() => setExplore(true)}>explore startup and rookie values</button>

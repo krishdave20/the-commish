@@ -1,3 +1,4 @@
+import { SectionHeader } from '../../components/SectionHeader';
 import { UsageTrendChart } from '../../components/charts/UsageTrendChart';
 import type { TrendSeries } from '../../components/charts/UsageTrendChart';
 import { formatCount, formatNum, formatPct, signed } from '../../app/format';
@@ -29,12 +30,11 @@ function trend(weeks: PlayerWeek[], pos: string): TrendSeries[] {
 export function UsageTrends({ weeks, pos }: { weeks: PlayerWeek[]; pos: string }) {
   return (
     <section className="card" aria-labelledby="trend-title">
-      <header>
-        <div className="micro">by week, from play-by-play and snap counts</div>
-        <h2 id="trend-title">usage trends</h2>
-      </header>
+      <SectionHeader
+        id="trend-title" title="usage trends"
+        tip="by week, from play-by-play and snap counts. target share is his targets over the team’s pass attempts; air-yards share is his air yards over the team’s. weeks he did not play have no point."
+      />
       <UsageTrendChart series={trend(weeks, pos)} label="Usage by week: snap percent, target share, air-yards share and red-zone target share" />
-      <p className="note">target share is his targets over the team’s pass attempts; air-yards share is his air yards over the team’s. weeks he did not play have no point.</p>
     </section>
   );
 }
@@ -63,12 +63,11 @@ export function SeasonUsage({ s, defs }: { s: PlayerSeason; defs: Record<string,
   }
   return (
     <section className="card" aria-labelledby="season-usage-title">
-      <header>
-        <div className="micro">{`season to date, ${s.games} ${s.games === 1 ? 'game' : 'games'}`}</div>
-        <h2 id="season-usage-title">season usage</h2>
-      </header>
+      <SectionHeader
+        id="season-usage-title" title="season usage" kicker={`season to date, ${s.games} ${s.games === 1 ? 'game' : 'games'}`}
+        tip={`splits under ${MIN_TARGETS} targets, ${MIN_CARRIES} carries or ${MIN_ROUTES} snaps or routes are hidden; the sample size is always shown.`}
+      />
       <SplitTable caption="Season usage" rows={rows} />
-      <p className="note">splits under {MIN_TARGETS} targets, {MIN_CARRIES} carries or {MIN_ROUTES} snaps or routes are hidden; the sample size is always shown.</p>
     </section>
   );
 }
@@ -85,10 +84,7 @@ export function RbSplits({ s }: { s: PlayerSeason }) {
   ];
   return (
     <section className="card" aria-labelledby="rb-title">
-      <header>
-        <div className="micro">box counts from ftn charting</div>
-        <h2 id="rb-title">rushing splits</h2>
-      </header>
+      <SectionHeader id="rb-title" title="rushing splits" tip="box counts from ftn charting." />
       <SplitTable caption="Rushing box splits" rows={rows} />
     </section>
   );
@@ -106,10 +102,7 @@ export function FtnSplits({ s }: { s: PlayerSeason }) {
   ];
   return (
     <section className="card" aria-labelledby="ftn-title">
-      <header>
-        <div className="micro">charting data from ftn</div>
-        <h2 id="ftn-title">charting splits</h2>
-      </header>
+      <SectionHeader id="ftn-title" title="charting splits" tip="charting data from ftn." />
       <SplitTable caption="Charting splits" rows={rows} />
     </section>
   );
@@ -130,11 +123,8 @@ export function CoveragePanel({ cov }: { cov: NonNullable<PlayerNflverse['covera
   const shells = Object.entries(cov.shells ?? {}).filter(([, t]) => t[0] >= MIN_ROUTES).sort((a, b) => b[1][0] - a[1][0]);
   return (
     <section className="card" aria-labelledby="cov-title">
-      <header>
-        <div className="micro">{label}</div>
-        <h2 id="cov-title">coverage and routes</h2>
-        {!cov.isCurrent && <p className="note">participation data for the current season is not published yet, so these splits are from {label}.</p>}
-      </header>
+      <SectionHeader id="cov-title" title="coverage and routes" kicker={label} tip={cov.routesDefinition} />
+      {!cov.isCurrent && <p className="note">participation data for the current season is not published yet, so these splits are from {label}.</p>}
       {!row ? <p className="note">no route data for this player in {label}.</p> : <SplitTable caption={`Coverage splits, ${label}`} rows={rows} />}
       {shells.length > 0 && (
         <div className="tw">
@@ -152,7 +142,6 @@ export function CoveragePanel({ cov }: { cov: NonNullable<PlayerNflverse['covera
           </table>
         </div>
       )}
-      <p className="note">{cov.routesDefinition}</p>
     </section>
   );
 }

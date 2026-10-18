@@ -34,16 +34,21 @@ function bigModel(o: { meRid?: number; wins?: (rid: number) => number } = {}): M
 
 const load = (o?: Parameters<typeof bigModel>[0]) => sampleLoadModel(() => bigModel(o));
 const round1 = (section: HTMLElement) => [...section.querySelectorAll('.br-match')].filter((e) => /^round 1,/.test(e.getAttribute('aria-label')!)).map((e) => e.getAttribute('aria-label')!);
+const screenShip = async () => (await screen.findByRole('heading', { level: 2, name: 'road to the ’ship' })).closest('section')!;
 const ship = () => screen.getByRole('heading', { level: 2, name: 'road to the ’ship' }).closest('section')!;
 const bowl = () => screen.getByRole('heading', { level: 2, name: 'the toilet bowl' }).closest('section')!;
 const toggle = (name: string) => screen.getByRole('radio', { name });
 
 async function raceReady(o?: { route?: string; sleeper?: ReturnType<typeof createFakeSleeper>; loadModel?: ReturnType<typeof load> }) {
-  const r = renderApp({ linked, route: o?.route ?? '/race', loadModel: o?.loadModel ?? load(), sleeper: o?.sleeper });
+  const r = renderApp({ linked, route: o?.route ?? '/race?tab=brackets', loadModel: o?.loadModel ?? load(), sleeper: o?.sleeper });
   await screen.findByRole('heading', { level: 2, name: 'road to the ’ship' });
   await screen.findByRole('group', { name: /round 1, game 1/ });
   return r;
 }
+
+/** the playoff picture's own tabs (the machine and the standings are not on the brackets tab) */
+const goTo = (user: { click: (el: HTMLElement) => Promise<void> }, name: string) =>
+  user.click(within(screen.getByRole('radiogroup', { name: 'Playoff picture sections' })).getByRole('radio', { name }));
 
 describe('the bracket on the playoff picture', () => {
   it('has a section with a plain kicker and a toggle between the ’ship and the toilet bowl', async () => {
@@ -81,33 +86,43 @@ describe('the bracket on the playoff picture', () => {
     // no picks: every game goes to the stronger team, so the strongest teams finish on top
     await waitFor(() => expect(round1(ship())[0]).toMatch(/^round 1, game 1: Team \d versus Team \d$/));
     const before = round1(ship());
-    // "you win out": Team 8 wins all four of its games
-    const machine = screen.getByRole('heading', { level: 2, name: 'playoff machine' }).closest('section')!;
+    // the machine is its own tab; the picks stay while you move between tabs
+    await goTo(user, 'playoff machine');
+    const machine = (await screen.findByRole('heading', { level: 2, name: 'playoff machine' })).closest('section')!;
     await user.click(within(machine).getByRole('button', { name: 'pick favorites (all)' }));
-    const favs = round1(ship());
+    await goTo(user, 'brackets');
+    const favs = round1(await screenShip());
     expect(favs).toEqual(before); // picking the favorites changes nothing: that is what the bracket assumed
     // now make the weakest team win everything it plays: pick its side in every one of its games
-    await user.click(within(machine).getByRole('button', { name: 'clear' }));
+    await goTo(user, 'playoff machine');
+    const machine2 = (await screen.findByRole('heading', { level: 2, name: 'playoff machine' })).closest('section')!;
+    await user.click(within(machine2).getByRole('button', { name: 'clear' }));
     for (const wk of ['wk 5', 'wk 6', 'wk 7', 'wk 8']) {
-      await user.click(within(machine).getByRole('radio', { name: new RegExp(`^${wk}`) }));
-      const sides = within(machine).getAllByRole('button').filter((b) => /^Team 1\b/.test(b.querySelector('.nm')?.textContent ?? ''));
+      await user.click(within(machine2).getByRole('radio', { name: new RegExp(`^${wk}`) }));
+      const sides = within(machine2).getAllByRole('button').filter((b) => /^Team 1\b/.test(b.querySelector('.nm')?.textContent ?? ''));
       for (const s of sides) await user.click(s);
     }
+    await goTo(user, 'brackets');
     await waitFor(() => expect(round1(ship())).not.toEqual(before));
     // Team 1 went 8-0 on the machine: it is seed 1
     expect(round1(ship())[0]).toMatch(/^round 1, game 1: Team 1 versus/);
     // and the picks live on the machine side: clearing them puts the seeds back
-    await user.click(within(machine).getByRole('button', { name: 'clear' }));
+    await goTo(user, 'playoff machine');
+    await user.click(within((await screen.findByRole('heading', { level: 2, name: 'playoff machine' })).closest('section')!).getByRole('button', { name: 'clear' }));
+    await goTo(user, 'brackets');
     await waitFor(() => expect(round1(ship())).toEqual(before));
   });
 
   it('adds title and flush columns to the standings and a title and flush line to the team drawer', async () => {
     const { user } = await raceReady();
+    await goTo(user, 'standings');
     const table = await screen.findByRole('table', { name: 'Playoff picture standings' });
-    const heads = within(table).getAllByRole('columnheader').map((h) => h.textContent!.replace(/[▲▼]/g, '').trim());
-    expect(heads).toContain('title');
-    expect(heads).toContain('flush');
-    expect(heads.indexOf('flush')).toBe(heads.indexOf('title') + 1);
+    const heads = () => within(table).getAllByRole('columnheader').map((h) => h.textContent!.replace(/[▲▼]/g, '').trim());
+    // the title odds are on by default; the flush odds are one of the "more columns"
+    expect(heads()).toContain('title');
+    expect(heads()).not.toContain('flush');
+    await user.click(screen.getByRole('button', { name: /more columns/ }));
+    expect(heads()).toContain('flush');
     await waitFor(() => expect(within(within(table).getByText('Team 8').closest('tr')!).queryAllByText('…')).toHaveLength(0));
     await user.click(within(table).getByText('Team 1'));
     const drawer = await screen.findByRole('dialog');
@@ -144,7 +159,7 @@ async function userClick(el: HTMLElement) {
 }
 
 describe('the front office setting', () => {
-  const settings = () => screen.getByRole('heading', { level: 2, name: 'the toilet bowl' }).closest('section')!;
+  const settings = () => screen.getByRole('heading', { level: 2, name: 'the toilet bowl' }).closest('details')!;
   const stored = () => JSON.parse(window.localStorage.getItem(PREFS_KEY) ?? '{}') as { losers?: string };
   const LEAGUE_CONSOLATION: BracketRow[] = [
     { m: 1, r: 1, t1: 10, t2: 1, w: null, l: null }, { m: 2, r: 1, t1: 2, t2: 6, w: null, l: null },
@@ -187,8 +202,6 @@ describe('the front office setting', () => {
   it('switching it flips who advances and the labels on the playoff picture', async () => {
     window.localStorage.setItem(PREFS_KEY, JSON.stringify({ autoRefresh: true, updateUrl: '', losers: 'consolation' }));
     const { user } = await raceReady({ sleeper: createFakeSleeper({ losersBracket: LEAGUE_CONSOLATION }) });
-    const table = await screen.findByRole('table', { name: 'Playoff picture standings' });
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent!.replace(/[▲▼]/g, '').trim())).toContain('consolation');
     await user.click(toggle('the consolation prize'));
     const b = screen.getByRole('heading', { level: 2, name: 'the consolation prize' }).closest('section')!;
     expect(within(b).getByText('consolation bracket: winners advance')).toBeInTheDocument();
@@ -198,6 +211,10 @@ describe('the front office setting', () => {
     expect(b).not.toHaveTextContent('official losers bracket');
     await user.click(within(b).getAllByRole('button', { name: /^seed 1, Team \d,.*, advance$/ })[0]!);
     expect(within(b).queryByText('flushed')).not.toBeInTheDocument();
+    // the standings column follows the setting too
+    await goTo(user, 'standings');
+    await user.click(screen.getByRole('button', { name: /more columns/ }));
+    expect(within(await screen.findByRole('table', { name: 'Playoff picture standings' })).getAllByRole('columnheader').map((h) => h.textContent!.replace(/[▲▼]/g, '').trim())).toContain('consolation');
   });
 
   it('says so when the app shows something other than the league\'s own bracket', async () => {
@@ -226,36 +243,39 @@ describe('the huddle', () => {
     return r;
   };
 
-  it('in season shows "your path": projected seed, first opponent, title odds, and a link to the full bracket', async () => {
+  const strip = async () => within(await screen.findByRole('group', { name: 'your season' }));
+
+  it('in season shows "your path" in the strip: projected seed, title odds, the first game and a link to the playoff picture', async () => {
     // Team 1 is 4-0: the playoffs are likelier than the toilet bowl
     await huddleReady({ model: { meRid: 1 } });
-    const card = (await screen.findByRole('heading', { level: 2, name: 'your path' })).closest('section')!;
-    await waitFor(() => expect(card).toHaveTextContent(/projected seed: \d(st|nd|rd|th)\./));
-    expect(card).toHaveTextContent(/first game: round 1, week 9 against Team \d \(seed \d\); \d+% to win\./);
-    expect(card).not.toHaveTextContent('toilet bowl');
-    expect(card).toHaveTextContent('title odds');
-    expect(card).toHaveTextContent(/\d+% to reach the final · \d+% to make the playoffs at all\./);
-    expect(within(card).getByRole('link', { name: 'open the full bracket →' })).toHaveAttribute('href', '/race');
+    const s = await strip();
+    await waitFor(() => expect(s.getByText('projected seed').closest('.kpi')).toHaveTextContent(/^projected seed\d(st|nd|rd|th)/));
+    const path = s.getByText('projected seed').closest('.kpi')!;
+    expect(path).toHaveTextContent(/\d+% title odds · \d+% to reach the final/);
+    const note = screen.getByText(/first game: round 1/).closest('p')!;
+    expect(note).toHaveTextContent(/first game: round 1, week 9 against Team \d \(seed \d\); \d+% to win\./);
+    expect(note).not.toHaveTextContent('toilet bowl');
+    expect(within(note).getByRole('link', { name: /open the playoff picture/ })).toHaveAttribute('href', '/race');
   });
 
   it('a team likelier to land in the toilet bowl than the playoffs gets its toilet bowl path, with a straight face', async () => {
     // Team 1 is the weakest team (and winless): its odds are all about the bottom four
     await huddleReady({ model: { meRid: 1, wins: (r) => (r === 1 ? 0 : 2) } });
-    const card = (await screen.findByRole('heading', { level: 2, name: 'your path' })).closest('section')!;
-    await waitFor(() => expect(card).toHaveTextContent('the toilet bowl'));
-    expect(card).toHaveTextContent(/the odds have you in the toilet bowl \(\d+%\) before the playoffs \(\d+%\)\. someone has to be the worst team in the league\./);
-    expect(card).toHaveTextContent(/to be crowned toilet bowl champ: crowned the worst team in the league\./);
-    expect(card).toHaveTextContent(/projected seed: \d(st|nd|rd|th)/);
-    expect(card).toHaveTextContent(/to lose it and advance/);
+    const s = await strip();
+    await waitFor(() => expect(s.getByText('the toilet bowl')).toBeInTheDocument());
+    expect(s.getByText('the toilet bowl').closest('.kpi')).toHaveTextContent(/to be crowned toilet bowl champ: crowned the worst team in the league/);
+    const note = screen.getByText(/the odds have you in the toilet bowl/).closest('p')!;
+    expect(note).toHaveTextContent(/the odds have you in the toilet bowl \(\d+%\) before the playoffs \(\d+%\)\. someone has to be the worst team in the league\./);
+    expect(note).toHaveTextContent(/to lose it and advance/);
   });
 
-  it('the consolation setting gives the same card ordinary copy', async () => {
+  it('the consolation setting gives the same strip ordinary copy', async () => {
     window.localStorage.setItem(PREFS_KEY, JSON.stringify({ autoRefresh: true, updateUrl: '', losers: 'consolation' }));
     await huddleReady({ model: { meRid: 1, wins: (r) => (r === 1 ? 0 : 2) } });
-    const card = (await screen.findByRole('heading', { level: 2, name: 'your path' })).closest('section')!;
-    await waitFor(() => expect(card).toHaveTextContent('the consolation prize'));
-    expect(card).toHaveTextContent(/there is still a trophy down here/);
-    expect(card).not.toHaveTextContent('flush');
+    const s = await strip();
+    await waitFor(() => expect(s.getByText('the consolation prize')).toBeInTheDocument());
+    expect(screen.getByText(/there is still a trophy down here/)).toBeInTheDocument();
+    expect(screen.getByText(/there is still a trophy down here/).closest('p')).not.toHaveTextContent('flush');
   });
 
   it('postseason preview: both brackets, from Sleeper\'s winners bracket with the real results locked and the rest open', async () => {
@@ -269,13 +289,15 @@ describe('the huddle', () => {
     expect(await screen.findByText('previewing: postseason')).toBeInTheDocument();
     const s = (await screen.findByRole('heading', { level: 2, name: 'road to the ’ship' })).closest('section')!;
     expect(s).toHaveTextContent('from sleeper’s bracket');
+    // the postseason huddle shows one bracket at a time, the road to the ’ship first
     // game 1 was played: Team 4 beat Team 1 and the result is locked
     await waitFor(() => expect(within(s).getByRole('button', { name: /^seed 4, Team 4,.*advances \(final result\)/ })).toHaveAttribute('aria-disabled', 'true'));
     // game 2 is open and pickable; the final gets its teams once game 2 is picked
     await userClick(within(s).getByRole('button', { name: /^seed \d+, Team 3,/ }));
     expect(within(s).getAllByRole('button', { name: /^seed \d+, Team (3|4),.*round 2/ })).toHaveLength(2);
-    // the toilet bowl sits below it
-    const t = screen.getByRole('heading', { level: 2, name: 'the toilet bowl' }).closest('section')!;
+    // the toilet bowl is the other tab
+    await userClick(screen.getByRole('radio', { name: 'the toilet bowl' }));
+    const t = (await screen.findByRole('heading', { level: 2, name: 'the toilet bowl' })).closest('section')!;
     expect(within(t).getByText('consolation bracket: losers advance')).toBeInTheDocument();
     expect(within(t).getAllByRole('button', { name: /, flush$/ }).length).toBeGreaterThan(0);
   });
@@ -284,7 +306,7 @@ describe('the huddle', () => {
     await huddleReady({ route: '/?phase=postseason', sleeper: createFakeSleeper() });
     const s = (await screen.findByRole('heading', { level: 2, name: 'road to the ’ship' })).closest('section')!;
     await waitFor(() => expect(s).toHaveTextContent('sleeper has no bracket yet, so this is the projected one'));
-    expect(screen.getByRole('heading', { level: 2, name: 'the toilet bowl' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'the toilet bowl' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'your path' })).not.toBeInTheDocument();
   });
 

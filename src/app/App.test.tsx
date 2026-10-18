@@ -16,13 +16,15 @@ describe('app shell', () => {
     expect(await screen.findByLabelText('Sleeper username')).toBeInTheDocument();
   });
 
-  it('shows all 9 nav routes in the sidebar', async () => {
+  it('shows the 9 grouped nav routes in the sidebar', async () => {
     renderApp({ linked: [sampleAccount()] });
     const nav = await screen.findByRole('navigation', { name: 'Primary' });
     const links = within(nav).getAllByRole('link');
     expect(links).toHaveLength(9);
     expect(links.map((a) => a.textContent)).toEqual(NAV.map((n) => n.label));
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/takes', '/players', '/team', '/race', '/waivers', '/trades', '/draft', '/settings']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/gameday', '/team', '/race', '/takes', '/waivers', '/trades', '/players', '/draft']);
+    const ref = within(screen.getByRole('navigation', { name: 'Reference' })).getAllByRole('link');
+    expect(ref.map((a) => a.getAttribute('href'))).toEqual(['/settings', '/method']);
   });
 
   it('puts the wordmark and account switcher in the sidebar', async () => {
@@ -43,12 +45,13 @@ describe('app shell', () => {
   });
 
   it('switches the followed league from the sidebar', async () => {
-    const { accounts, user } = renderApp({ linked: [sampleAccount({ leagueIds: ['L1', 'L2'] })] });
+    const { accounts, user } = renderApp({ linked: [sampleAccount({ leagueIds: ['L1', 'L2'] })], route: '/settings' });
     const select = await screen.findByLabelText('League');
     await screen.findByRole('option', { name: 'Half Point Keepers' });
     await user.selectOptions(select, 'L2');
     expect(accounts.active()?.activeLeagueId).toBe('L2');
-    expect(await screen.findByRole('heading', { level: 2, name: 'Half Point Keepers' })).toBeInTheDocument();
+    // the league's rules (front office) now belong to the league just picked
+    expect(await screen.findByText('Half Point Keepers', { selector: '.sum-hint' })).toBeInTheDocument();
   });
 
   it('gives the draft room its page header, kicker and document title (no placeholder is left)', async () => {

@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import type { LoadModel } from '../app/loadModel';
-import type { BracketRow, DraftPick, PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient, ProjectionRow, TrendingRow } from '../data';
+import type { BracketRow, DraftPick, Matchup, PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient, ProjectionRow, ScoreGame, TrendingRow } from '../data';
 import { syntheticPool } from '../engine/draft/test-helpers';
 import { buildRankings, createMock, draftOrderFor } from '../engine';
 import { handModel } from '../engine/test-helpers';
@@ -381,6 +381,15 @@ export interface FakeSleeperOpts {
   losersBracket?: BracketRow[];
   /** make the bracket endpoints fail, as a 404 or an outage would */
   bracketFails?: boolean;
+  /** game day: what the live endpoints answer (functions, so a test can change them between polls). Without it the client has no live endpoints. */
+  live?: FakeLive;
+}
+
+/** What the fake game day endpoints serve, by week. */
+export interface FakeLive {
+  matchups: (week: number) => Matchup[];
+  scores: (week: number) => ScoreGame[];
+  projections?: (week: number) => ProjectionRow[];
 }
 
 /** The Sleeper client pieces the app reads outside the engine's pull: players, FantasyCalc, trending adds, past seasons and draft inputs. */
@@ -416,6 +425,12 @@ export function createFakeSleeper(o: FakeSleeperOpts = {}) {
       if (o.projectionsFail) throw new Error('Sleeper projections are down');
       return loaded(o.projections ?? sampleSeasonProjections());
     }),
+    ...(o.live ? {
+      liveMatchups: vi.fn(async (_id: string, week: number) => loaded(o.live!.matchups(week))),
+      scores: vi.fn(async (_season: string, week: number) => loaded(o.live!.scores(week))),
+      projections: vi.fn(async (_season: string, week: number) => loaded(o.live!.projections?.(week) ?? [])),
+      schedule: vi.fn(async () => loaded([])),
+    } : {}),
   } as unknown as SleeperClient & {
     players: ReturnType<typeof vi.fn>; fantasyCalc: ReturnType<typeof vi.fn>; trending: ReturnType<typeof vi.fn>;
     league: ReturnType<typeof vi.fn>; seasonProjections: ReturnType<typeof vi.fn>;
@@ -597,4 +612,60 @@ export function createFakeNflverse(o: { missing?: boolean; bundle?: () => Nflver
     unmatched: serve(() => ({ schema: 1, season: 2026, generatedAt: '', players: b.unmatched })),
     urlOf: (f: string) => `./data/nflverse/${f}`,
   } as unknown as NflverseClient & Record<'manifest' | 'weekly' | 'season' | 'coverage' | 'unmatched', ReturnType<typeof vi.fn>>;
+}
+
+/* ---------- game day ---------- */
+
+/** The sample league's four fantasy teams, as the live game day tests see them: every player of fantasy team k plays for NFL team `N{k}`,
+    and N1 plays N2 (matchup 1: me against Reed) while N3 plays N4 (matchup 2). The bench wideout is on N1 too. */
+export function liveSampleModel(): Model {
+  const m = sampleModel();
+  for (const p of m.players) if (p.ownerRid > 0) p.nfl = `N${p.ownerRid}`;
+  return m;
+}
+
+const LIVE_STARTERS: Record<number, string[]> = {
+  1: ['t1qb', 't1rb', 't1wr'], 2: ['t2qb', 't2rb', 't2wr'], 3: ['t3qb', 't3rb', 't3wr'], 4: ['t4qb', 't4rb', 't4wr'],
+};
+const LIVE_BENCH: Record<number, string[]> = { 1: ['t1bw'], 2: [], 3: [], 4: [] };
+
+/** Sleeper-shaped matchups for the sample league: points per player id (anything missing is 0). Roster 1 plays 2 and 3 plays 4. */
+export function sampleLiveMatchups(pts: Record<string, number> = {}): Matchup[] {
+  return [1, 2, 3, 4].map((rid) => {
+    const starters = LIVE_STARTERS[rid]!;
+    const players = [...starters, ...LIVE_BENCH[rid]!];
+    const players_points = Object.fromEntries(players.map((p) => [p, pts[p] ?? 0]));
+    const starters_points = starters.map((p) => players_points[p]!);
+    return {
+      roster_id: rid, matchup_id: rid <= 2 ? 1 : 2, points: Math.round(starters_points.reduce((a, b) => a + b, 0) * 100) / 100,
+      starters, players, starters_points, players_points, custom_points: null,
+    } as Matchup;
+  });
+}
+
+export type FakeGameState = 'pre' | 'live' | 'final';
+
+/** The two NFL games (N2 at N1, N4 at N3) as Sleeper's scores endpoint reports them. `clock` is "quarter time", e.g. ['2', '7:30']. */
+export function sampleScores(o: { a?: FakeGameState; b?: FakeGameState; kickoff?: number; clock?: [string, string] } = {}): ScoreGame[] {
+  const g = (id: string, home: string, away: string, state: FakeGameState, kickoff: number): ScoreGame => ({
+    game_id: id,
+    status: state === 'pre' ? 'pre_game' : state === 'live' ? 'in_game' : 'complete',
+    start_time: kickoff,
+    metadata: {
+      home_team: home, away_team: away, home_score: state === 'pre' ? undefined : 17, away_score: state === 'pre' ? undefined : 10,
+      quarter: state === 'pre' ? '' : state === 'final' ? 'F' : (o.clock ?? ['2', '7:30'])[0], time_remaining: state === 'live' ? (o.clock ?? ['2', '7:30'])[1] : '00:00',
+      is_in_progress: state === 'live', is_over: state === 'final',
+    },
+  });
+  const k = o.kickoff ?? Date.now() - 3_600_000;
+  return [g('g1', 'N1', 'N2', o.a ?? 'live', k), g('g2', 'N3', 'N4', o.b ?? 'final', k + 60_000)];
+}
+
+/** Projection rows for the sample players: the pre-game expectation of each, by player id. */
+export function sampleLiveProjections(mu: Record<string, number> = {}): ProjectionRow[] {
+  const base: Record<string, [string, number]> = {
+    t1qb: ['QB', 20], t1rb: ['RB', 15], t1wr: ['WR', 12], t1bw: ['WR', 6], t2qb: ['QB', 19], t2rb: ['RB', 14], t2wr: ['WR', 13],
+    t3qb: ['QB', 17], t3rb: ['RB', 13], t3wr: ['WR', 10], t4qb: ['QB', 15], t4rb: ['RB', 10], t4wr: ['WR', 8],
+  };
+  return Object.entries(base).map(([pid, [pos, v]]) => ({ player_id: pid, stats: { pts_ppr: mu[pid] ?? v }, player: { position: pos, first_name: pid, last_name: 'x' } }));
 }

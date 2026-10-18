@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { formatCount } from '../../app/format';
+import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
 import type { Engine } from '../../engine';
 import type { PickValuation } from '../../engine/dynasty/index.ts';
@@ -31,10 +32,10 @@ export function PicksCard({ engine, dyn }: { engine: Engine; dyn: DynastyView })
 
   return (
     <section className="card" aria-labelledby="picks-title">
-      <header>
-        <div className="micro">who holds the next {data?.seasons.length ?? 3} drafts</div>
-        <h2 id="picks-title">future picks</h2>
-      </header>
+      <SectionHeader
+        id="picks-title" title="future picks"
+        tip={`who holds the next ${data?.seasons.length ?? 3} drafts. the slot (early, mid or late) comes from each pick’s original owner’s projected finish for the next draft; later drafts are mid. est. means fantasycalc has no row for that exact pick, so the nearest one is used. values: fantasycalc.`}
+      />
       {!data ? <p className="note" role="status">loading picks…</p> : (
         <div className="stack">
           <Segmented
@@ -75,10 +76,6 @@ export function PicksCard({ engine, dyn }: { engine: Engine; dyn: DynastyView })
           {show === 'traded' && traded === 0 && <p className="note">no picks have changed hands in this league.</p>}
           {!dyn.fc?.ok && dyn.fc && <p className="note" role="status">pick values are unavailable right now. {dyn.fc.reason}</p>}
           {!dyn.native && <p className="note">this is a redraft league, so every team holds its own picks; these are the default slots, priced with dynasty values.</p>}
-          <p className="note">
-            the slot (early, mid or late) comes from each pick’s original owner’s projected finish for the next draft; later drafts are mid.
-            est. means fantasycalc has no row for that exact pick, so the nearest one is used. values: fantasycalc.
-          </p>
         </div>
       )}
     </section>

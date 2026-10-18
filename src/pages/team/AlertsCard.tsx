@@ -5,6 +5,7 @@ import { useScenario } from '../../app/modelContext';
 import { useComputed } from '../../app/useComputed';
 import { useDebounced } from '../../app/useSimulation';
 import { Checklist } from '../../components/Checklist';
+import { SectionHeader } from '../../components/SectionHeader';
 import type { Engine } from '../../engine';
 import { lineupAlerts, waiverAlerts } from './alerts';
 
@@ -24,10 +25,7 @@ export function AlertsCard({ engine, withWire = true }: { engine: Engine; /** th
 
   return (
     <section className="card" aria-labelledby="alerts-title">
-      <header>
-        <div className="micro">to do before kickoff, week {cur}</div>
-        <h2 id="alerts-title">{FEATURE.alerts}</h2>
-      </header>
+      <SectionHeader id="alerts-title" title={FEATURE.alerts} tip={`what to change in sleeper before kickoff of week ${cur}: your best lineup against the one you set.`} />
       <Checklist
         label={FEATURE.alerts} items={list}
         onToggle={(id) => setChecked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; })}

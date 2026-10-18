@@ -102,36 +102,53 @@ describe('pure helpers', () => {
 });
 
 describe('huddle: in season (live phase)', () => {
-  it('shows odds, the matchup, alerts, injuries, top waiver adds and my takes, with the league below', async () => {
+  it('opens with a strip of figures, then alerts, the top waiver adds and the top takes for my players', async () => {
     renderApp({ linked, buildTakes: stubBuildTakes() });
-    await screen.findByRole('heading', { level: 2, name: 'playoff odds' });
+    const strip = await screen.findByRole('group', { name: 'your season' });
+    await waitFor(() => expect(within(strip).getByText('projected seed')).toBeInTheDocument());
     expect(screen.queryByText(/previewing/)).not.toBeInTheDocument();
+    const fig = (label: string) => within(strip).getByText(label).closest('.kpi') as HTMLElement;
+    expect(within(strip).getAllByText(/./, { selector: '.kpi .micro' }).map((e) => e.textContent)).toEqual(['record', 'playoff odds', 'this week’s matchup', 'projected seed']);
+
+    // record: 4-2 and second of six
+    expect(fig('record')).toHaveTextContent('4–2');
+    expect(fig('record')).toHaveTextContent('Sunday Scaries, 2nd of 6');
 
     // matchup: my team against Reed Between the Lines, projected totals and a win chance
-    const m = section('this week’s matchup');
+    const m = fig('this week’s matchup');
     expect(m).toHaveTextContent('week 5');
-    expect(m).toHaveTextContent('Sunday Scaries');
-    expect(m).toHaveTextContent('Reed Between the Lines');
-    expect(m).toHaveTextContent('47.0');
-    expect(m).toHaveTextContent('46.0');
-    expect(m).toHaveTextContent(/you are a \d+% (favorite|underdog) this week\./);
-    expect(m).not.toHaveTextContent('live score');
+    expect(m).toHaveTextContent('47.0 to 46.0 vs Reed Between the Lines');
+    expect(m).toHaveTextContent(/\d+%\s*(favorite|underdog)/);
+    expect(m).not.toHaveTextContent('live');
 
-    expect(within(section('playoff odds')).getByText(/magic number|no number of your own wins|eliminated/)).toBeInTheDocument();
-    expect(within(section('playoff odds')).getByRole('link', { name: /open the playoff picture/ })).toHaveAttribute('href', '/race');
+    // odds: a percentage, a tier, and the expected wins
+    expect(fig('playoff odds')).toHaveTextContent(/(>99|<1|\d+)%/);
+    expect(fig('playoff odds')).toHaveTextContent('expected wins');
+
+    // the path: a projected seed, title odds, and the first game below the strip
+    expect(fig('projected seed')).toHaveTextContent(/title odds/);
+    expect(within(strip.parentElement!).getByText(/first game: round 1/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open the playoff picture/ })).toHaveAttribute('href', '/race');
+    // the old cards are folded into the strip
+    expect(screen.queryByRole('heading', { name: 'playoff odds' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'this week’s matchup' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'your path' })).not.toBeInTheDocument();
 
     // alerts reuse the locker room's logic, minus the waiver adds (they have their own card)
     const alerts = section('start/sit alerts');
     expect(within(alerts).getByText('your lineup is already set right.')).toBeInTheDocument();
     expect(alerts).not.toHaveTextContent('consider adding');
 
-    expect(section('injury flags')).toHaveTextContent('no injury flags on your starters.');
+    // a clean bill of health is not news: no injury card
+    expect(screen.queryByRole('heading', { name: 'injury flags' })).not.toBeInTheDocument();
 
     const wire = section('top waiver adds');
     await waitFor(() => expect(within(wire).getByRole('list', { name: 'Top waiver adds' })).toBeInTheDocument());
     expect(wire).toHaveTextContent('Free Agent Fran');
     expect(wire).toHaveTextContent('drop Backup Wideout');
     expect(wire).toHaveTextContent(/\+\d/);
+    expect(within(wire).getAllByRole('listitem').length).toBeLessThanOrEqual(3);
+    expect(within(wire).getByRole('link', { name: /open the waiver wire/ })).toHaveAttribute('href', '/waivers');
 
     // top takes: only my own players'
     const takes = section('hot takes for your players');
@@ -140,16 +157,34 @@ describe('huddle: in season (live phase)', () => {
     expect(takes).not.toHaveTextContent('Free Agent Fran is getting added');
     expect(within(takes).getByRole('link', { name: 'all 5 takes →' })).toHaveAttribute('href', '/takes');
 
-    // the league panel and the standings stay below
-    expect(screen.getByRole('heading', { level: 2, name: 'Sample League' })).toBeInTheDocument();
-    expect(screen.getByRole('table', { name: 'League standings' })).toBeInTheDocument();
+    // the league panel and the standings table are not on the huddle any more
+    expect(screen.queryByRole('heading', { level: 2, name: 'Sample League' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'League standings' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'rookie class' })).not.toBeInTheDocument();
+  });
+
+  it('shows at most three lean takes: a headline each, the rest behind “the detail”', async () => {
+    const many = (): ReturnType<ReturnType<typeof stubBuildTakes>> => [];
+    expect(many()).toEqual([]);
+    renderApp({ linked, buildTakes: stubBuildTakes() });
+    const takes = (await screen.findByRole('heading', { level: 2, name: 'hot takes for your players' })).closest('section')!;
+    await waitFor(() => expect(within(takes).getAllByRole('article').length).toBeGreaterThan(0));
+    expect(within(takes).getAllByRole('article').length).toBeLessThanOrEqual(3);
+    // the card's detail (why it matters, sample, sources) sits in a closed disclosure
+    const detail = within(takes).getAllByText('the detail')[0]!.closest('details')!;
+    expect(detail).not.toHaveAttribute('open');
+    expect(detail).toHaveTextContent(/sources:/);
+    // the huddle's cards are lean: the numbers (the stat line) and the actions are one tap away, inside the detail
+    expect(detail).toHaveTextContent(/\d/);
+    expect(within(detail).getByRole('button', { name: /^(watch|watching) / })).toBeInTheDocument();
+    expect(within(detail).getByRole('link', { name: /^profile: / })).toBeInTheDocument();
   });
 
   it('fills the playoff odds from the first simulation', async () => {
     renderApp({ linked, loadModel: sampleLoadModel(() => ({ ...sampleModel(), oddsPending: true })), buildTakes: stubBuildTakes() });
-    const odds = await screen.findByRole('heading', { level: 2, name: 'playoff odds' });
-    await waitFor(() => expect(within(odds.closest('section')!).getAllByText(/^(>99|<1|\d+)%$/).length).toBeGreaterThan(0), { timeout: 4000 });
+    const strip = await screen.findByRole('group', { name: 'your season' });
+    const odds = within(strip).getByText('playoff odds').closest('.kpi') as HTMLElement;
+    await waitFor(() => expect(odds).toHaveTextContent(/(>99|<1|\d+)%/), { timeout: 4000 });
   });
 
   it('shows the live score once the week is under way', async () => {
@@ -162,7 +197,7 @@ describe('huddle: in season (live phase)', () => {
       return r;
     };
     renderApp({ linked, loadModel, buildTakes: stubBuildTakes() });
-    expect(await screen.findByText(/live score: 31\.5 to 22\.2\./)).toBeInTheDocument();
+    expect(await screen.findByText(/week 5, live: 31\.5 to 22\.2 vs Reed Between the Lines/)).toBeInTheDocument();
   });
 
   it('flags injured starters', async () => {
@@ -197,13 +232,16 @@ describe('huddle: in season (live phase)', () => {
   it('waits for the model, quietly', async () => {
     renderApp({ linked, loadModel: () => new Promise(() => {}), buildTakes: stubBuildTakes() });
     expect(await screen.findByText(/building the model for your odds, matchup and waiver adds/)).toBeInTheDocument();
-    expect(screen.getByRole('table', { name: 'League standings' })).toBeInTheDocument();
   });
 
-  it('postseason (override) uses the same sections', async () => {
+  it('postseason (override) has the same restraint: a strip, one bracket at a time, then the same sections', async () => {
     renderApp({ linked, route: '/?phase=postseason', buildTakes: stubBuildTakes() });
-    expect(await screen.findByRole('heading', { level: 2, name: 'this week’s matchup' })).toBeInTheDocument();
+    const strip = await screen.findByRole('group', { name: 'your season' });
+    // the brackets are the page, so the strip does not repeat your path
+    expect(within(strip).queryByText('projected seed')).not.toBeInTheDocument();
+    expect(within(strip).getByText('this week’s matchup')).toBeInTheDocument();
     expect(screen.getByText('previewing: postseason')).toBeInTheDocument();
+    expect(screen.getByRole('radiogroup', { name: 'Brackets' })).toBeInTheDocument();
   });
 });
 
@@ -214,18 +252,17 @@ describe('huddle: preview override', () => {
     const back = screen.getByRole('link', { name: 'back to live' });
     expect(back).toHaveAttribute('href', '/');
     expect(await screen.findByRole('heading', { level: 2, name: 'value movers' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'playoff odds' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('table', { name: 'League standings' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'your season' })).not.toBeInTheDocument();
 
     await user.click(back);
-    expect(await screen.findByRole('heading', { level: 2, name: 'playoff odds' })).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: 'your season' })).toBeInTheDocument();
     expect(screen.queryByText(/previewing/)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'value movers' })).not.toBeInTheDocument();
   });
 
   it('ignores a phase it does not know', async () => {
     renderApp({ linked, route: '/?phase=bogus', buildTakes: stubBuildTakes() });
-    expect(await screen.findByRole('heading', { level: 2, name: 'playoff odds' })).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: 'your season' })).toBeInTheDocument();
     expect(screen.queryByText(/previewing/)).not.toBeInTheDocument();
   });
 });
@@ -241,6 +278,8 @@ describe('huddle: offseason', () => {
   };
   const league = (patch: Partial<SleeperLeague> = {}) => bundleWith((b) => { Object.assign(b.league, { previous_league_id: 'L0', ...patch }); rostered(b); });
   const route = '/?phase=offseason';
+  /** the offseason huddle shows one section at a time: open it from its tab */
+  const open = async (user: ReturnType<typeof renderApp>['user'], name: string) => user.click(await screen.findByRole('radio', { name }));
 
   it('shows value movers among rostered players, with a note when the league is not dynasty', async () => {
     const sleeper = createFakeSleeper({
@@ -262,7 +301,7 @@ describe('huddle: offseason', () => {
       'Reed Receiver' + 'WR' + '4,000' + '−400', 'Walt Wideout' + 'you' + 'WR' + '5,234' + '−150',
     ]);
     expect(movers).toHaveTextContent('this league is not dynasty');
-    expect(movers).toHaveTextContent('Values: FantasyCalc.');
+    expect(screen.getByText(/values: fantasycalc/)).toBeInTheDocument(); // the page's one attribution line
   });
 
   it('keeps the top and bottom five, and drops the note in a dynasty league', async () => {
@@ -287,7 +326,8 @@ describe('huddle: offseason', () => {
 
   it('lists the rookie class from the draft engine’s rookie rankings, top 12 at most', async () => {
     const sleeper = createFakeSleeper({ seasons: seasons() });
-    renderApp({ linked, api: apiWith(league()), sleeper, route, buildTakes: stubBuildTakes() });
+    const first = renderApp({ linked, api: apiWith(league()), sleeper, route, buildTakes: stubBuildTakes() });
+    await open(first.user, 'rookie class');
     const table = await screen.findByRole('table', { name: 'Rookie class, top 12' });
     const names = within(table).getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell')[1]!.textContent);
     expect(names.sort()).toEqual(['QB5 X', 'RB4 X', 'RB9 X', 'WR3 X', 'WR8 X']);
@@ -298,7 +338,8 @@ describe('huddle: offseason', () => {
     const many = sampleSeasonProjections();
     for (const r of many) if (r.player && (r.player.position === 'K' || r.player.position === 'DEF')) r.player.years_exp = 0; // not a "class"
     many.slice(0, 40).forEach((r) => { if (r.player) r.player.years_exp = 0; });
-    renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: seasons(), projections: many }), route, buildTakes: stubBuildTakes() });
+    const second = renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: seasons(), projections: many }), route, buildTakes: stubBuildTakes() });
+    await open(second.user, 'rookie class');
     const big = await screen.findByRole('table', { name: 'Rookie class, top 12' });
     expect(within(big).getAllByRole('row')).toHaveLength(13);
     expect(within(big).queryByText(/^(K|DEF)\d+ X$/)).not.toBeInTheDocument();
@@ -306,15 +347,18 @@ describe('huddle: offseason', () => {
   });
 
   it('says so when the rookie projections are not out, or Sleeper fails', async () => {
-    renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: seasons(), projections: [] }), route, buildTakes: stubBuildTakes() });
+    const first = renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: seasons(), projections: [] }), route, buildTakes: stubBuildTakes() });
+    await open(first.user, 'rookie class');
     expect(await screen.findByText('no rookie projections are out yet.')).toBeInTheDocument();
     cleanup();
-    renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: seasons(), projectionsFail: true }), route, buildTakes: stubBuildTakes() });
+    const second = renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: seasons(), projectionsFail: true }), route, buildTakes: stubBuildTakes() });
+    await open(second.user, 'rookie class');
     expect(await screen.findByText(/could not load the rookie rankings\. Sleeper projections are down/)).toBeInTheDocument();
   });
 
   it('draws my roster’s age profile by position from birth dates', async () => {
-    renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: seasons() }), route, buildTakes: stubBuildTakes() });
+    const { user } = renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: seasons() }), route, buildTakes: stubBuildTakes() });
+    await open(user, 'roster age');
     const age = (await screen.findByRole('heading', { level: 2, name: 'roster age profile' })).closest('section')!;
     const list = await within(age).findByRole('list', { name: 'Average age by position' });
     const expected = ageOf({ birth_date: '2000-03-04' })!;
@@ -327,7 +371,8 @@ describe('huddle: offseason', () => {
 
   it('follows previous_league_id for the league history', async () => {
     const sleeper = createFakeSleeper({ seasons: seasons() });
-    renderApp({ linked, api: apiWith(league()), sleeper, route, buildTakes: stubBuildTakes() });
+    const { user } = renderApp({ linked, api: apiWith(league()), sleeper, route, buildTakes: stubBuildTakes() });
+    await open(user, 'league history');
     const hist = (await screen.findByRole('heading', { level: 2, name: 'league history' })).closest('section')!;
     const table = await within(hist).findByRole('table', { name: 'League history' });
     const rows = within(table).getAllByRole('row').slice(1);
@@ -345,10 +390,11 @@ describe('huddle: offseason', () => {
 
   it('includes the followed league itself when it is a finished season', async () => {
     const b = league({ status: 'complete', season: '2025', previous_league_id: 'L0', metadata: { latest_league_winner_roster_id: '1' } });
-    renderApp({
+    const { user } = renderApp({
       linked, api: apiWith(b, { week: 1, season: '2026', season_type: 'off', league_season: '2026', previous_season: '2025' }),
       sleeper: createFakeSleeper({ seasons: seasons() }), buildTakes: stubBuildTakes(),
     });
+    await open(user, 'league history');
     const hist = (await screen.findByRole('heading', { level: 2, name: 'league history' })).closest('section')!;
     await waitFor(() => expect(within(hist).getAllByRole('row')).toHaveLength(4));
     const rows = within(hist).getAllByRole('row').slice(1);
@@ -357,12 +403,14 @@ describe('huddle: offseason', () => {
   });
 
   it('says so when a league has no earlier seasons, and keeps what it found when one cannot load', async () => {
-    renderApp({ linked, api: apiWith(league({ previous_league_id: null })), sleeper: createFakeSleeper(), route, buildTakes: stubBuildTakes() });
+    const first = renderApp({ linked, api: apiWith(league({ previous_league_id: null })), sleeper: createFakeSleeper(), route, buildTakes: stubBuildTakes() });
+    await open(first.user, 'league history');
     expect(await screen.findByText('this league has no earlier seasons on sleeper.')).toBeInTheDocument();
     cleanup();
     const s = seasons();
     delete s.LZ;
-    renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: s }), route, buildTakes: stubBuildTakes() });
+    const second = renderApp({ linked, api: apiWith(league()), sleeper: createFakeSleeper({ seasons: s }), route, buildTakes: stubBuildTakes() });
+    await open(second.user, 'league history');
     const table = await screen.findByRole('table', { name: 'League history' });
     expect(within(table).getAllByRole('row')).toHaveLength(2);
     expect(await screen.findByText(/some earlier seasons could not be loaded/)).toBeInTheDocument();
@@ -394,33 +442,35 @@ describe('huddle: pre-draft', () => {
   it('is the live layout when the league has not drafted', async () => {
     const b = preDraft();
     renderApp({ linked, api: apiWith(b), sleeper: sleeperFor(b.drafts[0]!), buildTakes: stubBuildTakes() });
-    expect(await screen.findByRole('heading', { level: 2, name: 'draft countdown' })).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: 'Draft day' })).toBeInTheDocument();
     expect(screen.queryByText(/previewing/)).not.toBeInTheDocument();
   });
 
-  it('counts down to the draft, shows my slot, the tiers to study and the mock grade at my real slot', async () => {
+  it('counts down to the draft, shows my slot and the mock grade in the strip, and keeps the tiers and the mock on tabs', async () => {
     const b = preDraft();
-    renderApp({ linked, api: apiWith(b), sleeper: sleeperFor(b.drafts[0]!), buildTakes: stubBuildTakes() });
-    const cd = (await screen.findByRole('heading', { level: 2, name: 'draft countdown' })).closest('section')!;
-    expect(within(cd).getByRole('timer')).toHaveTextContent('3d 4h 12m');
-    expect(section('your draft slot')).toHaveTextContent('3 of 6');
-    expect(section('your draft slot')).toHaveTextContent('you pick #3 overall in round one.');
+    const { user } = renderApp({ linked, api: apiWith(b), sleeper: sleeperFor(b.drafts[0]!), buildTakes: stubBuildTakes() });
+    const strip = await screen.findByRole('group', { name: 'Draft day' });
+    expect(within(strip).getByRole('timer')).toHaveTextContent('3d 4h 12m');
+    const slot = within(strip).getByText('your draft slot').closest('.kpi')!;
+    expect(slot).toHaveTextContent('3 of 6');
 
-    // the quick mock matches the engine run at slot 3
+    // the quick mock matches the engine run at slot 3: its grade is a strip figure, the picks are on the mock tab
     const draft = b.drafts[0]!;
     const rankings = buildRankings({ projections: sampleSeasonProjections(), league: b.league, mode: 'redraft', players: null, fantasyCalc: null });
     const order = draftOrderFor(draft, [], 6);
     const mock = createMock({ rankings, order, userRosterId: order.find((o) => o.slot === slotOfUser(draft, 'u1'))!.originalRosterId });
     mock.autoAll();
     const grade = mock.state.grade!;
+    await waitFor(() => expect(within(strip).getByText('projected grade').closest('.kpi')).toHaveTextContent(`${grade.letter}lineup rank ${grade.rank} of ${grade.teams}`));
+    await user.click(screen.getByRole('radio', { name: 'quick mock' }));
     const box = (await screen.findByRole('heading', { level: 2, name: 'mock draft' })).closest('section')!;
-    await waitFor(() => expect(box).toHaveTextContent('projected grade'));
     expect(box).toHaveTextContent(`projected grade${grade.letter}`);
     expect(box).toHaveTextContent(`lineup rank${grade.rank} of ${grade.teams}`);
     expect(within(box).getByRole('link', { name: 'run the full mock draft →' })).toHaveAttribute('href', '/draft?tab=mock');
     expect(within(box).getByRole('link', { name: 'see the rankings →' })).toHaveAttribute('href', '/draft?tab=rankings');
     expect(box).toHaveTextContent('your first picks:');
 
+    await user.click(screen.getByRole('radio', { name: 'tiers' }));
     const tiers = section('tiers to study');
     expect(tiers).toHaveTextContent('RB tier 1');
     expect(tiers).toHaveTextContent('QB tier 1');
@@ -454,9 +504,10 @@ describe('huddle: pre-draft', () => {
 
   it('says so when the slot or the start time is not set', async () => {
     const b = preDraft({ draft_order: null, start_time: null });
-    renderApp({ linked, api: apiWith(b), sleeper: sleeperFor(b.drafts[0]!), buildTakes: stubBuildTakes() });
-    expect(await screen.findByText(/no draft time is set yet/)).toBeInTheDocument();
+    const { user } = renderApp({ linked, api: apiWith(b), sleeper: sleeperFor(b.drafts[0]!), buildTakes: stubBuildTakes() });
+    expect(await screen.findByText(/the commissioner sets the time in sleeper/)).toBeInTheDocument();
     expect(screen.getByText(/the draft order is not set yet/)).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: 'quick mock' }));
     expect(await screen.findByText(/your slot is not set, so this assumes/)).toBeInTheDocument();
   });
 
@@ -468,19 +519,22 @@ describe('huddle: pre-draft', () => {
 
   it('copes with a draft type the mock cannot run, and with the rankings failing', async () => {
     const b = preDraft({ type: 'auction' });
-    renderApp({ linked, api: apiWith(b), sleeper: sleeperFor(b.drafts[0]!), buildTakes: stubBuildTakes() });
+    const first = renderApp({ linked, api: apiWith(b), sleeper: sleeperFor(b.drafts[0]!), buildTakes: stubBuildTakes() });
+    await first.user.click(await screen.findByRole('radio', { name: 'quick mock' }));
     expect(await screen.findByText(/the quick mock could not run\. Draft type "auction" is not supported/)).toBeInTheDocument();
     cleanup();
     const ok = preDraft();
-    renderApp({ linked, api: apiWith(ok), sleeper: sleeperFor(ok.drafts[0]!, { projectionsFail: true }), buildTakes: stubBuildTakes() });
+    const second = renderApp({ linked, api: apiWith(ok), sleeper: sleeperFor(ok.drafts[0]!, { projectionsFail: true }), buildTakes: stubBuildTakes() });
+    await second.user.click(await screen.findByRole('radio', { name: 'quick mock' }));
     expect(await screen.findAllByText(/could not load the rankings\. Sleeper projections are down/)).not.toHaveLength(0);
   });
 
   it('previews against a league that is already in season', async () => {
     renderApp({ linked, route: '/?phase=pre_draft', sleeper: createFakeSleeper({ draft: { ...draftOf(), status: 'complete', start_time: null } }), buildTakes: stubBuildTakes() });
     expect(await screen.findByText('previewing: pre-draft')).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { level: 2, name: 'draft countdown' })).toBeInTheDocument();
-    expect(screen.getByText(/no draft time is set yet/)).toBeInTheDocument();
+    const strip = await screen.findByRole('group', { name: 'Draft day' });
+    expect(within(strip).getByText('draft countdown')).toBeInTheDocument();
+    expect(screen.getByText(/the commissioner sets the time in sleeper/)).toBeInTheDocument();
   });
 
   describe('countdown ticking', () => {

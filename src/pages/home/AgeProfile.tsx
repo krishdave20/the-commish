@@ -3,6 +3,7 @@ import { usePlayersFile } from '../../app/playersData';
 import { ageOf } from '../../app/playersIndex';
 import { FEATURE } from '../../app/names';
 import { AgeBars } from '../../components/charts/AgeBars';
+import { SectionHeader } from '../../components/SectionHeader';
 import type { AgeRow } from '../../components/charts/AgeBars';
 import type { LeagueBundle } from '../../data';
 import { formatNum } from '../../app/format';
@@ -33,10 +34,7 @@ export function AgeProfile({ bundle, userId }: { bundle: LeagueBundle; userId: s
 
   return (
     <section className="card" aria-labelledby="age-title">
-      <header>
-        <div className="micro">from sleeper’s birth dates</div>
-        <h2 id="age-title">{FEATURE.ageProfile}</h2>
-      </header>
+      <SectionHeader id="age-title" title={FEATURE.ageProfile} tip="average age by position, from sleeper’s birth dates, against the league’s rostered average." />
       {!file.data ? <p className="note" role="status">{file.error ? `could not load the players file. ${file.error}` : 'loading sleeper’s players file…'}</p>
         : rows.length === 0 ? <p className="note">no ages on file for your roster.</p>
         : (

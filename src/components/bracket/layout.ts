@@ -9,8 +9,8 @@ export interface Dims { slotH: number; unit: number; matchH: number }
 const dims = (slotH: number, unit: number): Dims => ({ slotH, unit, matchH: slotH * 2 + 1 });
 /** with a mouse */
 export const DEFAULT_DIMS: Dims = dims(30, 40);
-/** on a phone or any touch screen: every team slot is a 40px tap target */
-export const TOUCH_DIMS: Dims = dims(40, 52);
+/** on a phone or any touch screen: every team slot is a 44px tap target */
+export const TOUCH_DIMS: Dims = dims(44, 56);
 
 export const SLOT_H = DEFAULT_DIMS.slotH;
 export const MATCH_H = DEFAULT_DIMS.matchH;

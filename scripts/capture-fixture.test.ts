@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { SleeperLeague } from '../src/data/contract.ts';
-import { bracketRequests, fantasyCalcRequests, outDirOf, parseArgs, parseOnly, srcDirOf } from './capture-fixture.ts';
+import { scoresAsOf, bracketRequests, fantasyCalcRequests, outDirOf, parseArgs, parseOnly, srcDirOf } from './capture-fixture.ts';
 
 describe('capture-fixture args', () => {
   it('reads user and league from the command line, defaulting the output dir', () => {
@@ -62,5 +62,26 @@ describe('the committed nflverse snapshot (reference/fixture/nflverse)', () => {
     expect(manifest.season).toBe(Number(fixture.season));
     expect(Object.keys(manifest.files).length).toBeGreaterThan(3);
     for (const f of Object.keys(manifest.files)) expect(JSON.parse(await readFile(resolve(nv, f), 'utf8')), f).toBeTruthy();
+  });
+});
+
+describe('scoresAsOf (the fixture week\'s scores at the fixture moment)', () => {
+  const NOW = Date.parse('2026-10-16T21:29:50Z');
+  const game = (id: string, start: number, status: string) => ({
+    game_id: id, status, start_time: start, date: '2026-10-18',
+    metadata: { home_team: 'ATL', away_team: 'CHI', home_score: 23, away_score: 31, quarter: 'F', time_remaining: '00:00', is_over: true, is_in_progress: false, home_score_quarter1: 7, away_score_overtime: 0, possession: 'ATL', spread: { ATL: 8.5 }, date_time: '2026-10-18T17:00:00+00:00' },
+  });
+  it('sends games that kick off after the moment back to pre-game, keeping their kickoff and spread', () => {
+    const [g] = scoresAsOf([game('a', NOW + 1000, 'complete')], NOW);
+    expect(g.status).toBe('pre_game');
+    expect(g.start_time).toBe(NOW + 1000);
+    expect(g.metadata).toMatchObject({ home_score: 0, away_score: 0, quarter: '', time_remaining: '15:00', is_over: false, is_in_progress: false, home_team: 'ATL', spread: { ATL: 8.5 } });
+    expect(g.metadata).not.toHaveProperty('home_score_quarter1');
+    expect(g.metadata).not.toHaveProperty('away_score_overtime');
+    expect(g.metadata).not.toHaveProperty('possession');
+  });
+  it('leaves a game that had already kicked off as received', () => {
+    const before = game('b', NOW - 3_600_000, 'complete');
+    expect(scoresAsOf([before], NOW)[0]).toBe(before);
   });
 });

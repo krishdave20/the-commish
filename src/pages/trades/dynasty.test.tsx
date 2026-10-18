@@ -77,7 +77,7 @@ const kpi = (label: string) => screen.getByText(label).closest('.kpi') as HTMLEl
 
 describe('dynasty mode in a dynasty league', () => {
   it('shows contender or rebuilder: a chart and a labelled table of every team, with your own read', async () => {
-    setup('contender');
+    setup('contender', { route: '/trades?tab=dynasty' });
     expect(await screen.findByRole('heading', { level: 2, name: 'contender or rebuilder' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'dynasty mode: explore' })).not.toBeInTheDocument();
     const table = await screen.findByRole('table', { name: 'Contender or rebuilder, every team' });
@@ -90,16 +90,18 @@ describe('dynasty mode in a dynasty league', () => {
     expect(screen.getByText(/^you read as a contender: playoff odds 95% \(1st of 4\)/)).toBeInTheDocument();
     expect(document.querySelectorAll('.lens-dot')).toHaveLength(4);
     expect(document.querySelectorAll('.lens-dot[data-me="true"]')).toHaveLength(1);
-    expect(screen.getAllByText('values: fantasycalc.').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/values: fantasycalc\./).length).toBeGreaterThan(0);
+    // the table's default columns; the rest wait behind "more columns"
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''))).toEqual(['team', 'label', 'playoff odds', 'dynasty value']);
   });
 
   it('labels a weak, thin team a rebuilder', async () => {
-    setup('rebuilder');
+    setup('rebuilder', { route: '/trades?tab=dynasty' });
     expect(await screen.findByText(/^you read as a rebuilder: playoff odds 5% \(4th of 4\)/)).toBeInTheDocument();
   });
 
   it('lists every team\'s future picks, with acquired ones and their via owners', async () => {
-    setup('contender', { traded: true });
+    setup('contender', { traded: true, route: '/trades?tab=dynasty' });
     const table = await screen.findByRole('table', { name: 'Future picks by team' });
     const mine = within(table).getByText('Sunday Scaries').closest('tr')!;
     // 3 drafts x 2 rounds, plus the 2027 1st bought from Reed Between the Lines (roster 2, whose manager is m2)
@@ -169,11 +171,12 @@ describe('dynasty mode in a dynasty league', () => {
   });
 
   it('degrades quietly when fantasycalc is down: the reason in muted text, the redraft analyzer still works', async () => {
-    const { user } = setup('contender', { fcFails: true });
+    const { user } = setup('contender', { fcFails: true, route: '/trades?tab=dynasty' });
     expect(await screen.findByText(/dynasty values are unavailable right now, so teams cannot be labelled\. FantasyCalc is unavailable: FantasyCalc is down/)).toBeInTheDocument();
     expect(screen.queryByRole('table', { name: 'Contender or rebuilder, every team' })).not.toBeInTheDocument();
     // the picks are still listed, without values
     expect(await screen.findByRole('table', { name: 'Future picks by team' })).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: 'analyzer' }));
     await user.click(screen.getByRole('checkbox', { name: 'you send: Backup Wideout' }));
     expect(await screen.findByText('your lineup, wks 6–8')).toBeInTheDocument();
     expect(screen.getByText(/dynasty values are unavailable right now, so only this season is scored/)).toBeInTheDocument();
@@ -184,7 +187,7 @@ describe('dynasty mode in a dynasty league', () => {
 describe('dynasty mode in a redraft league', () => {
   it('stays off until you flip the explore switch, then explains the values are dynasty values', async () => {
     const sleeper = createFakeSleeper({ fantasyCalcRows: fcRows('contender') });
-    const { user } = renderApp({ linked, route: '/trades', sleeper });
+    const { user } = renderApp({ linked, route: '/trades?tab=dynasty', sleeper });
     const toggle = await screen.findByRole('button', { name: 'dynasty mode: explore' });
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryByRole('heading', { level: 2, name: 'future picks' })).not.toBeInTheDocument();

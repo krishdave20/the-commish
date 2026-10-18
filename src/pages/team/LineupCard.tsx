@@ -3,7 +3,10 @@ import { formatPoints1 } from '../../app/format';
 import { useScenario } from '../../app/modelContext';
 import { PlayerLink } from '../../components/PlayerLink';
 import { MatchupGrade } from '../../components/MatchupGrade';
+import { MoreColumns } from '../../components/MoreColumns';
+import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
+import { useMoreColumns } from '../../components/useMoreColumns';
 import { SLOT_LABEL } from '../../engine';
 import type { Engine, ModelPlayer, Scenario } from '../../engine';
 import { PlayerTags } from './PlayerTags';
@@ -21,6 +24,7 @@ export function LineupCard({ engine }: { engine: Engine }) {
   const { scenario, setScenario } = useScenario();
   const { currentWeek: cur, maxWeek, lastRegularWeek: last } = engine.model.meta;
   const [week, setWeek] = useState(cur);
+  const more = useMoreColumns('lineup');
   const weeks = useMemo(() => Array.from({ length: maxWeek - cur + 1 }, (_, i) => cur + i), [cur, maxWeek]);
 
   const view = useMemo(() => {
@@ -42,28 +46,26 @@ export function LineupCard({ engine }: { engine: Engine }) {
 
   return (
     <section className="card" aria-labelledby="lineup-title">
-      <header>
-        <div className="micro">the best eleven, by the numbers</div>
-        <h2 id="lineup-title">lineup</h2>
-      </header>
-      <div className="stack">
+      <SectionHeader id="lineup-title" title="lineup" tip="the best eleven, by the numbers. pin a player to always start him, bench one to never start him; the what-if follows." />
+      <div className="row between">
         <Segmented label="Lineup week" value={week} onChange={setWeek} options={weeks.map((w) => ({ value: w, label: `wk ${w}` }))} />
-        {isPlayoff && <p className="note">fantasy playoff week.</p>}
+        <MoreColumns on={more.on} onToggle={more.toggle} label="lineup" />
       </div>
+      {isPlayoff && <p className="note">fantasy playoff week.</p>}
       <div className="tw">
         <table>
           <caption className="sr-only">{`Lineup for week ${week}`}</caption>
           <thead>
             <tr>
-              <th scope="col">slot</th><th scope="col">player</th><th scope="col" className="hide-sm">opp</th>
-              <th scope="col">range</th><th scope="col" className="n">exp</th><th scope="col" className="n">start</th>
+              <th scope="col">slot</th><th scope="col">player</th>{more.on && <th scope="col">opp</th>}
+              {more.on && <th scope="col">range</th>}<th scope="col" className="n">exp</th><th scope="col" className="n">start</th>
             </tr>
           </thead>
           <tbody>
             {all.map((r, i) => {
               const p = r.p;
               if (!p) {
-                return <tr key={`e${i}`}><td className="micro">{SLOT_LABEL[r.slot] ?? r.slot}</td><td className="dim" colSpan={5}>empty slot</td></tr>;
+                return <tr key={`e${i}`}><td className="micro">{SLOT_LABEL[r.slot] ?? r.slot}</td><td className="dim" colSpan={more.on ? 5 : 3}>empty slot</td></tr>;
               }
               const v = scope.val(p, week, true);
               const [lo, hi] = scope.range(p, week, true);
@@ -72,14 +74,14 @@ export function LineupCard({ engine }: { engine: Engine }) {
                 <tr key={p.pid} className={r.start ? undefined : 'bn'}>
                   <td className="micro">{SLOT_LABEL[r.slot] ?? r.slot}</td>
                   <td><PlayerLink pid={p.pid} name={p.name} /> <span className="dim">{p.pos} · {p.nfl ?? ''}</span><PlayerTags p={p} /></td>
-                  <td className="hide-sm"><MatchupGrade opponent={p.opp[week]} dvp={p.dvp[week]} /></td>
-                  <td>
+ {more.on && <td><MatchupGrade opponent={p.opp[week]} dvp={p.dvp[week]} /></td>}
+                  {more.on && <td>
                     <div className="rng" title={`floor ${formatPoints1(lo)} · expected ${formatPoints1(v)} · ceiling ${formatPoints1(hi)}`}>
                       <div className="track" />
                       <div className="span" style={{ left: `${(lo / maxHi) * 100}%`, width: `${((hi - lo) / maxHi) * 100}%` }} />
                       <div className="mu" style={{ left: `${(v / maxHi) * 100}%` }} />
                     </div>
-                  </td>
+                  </td>}
                   <td className={`n${r.start ? '' : ' dim'}`}>{formatPoints1(v)}</td>
                   <td className="n">
                     {played ? <span className="dim">played</span> : (
@@ -95,8 +97,8 @@ export function LineupCard({ engine }: { engine: Engine }) {
               );
             })}
             <tr className="total">
-              <td className="micro">total</td><td>starting lineup</td><td className="hide-sm" />
-              <td className="dim">{formatPoints1(view.lo)}–{formatPoints1(view.hi)}</td>
+              <td className="micro">total</td><td>starting lineup</td>{more.on && <td />}
+              {more.on && <td className="dim">{formatPoints1(view.lo)}–{formatPoints1(view.hi)}</td>}
               <td className="n">{formatPoints1(L.total)}</td><td />
             </tr>
           </tbody>

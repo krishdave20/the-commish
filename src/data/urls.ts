@@ -47,6 +47,8 @@ export const sleeperUrls = {
   seasonProjections: (season: string, positions: string[] = OFFENSE_POSITIONS) =>
     `${B}/projections/nfl/${season}?season_type=regular&${posQuery(positions)}`,
   schedule: (season: string) => `${B}/schedule/nfl/regular/${season}`,
+  /** per-game status, quarter, clock, score and kickoff time (undocumented; the schedule has no kickoff times) */
+  scores: (season: string, week: number) => `${B}/scores/nfl/regular/${season}/${week}`,
 };
 
 export interface FantasyCalcParams { isDynasty: boolean; numQbs?: 1 | 2; numTeams?: number; ppr?: number }

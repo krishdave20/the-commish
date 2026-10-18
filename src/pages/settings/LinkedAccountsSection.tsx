@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { AccountList } from '../../components/AccountList';
+import { Disclosure } from '../../components/Disclosure';
 import { useAccountStore, useAccounts, useActive, useApi } from '../../app/hooks';
 import { useData } from '../../app/dataContext';
 
@@ -21,8 +22,7 @@ export function LinkedAccountsSection() {
   }
 
   return (
-    <section className="section" aria-labelledby="set-accounts">
-      <h2 id="set-accounts">Linked accounts</h2>
+    <Disclosure title="Linked accounts" id="set-accounts" defaultOpen hint={`${list.length} on this device`}>
       <p className="note">Accounts are remembered on this device only. Pick which one to view, or remove it.</p>
       <AccountList
         accounts={list}
@@ -34,6 +34,6 @@ export function LinkedAccountsSection() {
         <button type="button" className="btn warn" onClick={() => { void signOut(); }} disabled={!active}>Sign out</button>
         <span className="note">Signing out removes the active account and clears the saved data.</span>
       </div>
-    </section>
+    </Disclosure>
   );
 }

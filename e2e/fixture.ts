@@ -66,3 +66,14 @@ export function pickPlayerWithUsage(): { pid: string; name: string } {
   const p = players[best[0]];
   return { pid: best[0], name: `${p.first_name ?? ''} ${p.last_name}`.trim() };
 }
+
+/** My team's final points for a played week, from the fixture's matchups file: the roster the fixture user owns. */
+export function myWeekPoints(week: number): number {
+  const rosters = fixtureJson<Array<{ roster_id: number; owner_id: string | null }>>(manifest.files[`https://api.sleeper.app/v1/league/${manifest.league_id}/rosters`]);
+  const mine = rosters.find((r) => r.owner_id === manifest.user_id);
+  if (!mine) throw new Error('The fixture user owns no roster in the fixture league.');
+  const rows = fixtureJson<Array<{ roster_id: number; points: number }>>(manifest.files[`https://api.sleeper.app/v1/league/${manifest.league_id}/matchups/${week}`]);
+  const row = rows.find((m) => m.roster_id === mine.roster_id);
+  if (!row) throw new Error(`No week ${week} matchup for roster ${mine.roster_id} in the fixture.`);
+  return row.points;
+}

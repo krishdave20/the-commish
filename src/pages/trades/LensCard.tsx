@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { formatCount, formatOdds, ordinal, formatNum } from '../../app/format';
 import { FEATURE } from '../../app/names';
+import { SectionHeader } from '../../components/SectionHeader';
 import { SortableTable } from '../../components/SortableTable';
 import type { Column } from '../../components/useSort';
 import type { Engine } from '../../engine';
@@ -49,7 +50,7 @@ export function LensCard({ engine, dyn, redraft, explore, setExplore }: Props) {
       render: (r) => <>{formatOdds(r.playoffPct)} <span className="dim">{ordinal(r.playoffRank)}</span></>,
     },
     {
-      key: 'pts', header: 'exp points', numeric: true, value: (r) => r.ptsRos, className: 'hide-sm',
+      key: 'pts', header: 'exp points', more: true, numeric: true, value: (r) => r.ptsRos,
       render: (r) => <>{formatCount(r.ptsRos)} <span className="dim">{ordinal(r.ptsRank)}</span></>,
     },
     {
@@ -57,19 +58,19 @@ export function LensCard({ engine, dyn, redraft, explore, setExplore }: Props) {
       render: (r) => <span title={`players ${formatCount(r.players)} + picks ${formatCount(r.picks)}`}>{formatCount(r.value)} <span className="dim">{ordinal(r.valueRank)}</span></span>,
     },
     {
-      key: 'youth', header: '26 & under', numeric: true, value: (r) => r.youthShare, className: 'hide-sm',
+      key: 'youth', header: '26 & under', more: true, numeric: true, value: (r) => r.youthShare,
       render: (r) => (r.youthShare === null ? <span className="dim">—</span> : <>{Math.round(r.youthShare * 100)}% <span className="dim">{ordinal(r.youthRank!)}</span></>),
     },
-    { key: 'now', header: 'now', numeric: true, value: (r) => r.nowScore, render: (r) => formatNum(r.nowScore, 2), className: 'hide-sm dim' },
-    { key: 'future', header: 'later', numeric: true, value: (r) => r.futureScore, render: (r) => formatNum(r.futureScore, 2), className: 'hide-sm dim' },
+    { key: 'now', header: 'now', more: true, numeric: true, value: (r) => r.nowScore, render: (r) => formatNum(r.nowScore, 2), className: 'dim' },
+    { key: 'future', header: 'later', more: true, numeric: true, value: (r) => r.futureScore, render: (r) => formatNum(r.futureScore, 2), className: 'dim' },
   ];
 
   return (
     <section className="card" aria-labelledby="dynasty-title">
-      <header>
-        <div className="micro">dynasty mode</div>
-        <h2 id="dynasty-title">{FEATURE.contender}</h2>
-      </header>
+      <SectionHeader
+        id="dynasty-title" title={FEATURE.contender} kicker="dynasty mode"
+        tip={<>win-now is half playoff odds, half expected points over the rest of the regular season. future is 60% dynasty value (players plus picks) and 40% youth, the share of player value that is 26 or younger. a team is strong on an axis when it ranks in the top half of the league. values: fantasycalc.</>}
+      />
       {redraft && (
         <div className="form-row" style={{ justifyContent: 'space-between' }}>
           <p className="note" style={{ margin: 0 }}>
@@ -96,16 +97,11 @@ export function LensCard({ engine, dyn, redraft, explore, setExplore }: Props) {
             <LensChart teams={dyn.data.lens} name={(rid) => dyn.team(rid).team} meRid={meRid} />
             <SortableTable
               caption="Contender or rebuilder, every team" columns={columns} rows={rows} rowKey={(r) => r.rid}
-              initialSort={{ key: 'value', dir: 'desc' }} rowClassName={(r) => (r.isMe ? 'me' : undefined)}
+              initialSort={{ key: 'value', dir: 'desc' }} rowClassName={(r) => (r.isMe ? 'me' : undefined)} tableId="lens"
             />
-            <p className="note">
-              win-now is half playoff odds, half expected points over the rest of the regular season. future is 60% dynasty value (players plus picks)
-              and 40% youth, the share of player value that is 26 or younger. a team is strong on an axis when it ranks in the top half of the league.
-            </p>
           </div>
         )}
       {dyn?.playersError && <p className="note" role="status">the players file did not load, so ages are unknown. {dyn.playersError}</p>}
-      {dyn && <p className="note">values: fantasycalc.</p>}
     </section>
   );
 }

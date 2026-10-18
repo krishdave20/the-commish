@@ -12,6 +12,9 @@ import { useComputed } from '../app/useComputed';
 import { useDebounced } from '../app/useSimulation';
 import { MatchupGrade } from '../components/MatchupGrade';
 import { PlayerLink } from '../components/PlayerLink';
+import { HeadlineStrip } from '../components/HeadlineStrip';
+import { PageTabs } from '../components/PageTabs';
+import { SectionHeader } from '../components/SectionHeader';
 import { Segmented } from '../components/Segmented';
 import { SortableTable } from '../components/SortableTable';
 import type { Column } from '../components/useSort';
@@ -22,6 +25,8 @@ import { UsageRisers } from './waivers/UsageRisers';
 import type { RiserPlayer } from './waivers/UsageRisers';
 
 const NONE: WaiverEntry[] = [];
+/** rows drawn at first; the rest of the wire is one tap away */
+const PAGE = 15;
 
 function Board({ engine }: { engine: Engine }) {
   const { scenario } = useScenario();
@@ -64,16 +69,16 @@ function Board({ engine }: { engine: Engine }) {
     },
     { key: 'pos', header: 'pos', value: (w) => w.player.pos, className: 'dim' },
     { key: 'gain', header: FEATURE.lift, numeric: true, value: (w) => w.gain, render: (w) => <span className="pos-c">{signed(w.gain)}</span> },
-    { key: 'starts', header: 'starts', numeric: true, value: (w) => w.starts, render: (w) => `${w.starts}/${w.nweeks}`, className: 'hide-sm' },
-    { key: 'drop', header: 'drop', value: (w) => w.drop.name, className: 'dim nowrap' },
     { key: 'bid', header: 'faab bid', numeric: true, value: (w) => w.bid, render: (w) => formatMoney(w.bid) },
-    { key: 'next', header: `wk ${cur + 1} proj`, numeric: true, value: (w) => w.next, render: (w) => formatPoints1(w.next), className: 'hide-sm' },
-    { key: 'ceil', header: 'ceiling', numeric: true, value: (w) => w.ceil, render: (w) => formatPoints1(w.ceil), className: 'hide-sm' },
+    { key: 'drop', header: 'drop', value: (w) => w.drop.name, className: 'dim nowrap' },
+    { key: 'starts', header: 'starts', more: true, numeric: true, value: (w) => w.starts, render: (w) => `${w.starts}/${w.nweeks}` },
+    { key: 'next', header: `wk ${cur + 1} proj`, more: true, numeric: true, value: (w) => w.next, render: (w) => formatPoints1(w.next) },
+    { key: 'ceil', header: 'ceiling', more: true, numeric: true, value: (w) => w.ceil, render: (w) => formatPoints1(w.ceil) },
     {
-      key: 'opp', header: 'next matchup', className: 'hide-sm',
+      key: 'opp', header: 'next matchup', more: true,
       render: (w) => <MatchupGrade opponent={w.player.opp[cur + 1]} dvp={w.player.dvp[cur + 1]} />,
     },
-    { key: 'trend', header: 'trending adds', numeric: true, value: (w) => w.trend, render: (w) => (w.trend ? compact(w.trend) : ''), className: 'hide-sm dim' },
+    { key: 'trend', header: 'trending adds', more: true, numeric: true, value: (w) => w.trend, render: (w) => (w.trend ? compact(w.trend) : ''), className: 'dim' },
     {
       key: 'try', header: 'try', sortable: false,
       render: (w) => (
@@ -83,34 +88,44 @@ function Board({ engine }: { engine: Engine }) {
     },
   ];
 
+  const best = full[0] ?? null;
+  const range = weeks.length ? `weeks ${weeks[0]}${weeks.length > 1 ? `–${weeks[weeks.length - 1]}` : ''}` : '';
+
   return (
     <>
       <ScenarioBar />
-      <section className="card" aria-labelledby="wire-title">
-        <header>
-          <div className="micro">{`${FEATURE.lift}: points added to your best lineup`}</div>
-          <h2 id="wire-title">the wire</h2>
-        </header>
-        <div className="row">
-          <Segmented
-            label="Waiver window" value={win} onChange={setWin}
-            options={WAIVER_WINDOWS.map((w) => ({ value: w.id, label: w.label.toLowerCase() }))}
-          />
-          {positions.length > 0 && (
-            <Segmented label="Position filter" value={pos} onChange={setPos} options={[{ value: 'all', label: 'all' }, ...positions.map((p) => ({ value: p as string, label: p }))]} />
-          )}
-        </div>
-        <p className="note" role="status">
-          {board.pending ? 'working out lineup lift for every free agent…'
-            : weeks.length ? `weeks ${weeks[0]}${weeks.length > 1 ? `–${weeks[weeks.length - 1]}` : ''}, after dropping the cheapest bench option. bids scale with your remaining faab.` : ''}
-        </p>
-        {board.value === null ? null : !board.pending && list.length === 0 ? (
-          <p className="take">nobody on the wire beats your bench this window.</p>
+      <HeadlineStrip label="Best add" items={[
+        { label: 'best add', value: <span className="strip-name">{best ? best.player.name : board.pending ? '…' : '—'}</span>, sub: best ? `${best.player.pos} ${best.player.nfl ?? ''}, drop ${best.drop.name}` : board.pending ? 'working it out…' : 'nobody beats your bench' },
+        { label: FEATURE.lift, value: <span className="pos-c">{best ? signed(best.gain) : '—'}</span>, sub: range ? `${range} points added to your best lineup` : 'points added to your best lineup' },
+        { label: 'faab bid', value: <span>{best ? formatMoney(best.bid) : '—'}</span>, sub: 'scales with your remaining faab' },
+      ]} />
+      <PageTabs label="Waiver wire sections" defaultTab="wire" tabs={[{ value: 'wire', label: 'the wire' }, { value: 'risers', label: 'trending & risers' }]}>
+        {(tab) => tab === 'wire' ? (
+          <section className="card" aria-labelledby="wire-title">
+            <SectionHeader
+              id="wire-title" title="the wire"
+              tip={`${FEATURE.lift}: points added to your best lineup, ${weeks.length ? `${range}, ` : ''}after dropping the cheapest bench option. bids scale with your remaining faab.`}
+            />
+            <div className="row">
+              <Segmented
+                label="Waiver window" value={win} onChange={setWin}
+                options={WAIVER_WINDOWS.map((w) => ({ value: w.id, label: w.label.toLowerCase() }))}
+              />
+              {positions.length > 0 && (
+                <Segmented label="Position filter" value={pos} onChange={setPos} options={[{ value: 'all', label: 'all' }, ...positions.map((p) => ({ value: p as string, label: p }))]} />
+              )}
+            </div>
+            <p className="note" role="status">{board.pending ? 'working out lineup lift for every free agent…' : ''}</p>
+            {board.value === null ? null : !board.pending && list.length === 0 ? (
+              <p className="take">nobody on the wire beats your bench this window.</p>
+            ) : (
+              <SortableTable caption="Waiver wire" columns={columns} rows={list} rowKey={(w) => w.pid} initialSort={{ key: 'gain', dir: 'desc' }} tableId="waivers" pageSize={PAGE} />
+            )}
+          </section>
         ) : (
-          <SortableTable caption="Waiver wire" columns={columns} rows={list} rowKey={(w) => w.pid} initialSort={{ key: 'gain', dir: 'desc' }} />
+          <UsageRisers weeks={nv.bundle?.weekly ?? null} through={nv.bundle?.manifest.throughWeek ?? null} freeAgents={freeAgents} loading={nv.loading} />
         )}
-      </section>
-      <UsageRisers weeks={nv.bundle?.weekly ?? null} through={nv.bundle?.manifest.throughWeek ?? null} freeAgents={freeAgents} loading={nv.loading} />
+      </PageTabs>
     </>
   );
 }

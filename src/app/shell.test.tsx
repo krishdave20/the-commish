@@ -124,21 +124,21 @@ describe('reduced motion and touch', () => {
     expect(renderHook(() => useWantsReducedMotion()).result.current).toBe(false);
   });
 
-  it('a touch layout makes every bracket slot at least 40px and the bracket taller', () => {
+  it('a touch layout makes every bracket slot at least 44px and the bracket taller', () => {
     const bracket = buildBracket({ kind: 'championship', seedOrder: [1, 2, 3, 4, 5, 6, 7, 8], rules: { weekStart: 15, roundType: 0, seedType: 0 } });
     expect(TOUCH_DIMS.slotH).toBeGreaterThanOrEqual(40);
     expect(DEFAULT_DIMS.slotH).toBeLessThan(40);
     expect(layoutBracket(bracket, TOUCH_DIMS).height).toBeGreaterThan(layoutBracket(bracket).height);
   });
 
-  it('the bracket draws 40px slots on a phone and 30px with a mouse', () => {
+  it('the bracket draws 44px slots on a phone and 30px with a mouse', () => {
     const bracket = buildBracket({ kind: 'championship', seedOrder: [1, 2, 3, 4], rules: { weekStart: 15, roundType: 0, seedType: 0 } });
     const ctx = { means: Object.fromEntries([1, 2, 3, 4].map((r) => [r, { 15: 100, 16: 100, 17: 100 }])), sd: 20, currentWeek: 6 };
     const names = new Map([1, 2, 3, 4].map((r) => [r, `Team ${r}`] as const));
     const slotHeight = () => (document.querySelector('button.br-slot') as HTMLElement).style.height;
     stubMedia((q) => q.includes('max-width: 760px'));
     const { unmount } = render(<Bracket bracket={bracket} ctx={ctx} names={names} meRid={1} />);
-    expect(slotHeight()).toBe('40px');
+    expect(slotHeight()).toBe('44px');
     unmount();
     stubMedia(() => false);
     act(() => { render(<Bracket bracket={bracket} ctx={ctx} names={names} meRid={1} />); });

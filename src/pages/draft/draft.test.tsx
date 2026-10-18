@@ -45,13 +45,17 @@ const synthetic = () => buildRankings({ projections: sampleSeasonProjections(), 
 
 describe('draft room: rankings', () => {
   it('lists players by rank with tiers, tier breaks, replacement levels, ADP and value vs ADP', async () => {
-    const { container } = mount();
+    const { container, user } = mount();
     const table = await screen.findByRole('table', { name: 'Draft rankings' });
+    // by default: #, player, pos, proj pts, adp, vs adp, watch. Team, vor, tier and the FantasyCalc value wait behind "more columns".
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''))).toEqual(['#', 'player', 'pos', 'proj pts', 'adp', 'vs adp', 'watch']);
+    await user.click(screen.getByRole('button', { name: /more columns/ }));
     const r = synthetic();
     const ids = pids(container);
     expect(ids.slice(0, 5)).toEqual(r.rows.slice(0, 5).map((x) => x.pid));
     expect(screen.getAllByTestId('tier-break').length).toBeGreaterThan(0);
     expect(screen.getAllByTestId('tier-break')[0]).toHaveTextContent(/\w+ tier 2/);
+    // the replacement levels sit behind the title's ? (the text is in the page, one tap from view)
     expect(screen.getByText(`replacement: rb ${r.replacement.RB!.toFixed(1)} pts`)).toBeInTheDocument();
     expect(screen.getByText(/replacement: wr \d+\.\d pts/)).toBeInTheDocument();
     const first = within(table).getAllByRole('row').find((x) => x.dataset.pid === r.rows[0]!.pid)!;
@@ -140,6 +144,7 @@ describe('draft room: modes', () => {
     expect(await screen.findByText('adp: adp_dynasty_ppr')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'startup' })).toBeChecked();
     expect(screen.getByText('values: fantasycalc')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: /more columns/ }));
     expect(screen.getByRole('button', { name: 'fc value' })).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'rookie' }));
     expect(await screen.findByText('adp: adp_rookie')).toBeInTheDocument();

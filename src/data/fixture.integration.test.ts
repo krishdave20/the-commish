@@ -55,6 +55,7 @@ describe('fixture manifest', () => {
       [/\/v1\/stats\//, shapes.weekStats],
       [/\/projections\/nfl\//, shapes.projections],
       [/\/schedule\/nfl\//, shapes.schedule],
+      [/\/scores\/nfl\//, shapes.scores],
     ];
     for (const url of Object.keys(m.files)) {
       const g = guards.find(([re]) => re.test(url.split('?')[0]));
@@ -128,7 +129,8 @@ describe('DataApi on the fixture transport', () => {
     const rs = await api.healthChecks({
       season: m.season, week: m.week, username: m.username, userId: m.user_id, leagueId: m.league_id, draftId: b.drafts[0]?.draft_id,
     });
-    const sleeper = rs.filter((r) => r.source === 'sleeper');
+    // the fixture was captured before game day existed, so it holds no NFL scores (that row has its own test in health.test.ts)
+    const sleeper = rs.filter((r) => r.source === 'sleeper' && r.id !== 'sleeper.scores');
     expect(sleeper.length).toBeGreaterThanOrEqual(20);
     for (const r of sleeper) expect(['ok', 'warn'], `${r.id}: ${r.message}`).toContain(r.level);
     expect(sleeper.filter((r) => r.level === 'fail')).toEqual([]);

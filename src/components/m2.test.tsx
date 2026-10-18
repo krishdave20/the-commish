@@ -101,6 +101,28 @@ describe('OddsCell', () => {
     expect(tone(0)).toMatchObject({ tone: 'bad', bar: 'bar red' });
   });
 
+  it('"scale" has no verdict: a low chance is a quiet green bar, stronger toward the column maximum, never red or gold', () => {
+    const cell = (v: number, max: number) => {
+      const { container, unmount } = render(<OddsCell value={v} tone="scale" max={max} />);
+      const out = {
+        tone: container.querySelector('.oddcell')!.getAttribute('data-tone'),
+        bar: container.querySelector('.bar')!.className,
+        opacity: Number(container.querySelector<HTMLElement>('.bar > i')!.style.opacity),
+        width: container.querySelector<HTMLElement>('.bar > i')!.style.width,
+      };
+      unmount();
+      return out;
+    };
+    const top = cell(0.31, 0.31), low = cell(0.02, 0.31), none = cell(0, 0.31);
+    for (const c of [top, low, none]) expect(c).toMatchObject({ tone: 'scale', bar: 'bar' });
+    expect(top.opacity).toBeCloseTo(1);
+    expect(low.opacity).toBeLessThan(top.opacity);
+    expect(none.opacity).toBeCloseTo(0.35);
+    expect(top.width).toBe('31%');
+    // the same value on the playoff scale is red
+    expect(tone(0.31)).toMatchObject({ tone: 'bad', bar: 'bar red' });
+  });
+
   it('shows >99% and <1% near the ends', () => {
     expect(tone(0.997).text).toBe('>99%');
     expect(tone(0.002).text).toBe('<1%');

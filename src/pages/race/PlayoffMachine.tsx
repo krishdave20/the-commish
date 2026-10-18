@@ -8,6 +8,7 @@ import { useSimulation } from '../../app/useSimulation';
 import { ClinchMark } from '../../components/ClinchMark';
 import { OddsCell } from '../../components/OddsCell';
 import { Segmented } from '../../components/Segmented';
+import { SectionHeader } from '../../components/SectionHeader';
 import { SimBar } from '../../components/SimBar';
 import type { Engine, Picks } from '../../engine';
 
@@ -73,11 +74,10 @@ export function PlayoffMachine({ engine, picks, setPicks }: { engine: Engine; pi
 
   return (
     <section className="card" aria-labelledby="machine-title">
-      <header>
-        <div className="micro">pick winners, watch it move</div>
-        <h2 id="machine-title">{FEATURE.machine}</h2>
-        <p className="note">click a team to pick it to win; click it again to clear. marks and records change instantly; odds follow a moment later.</p>
-      </header>
+      <SectionHeader
+        id="machine-title" title={FEATURE.machine} kicker="pick winners, watch it move"
+        tip="click a team to pick it to win; click it again to clear. marks and records change instantly; odds follow a moment later."
+      />
 
       {weeks.length === 0 ? <p className="note">no regular-season games left to pick.</p> : (
         <>

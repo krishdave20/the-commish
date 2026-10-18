@@ -49,7 +49,8 @@ describe('hot takes feed (/takes)', () => {
 
   it('shows data through week N and the attribution when nflverse is used', async () => {
     renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
-    expect(await screen.findByText(/data through week 6 · 5 takes/)).toBeInTheDocument();
+    expect(await screen.findByText('data through week 6')).toBeInTheDocument();
+    expect(screen.getByText('of 5 takes')).toBeInTheDocument();
     expect(screen.getByText(/Play-by-play and snap data: nflverse\. Charting data: FTN Data via nflverse\./)).toBeInTheDocument();
     expect(screen.getByText(/Values: FantasyCalc\./)).toBeInTheDocument();
     expect(screen.getByText(/every take is a template filled with real numbers/)).toBeInTheDocument();
@@ -99,7 +100,8 @@ describe('hot takes feed (/takes)', () => {
     expect(card('Quinn Quarterback')).toBeInTheDocument();
     expect(build.mock.calls.at(-1)![0].nflverse).toBeNull();
     expect(screen.getByText(/the nightly nflverse update has not landed/)).toBeInTheDocument();
-    expect(screen.getByText(/no nflverse data yet · 1 take$/)).toBeInTheDocument();
+    expect(screen.getByText('no nflverse data yet')).toBeInTheDocument();
+    expect(screen.getByText('of 1 take')).toBeInTheDocument();
     expect(screen.queryByText(/Play-by-play and snap data/)).not.toBeInTheDocument();
   });
 
@@ -128,17 +130,51 @@ describe('hot takes feed (/takes)', () => {
 });
 
 describe('a long feed', () => {
-  it('draws 30 cards and grows on request, keeping the engine’s order', async () => {
+  it('draws 12 cards and grows on request, keeping the engine’s order', async () => {
     const many = () => Array.from({ length: 65 }, (_, i) => ({ ...sampleTakes()[0]!, id: `usage_spike:p${i}:6`, pid: `p${i}`, player: `Player ${i}`, headline: `Headline ${i}` }));
     const { user } = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes(many) });
-    await waitFor(() => expect(articles()).toHaveLength(30));
-    expect(screen.getByText('showing 30 of 65')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'show 30 more' }));
+    await waitFor(() => expect(articles()).toHaveLength(12));
+    expect(screen.getByText('showing 12 of 65')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'show 12 more' }));
+    expect(articles()).toHaveLength(24);
+    for (let i = 0; i < 3; i++) await user.click(screen.getByRole('button', { name: 'show 12 more' }));
     expect(articles()).toHaveLength(60);
     await user.click(screen.getByRole('button', { name: 'show 5 more' }));
     expect(articles()).toHaveLength(65);
     expect(articles()[64]).toHaveAccessibleName('Take: Headline 64');
     expect(screen.queryByRole('button', { name: /more/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('the strip and the card detail', () => {
+  it('opens with the count by relevance: your players, the waiver wire, league-wide', async () => {
+    renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
+    const strip = await screen.findByRole('group', { name: 'Takes by relevance' });
+    await waitFor(() => expect(within(strip).getByText('your players').closest('.kpi')).toHaveTextContent('2'));
+    expect(within(strip).getByText('waiver wire').closest('.kpi')).toHaveTextContent('1');
+    // the trade target and the dynasty mover count as league-wide
+    expect(within(strip).getByText('league-wide').closest('.kpi')).toHaveTextContent('2');
+  });
+
+  it('keeps why it matters, the track record and the sources behind a closed “the detail” on every card', async () => {
+    const { user } = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
+    await waitFor(() => expect(articles()).toHaveLength(5));
+    const spike = card('Walt Wideout’s snap share');
+    const detail = within(spike).getByText('the detail').closest('details')!;
+    expect(detail).not.toHaveAttribute('open');
+    await user.click(within(spike).getByText('the detail'));
+    expect(detail).toHaveAttribute('open');
+    expect(within(spike).getByText('why it matters for you')).toBeVisible();
+    // the headline, the stat line and the actions are always on the card
+    expect(within(spike).getByRole('heading', { level: 3 })).toBeVisible();
+    expect(within(spike).getByRole('button', { name: /^(watch|watching)/ })).toBeVisible();
+  });
+
+  it('filters sit on one row: the scope control and the detector select', async () => {
+    renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
+    const feed = (await screen.findByRole('heading', { level: 2, name: 'the feed' })).closest('section')!;
+    const row = within(feed).getByRole('radiogroup', { name: 'Take scope' }).parentElement!;
+    expect(within(row).getByLabelText('Detector kind')).toBeInTheDocument();
   });
 });
 

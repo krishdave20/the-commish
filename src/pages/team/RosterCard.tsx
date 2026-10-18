@@ -4,6 +4,7 @@ import { useScenario } from '../../app/modelContext';
 import { PAGES } from '../../app/names';
 import { PlayerLink } from '../../components/PlayerLink';
 import { MatchupGrade } from '../../components/MatchupGrade';
+import { SectionHeader } from '../../components/SectionHeader';
 import { SortableTable } from '../../components/SortableTable';
 import type { Column } from '../../components/useSort';
 import type { Engine, ModelPlayer } from '../../engine';
@@ -39,8 +40,8 @@ export function RosterCard({ engine }: { engine: Engine }) {
       render: (r) => <><PlayerLink pid={r.p.pid} name={r.p.name} /><PlayerTags p={r.p} added={r.added} /></>,
     },
     { key: 'pos', header: 'pos', value: (r) => r.p.pos },
-    { key: 'nfl', header: 'team', value: (r) => r.p.nfl ?? '', className: 'hide-sm' },
-    { key: 'avg', header: 'avg', numeric: true, value: (r) => r.p.seasonAvg, render: (r) => (r.p.seasonAvg == null ? '—' : formatPoints1(r.p.seasonAvg)) },
+    { key: 'nfl', header: 'team', value: (r) => r.p.nfl ?? '', more: true },
+    { key: 'avg', header: 'avg', more: true, numeric: true, value: (r) => r.p.seasonAvg, render: (r) => (r.p.seasonAvg == null ? '—' : formatPoints1(r.p.seasonAvg)) },
     {
       key: 'next', header: `wk ${cur + 1} proj`, numeric: true, value: (r) => r.next,
       render: (r) => (
@@ -51,21 +52,18 @@ export function RosterCard({ engine }: { engine: Engine }) {
     },
     { key: 'ros', header: 'rest of season', numeric: true, value: (r) => r.ros, render: (r) => formatPoints1(r.ros) },
     {
-      key: 'opp', header: `wk ${cur + 1} opp`, className: 'hide-sm',
+      key: 'opp', header: `wk ${cur + 1} opp`, more: true,
       render: (r) => <MatchupGrade opponent={r.p.opp[cur + 1]} dvp={r.p.dvp[cur + 1]} />,
     },
   ];
 
   return (
     <section className="card" aria-labelledby="roster-title">
-      <header>
-        <div className="micro">who you have</div>
-        <h2 id="roster-title">roster</h2>
-      </header>
-      <SortableTable caption="Roster" columns={columns} rows={rows} rowKey={(r) => r.p.pid} initialSort={{ key: 'ros', dir: 'desc' }} />
-      <p className="note">
-        open a name on the {PAGES.players.name} for usage, trade value and takes. projections are sleeper’s, scored with your league’s settings.
-      </p>
+      <SectionHeader
+        id="roster-title" title="roster"
+        tip={`who you have. open a name on the ${PAGES.players.name} for usage, trade value and takes. projections are sleeper’s, scored with your league’s settings.`}
+      />
+      <SortableTable caption="Roster" columns={columns} rows={rows} rowKey={(r) => r.p.pid} initialSort={{ key: 'ros', dir: 'desc' }} tableId="roster" />
     </section>
   );
 }

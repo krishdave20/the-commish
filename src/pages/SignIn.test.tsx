@@ -18,7 +18,7 @@ describe('sign in', () => {
     expect(api.nflState).not.toHaveBeenCalled();
   });
 
-  it('lists leagues with scoring and type, saves, and lands on Home with standings', async () => {
+  it('lists leagues with scoring and type, saves, and lands on the huddle', async () => {
     const { user, api, accounts } = renderApp();
     await user.type(await screen.findByLabelText('Sleeper username'), 'SampleUser');
     await user.click(screen.getByRole('button', { name: 'Find my leagues' }));
@@ -50,9 +50,8 @@ describe('sign in', () => {
     }));
     expect(accounts.setActive).toHaveBeenCalledWith('u1');
     expect(await screen.findByRole('heading', { level: 1, name: 'huddle' })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { level: 2, name: 'Sample League' })).toBeInTheDocument();
-    const standings = await screen.findByRole('table', { name: 'League standings' });
-    expect(within(standings).getByText('Reed Between the Lines')).toBeInTheDocument();
+    // the huddle's strip opens with the record, and the full standings are one link away
+    expect(await screen.findByRole('group', { name: 'your season' })).toBeInTheDocument();
   });
 
   it('also loads the previous season in the offseason', async () => {

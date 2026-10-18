@@ -3,13 +3,15 @@ import { EnginePage } from '../app/EnginePage';
 import { useNflverse } from '../app/nflverseData';
 import { TAKE_KIND_LABEL } from '../app/names';
 import { useTakes } from '../app/useTakes';
+import { HeadlineStrip } from '../components/HeadlineStrip';
+import { SectionHeader } from '../components/SectionHeader';
 import { Segmented } from '../components/Segmented';
 import type { Take, TakeKind } from '../takes/types';
 import { TakeCard } from './takes/TakeCard';
 
 type Scope = 'all' | 'mine' | 'waiver' | 'league';
-/** Cards drawn at first; a long feed grows by this much each time. */
-const PAGE = 30;
+/** Cards drawn at first; a long feed grows by this much each time (a short first screen, one tap for more). */
+const PAGE = 12;
 const SCOPES: Array<{ value: Scope; label: string }> = [
   { value: 'all', label: 'all' },
   { value: 'mine', label: 'my players' },
@@ -38,16 +40,22 @@ function Feed() {
   );
   const usesFc = t.takes.some((x) => x.sources.includes('fantasycalc'));
 
+  const count = (r: Take['relevance'][]) => t.takes.filter((x) => r.includes(x.relevance)).length;
+  const status = t.throughWeek !== null ? `data through week ${t.throughWeek}` : t.nflverseLoading ? 'loading the nightly nflverse data' : 'no nflverse data yet';
+
   return (
     <>
-      <section className="card take-filters" aria-labelledby="feed-controls">
-        <header>
-          <div className="micro">
-            {t.throughWeek !== null ? `data through week ${t.throughWeek}` : t.nflverseLoading ? 'loading the nightly nflverse data' : 'no nflverse data yet'}
-            {` · ${t.takes.length} ${t.takes.length === 1 ? 'take' : 'takes'}`}
-          </div>
-          <h2 id="feed-controls">the feed</h2>
-        </header>
+      <HeadlineStrip label="Takes by relevance" items={[
+        { label: 'your players', value: <span>{count(['mine'])}</span>, sub: `of ${t.takes.length} ${t.takes.length === 1 ? 'take' : 'takes'}` },
+        { label: 'waiver wire', value: <span>{count(['waiver'])}</span> },
+        { label: 'league-wide', value: <span>{count(['league', 'trade_target'])}</span>, sub: status },
+      ]} />
+
+      <section className="take-filters" aria-labelledby="feed-controls">
+        <SectionHeader
+          id="feed-controls" title="the feed"
+          tip={<>every take is a template filled with real numbers. no ai wrote them. each card keeps its detail (why it matters, the track record, sources) one tap away.</>}
+        />
         <div className="row">
           <Segmented label="Take scope" value={scope} onChange={(v) => { setScope(v); setLimit(PAGE); }} options={SCOPES} />
           <label className="ctl">
@@ -80,10 +88,7 @@ function Feed() {
         </div>
       )}
 
-      <p className="note">
-        every take is a template filled with real numbers. no ai wrote them.
-        {t.attribution ? ` ${t.attribution}` : ''}{usesFc ? ' Values: FantasyCalc.' : ''}
-      </p>
+      {(t.attribution || usesFc) && <p className="note attribution">{t.attribution ? `${t.attribution}` : ''}{usesFc ? `${t.attribution ? ' ' : ''}Values: FantasyCalc.` : ''}</p>}
     </>
   );
 }

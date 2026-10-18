@@ -1,12 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { AccountSwitcher } from './AccountSwitcher';
-import { METHOD_PATH, NAV } from './routes';
+import { LiveDot } from '../components/ticker/LiveDot';
+import { useLiveMaybe } from './live/liveContext';
+import { FOOTER_NAV, NAV, NAV_GROUP_LIST } from './routes';
 import { PAGES } from './names';
 
 /** The name of the page a path belongs to ("/players/123" is the scouting report). */
 function currentPageName(pathname: string): string {
-  const all = [...NAV.map((n) => ({ path: n.path, name: n.label })), { path: METHOD_PATH, name: PAGES.method.name }];
+  const all = [...NAV, ...FOOTER_NAV].map((n) => ({ path: n.path, name: n.label }));
   const hit = all.find((p) => (p.path === '/' ? pathname === '/' : pathname === p.path || pathname.startsWith(`${p.path}/`)));
   return hit?.name ?? PAGES.home.name;
 }
@@ -23,6 +25,8 @@ export function Sidebar() {
   const button = useRef<HTMLButtonElement>(null);
   const header = useRef<HTMLElement>(null);
   const here = currentPageName(pathname);
+  const live = useLiveMaybe()?.live ?? false;
+  const groupId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -59,12 +63,25 @@ export function Sidebar() {
       </button>
       <div className="menu" id={menuId}>
         <nav className="nav" aria-label="Primary">
-          {NAV.map((n) => (
-            <NavLink key={n.path} to={n.path} end={n.path === '/'}>{n.label}</NavLink>
+          {NAV_GROUP_LIST.map((g, i) => (
+            <div className="nav-group" role="group" aria-labelledby={`${groupId}-${i}`} key={g.label}>
+              <span className="nav-label" id={`${groupId}-${i}`}>{g.label}</span>
+              {g.items.map((n) => (
+                <NavLink key={n.path} to={n.path} end={n.path === '/'}>
+                  {n.label}
+                  {n.path === PAGES.gameday.path && live && (
+                    <>
+                      <LiveDot />
+                      <span className="sr-only"> (live)</span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <nav className="nav nav-sub" aria-label="Reference">
-          <NavLink to={METHOD_PATH}>{PAGES.method.name}</NavLink>
+          {FOOTER_NAV.map((n) => <NavLink key={n.path} to={n.path}>{n.label}</NavLink>)}
         </nav>
         <AccountSwitcher />
       </div>

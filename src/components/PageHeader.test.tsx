@@ -17,6 +17,17 @@ describe('PageHeader', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
+  it('keeps the title and kicker together on one line and the stamp and Refresh in a small line of their own', () => {
+    const { container } = render(<PageHeader kicker="Standings" title="League race" data={base} />);
+    const head = container.querySelector('.head-title')!;
+    expect(head).toContainElement(screen.getByRole('heading', { level: 1 }));
+    expect(head).toContainElement(screen.getByText('Standings'));
+    const stamp = container.querySelector('.stamp-row')!;
+    expect(stamp).toContainElement(screen.getByText('Data as of Fri, Oct 16, 4:05 PM'));
+    expect(stamp).toContainElement(screen.getByRole('button', { name: 'Refresh' }));
+    expect(head).not.toContainElement(screen.getByRole('button', { name: 'Refresh' }));
+  });
+
   it('shows cached and stale chips', () => {
     render(<PageHeader kicker="k" title="t" data={{ ...base, fromCache: true, stale: true }} />);
     expect(screen.getByText('cached')).toBeInTheDocument();

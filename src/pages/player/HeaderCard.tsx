@@ -1,5 +1,6 @@
 import { ageOf, str } from '../../app/playersIndex';
 import { useWatchlist } from '../../app/useWatchlist';
+import { SectionHeader } from '../../components/SectionHeader';
 import type { PlayerRecord } from '../../data';
 import type { ModelPlayer } from '../../engine';
 
@@ -21,17 +22,25 @@ function experience(rec: PlayerRecord): string {
 
 interface Props {
   pid: string;
-  name: string;
   rec: PlayerRecord | undefined;
   mp: ModelPlayer | undefined;
   /** who owns him in the followed league, when known */
   owner: string | null;
 }
 
-/** The facts from Sleeper's players file, plus the watchlist button. */
-export function HeaderCard({ pid, name, rec, mp, owner }: Props) {
+/** The one primary action on a profile: add him to, or take him off, your watchlist. Sits beside the way back, on every tab. */
+export function WatchButton({ pid }: { pid: string }) {
   const watch = useWatchlist();
   const watching = watch.has(pid);
+  return (
+    <button type="button" className={`btn${watching ? '' : ' solid'}`} aria-pressed={watching} onClick={() => watch.toggle(pid)}>
+      {watching ? 'on your watchlist' : 'add to watchlist'}
+    </button>
+  );
+}
+
+/** The facts from Sleeper's players file. */
+export function HeaderCard({ rec, mp, owner }: Props) {
   const injury = rec?.injury_status || mp?.injury || '';
   const body = str(rec?.injury_body_part) || mp?.body || '';
   const depthPos = str(rec?.depth_chart_position);
@@ -49,17 +58,7 @@ export function HeaderCard({ pid, name, rec, mp, owner }: Props) {
   ];
   return (
     <section className="card" aria-labelledby="bio-title">
-      <header>
-        <div className="row between">
-          <div>
-            <div className="micro">the facts</div>
-            <h2 id="bio-title">{name}</h2>
-          </div>
-          <button type="button" className={`btn${watching ? '' : ' solid'}`} aria-pressed={watching} onClick={() => watch.toggle(pid)}>
-            {watching ? 'on your watchlist' : 'add to watchlist'}
-          </button>
-        </div>
-      </header>
+      <SectionHeader id="bio-title" title="the facts" />
       {rec || mp ? (
         <dl className="defs">
           {facts.filter(([, v]) => v).map(([k, v]) => <div key={k} style={{ display: 'contents' }}><dt>{k}</dt><dd>{v}</dd></div>)}

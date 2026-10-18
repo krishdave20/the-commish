@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useLeagueHistory, summarizeSeason } from '../../app/leagueHistory';
 import { FEATURE } from '../../app/names';
+import { SectionHeader } from '../../components/SectionHeader';
 import type { LeagueBundle } from '../../data';
 import { formatPoints } from '../../app/format';
 
@@ -17,10 +18,7 @@ export function LeagueHistory({ bundle, userId }: { bundle: LeagueBundle; userId
   const first = !past.data && past.loading;
   return (
     <section className="card" aria-labelledby="history-title">
-      <header>
-        <div className="micro">follows the league back through its past seasons</div>
-        <h2 id="history-title">{FEATURE.history}</h2>
-      </header>
+      <SectionHeader id="history-title" title={FEATURE.history} tip="follows the league back through its past seasons." />
       {first && !own ? <p className="note" role="status">looking up past seasons…</p>
         : seasons.length === 0 ? <p className="note">{past.error ? `could not load past seasons. ${past.error}` : 'this league has no earlier seasons on sleeper.'}</p>
         : (

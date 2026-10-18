@@ -1,4 +1,5 @@
-/* Design tokens (SPEC section 8). One deliberate light look; there is no dark mode. */
+/* Design tokens. Palette from SPEC section 8; the type, corner and spacing rules come from the hybrid Apple look in docs/WEB_APP_NOTES.md.
+   One deliberate light look; there is no dark mode. Fonts, radii and spacing are tokens only: components never hard-code them. */
 :root {
   --paper: #f4f1eb;
   --sheet: #faf8f3;
@@ -17,7 +18,11 @@
   --gold-ink: #8a6418;
   --gold-soft: #f3e8cf;
 
-  --mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  /* body text and every control: the system UI font (San Francisco on Apple devices). Nothing is bundled. */
+  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* a monospace only for inline code */
+  --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  /* page titles, section titles, big numbers */
   --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
 
   /* Derived, never new hues: a gold that reads as text on the soft panels (5.1:1 on gold-soft where gold-ink alone is 4.4:1),
@@ -25,12 +30,40 @@
   --gold-text: color-mix(in srgb, var(--gold-ink) 85%, var(--ink));
   --green-deep: color-mix(in srgb, var(--green) 82%, var(--ink));
 
-  --r: 3px;
+  /* 8-point spacing grid */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 16px;
+  --s-4: 24px;
+  --s-5: 32px;
+  --s-6: 48px;
+
+  /* type: SF reads larger than a monospace at the same size, so body is 15 */
+  --fs-micro: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-table: 14px;
+  --fs-base: 15px;
+  --lh: 1.45;
+  --ls-micro: 0.05em;
+
+  /* corners: 8 px on cards, buttons, inputs and drawers; a smaller one on pills and tiny chips */
+  --r: 8px;
+  --r-sm: 6px;
+  --r-xs: 3px;
+  /* the least size a tap target may have on a touch screen */
+  --touch: 44px;
+
+  /* depth: soft shadows and a dimmed scrim for layers that sit above the page */
+  --scrim: rgba(31, 29, 25, 0.32);
+  --shadow-pop: 0 6px 24px rgba(31, 29, 25, 0.14), 0 1px 3px rgba(31, 29, 25, 0.08);
+  --shadow-sheet: -8px 0 32px rgba(31, 29, 25, 0.16);
+  --bar-glass: rgba(250, 248, 243, 0.8);
   /* motion: one curve, and every duration sits between --t-fast and --t-slow (150 to 550 ms) */
   --t-fast: 150ms;
   --t-base: 300ms;
   --t-slow: 550ms;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --sidebar-w: 15.5rem;
 
   color-scheme: light;

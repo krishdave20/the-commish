@@ -3,6 +3,7 @@ import { signed, formatCount } from '../../app/format';
 import { FEATURE } from '../../app/names';
 import { useFantasyCalc } from '../../app/playersData';
 import { PlayerLink } from '../../components/PlayerLink';
+import { SectionHeader } from '../../components/SectionHeader';
 import { isDynasty } from '../../engine';
 import type { FcEntry } from '../../engine';
 import type { LeagueBundle } from '../../data';
@@ -58,10 +59,7 @@ export function Movers({ bundle, userId }: { bundle: LeagueBundle; userId: strin
 
   return (
     <section className="card" aria-labelledby="movers-title">
-      <header>
-        <div className="micro">fantasycalc trade value, change over 30 days, players rostered in your league</div>
-        <h2 id="movers-title">{FEATURE.movers}</h2>
-      </header>
+      <SectionHeader id="movers-title" title={FEATURE.movers} tip="fantasycalc trade value, change over 30 days, for players rostered in your league." />
       {!dynasty && <p className="note" role="status">this league is not dynasty, so these are redraft trade values. the 30-day move matters most in dynasty leagues.</p>}
       {!fc ? <p className="note" role="status">loading values…</p>
         : !fc.ok ? <p className="note" role="status">values are unavailable right now. {fc.reason}</p>
@@ -71,7 +69,6 @@ export function Movers({ bundle, userId }: { bundle: LeagueBundle; userId: strin
             <Table caption="biggest fallers" rows={down} mine={mine} />
           </div>
         )}
-      <p className="note">Values: FantasyCalc.</p>
     </section>
   );
 }

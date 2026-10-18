@@ -9,7 +9,10 @@ import { usePageTitle } from '../app/usePageTitle';
 import { useWatchlist } from '../app/useWatchlist';
 import { PageHeader } from '../components/PageHeader';
 import { PlayerLink } from '../components/PlayerLink';
+import { MoreColumns } from '../components/MoreColumns';
+import { SectionHeader } from '../components/SectionHeader';
 import { Segmented } from '../components/Segmented';
+import { useMoreColumns } from '../components/useMoreColumns';
 import { formatCount } from '../app/format';
 
 type Scope = 'all' | 'mine' | 'rostered' | 'free' | 'watch';
@@ -32,6 +35,7 @@ export default function Players() {
   const [query, setQuery] = useState('');
   const [pos, setPos] = useState('all');
   const [scope, setScope] = useState<Scope>('all');
+  const more = useMoreColumns('players');
 
   const owner = useMemo(() => {
     const m = new Map<string, number>();
@@ -69,10 +73,10 @@ export default function Players() {
     <div className="page page-fade">
       <PageHeader kicker={PAGES.players.kicker} title={PAGES.players.name} data={players} />
       <section className="card" aria-labelledby="find-title">
-        <header>
-          <div className="micro">{players.index.length ? `${formatCount(players.index.length)} players on file` : 'loading sleeper’s players file'}</div>
-          <h2 id="find-title">find a player</h2>
-        </header>
+        <SectionHeader
+          id="find-title" title="find a player"
+          tip={players.index.length ? `${formatCount(players.index.length)} players on file, from sleeper’s players file.` : 'loading sleeper’s players file.'}
+        />
         <div className="form-row">
           <label className="ctl">
             search players
@@ -92,12 +96,14 @@ export default function Players() {
         ) : results.length === 0 && !players.loading ? (
           <p className="note">{scope === 'watch' ? 'nobody on your watchlist yet. open a player and add him.' : 'no player matches that search.'}</p>
         ) : (
+          <>
+          <MoreColumns on={more.on} onToggle={more.toggle} label="player search" />
           <div className="tw">
             <table>
               <caption className="sr-only">Player search results</caption>
               <thead>
                 <tr>
-                  <th scope="col">player</th><th scope="col">pos</th><th scope="col">team</th><th scope="col" className="n hide-sm">age</th>
+                  <th scope="col">player</th><th scope="col">pos</th><th scope="col">team</th>{more.on && <th scope="col" className="n">age</th>}
                   <th scope="col">owner</th><th scope="col"><span className="sr-only">watch</span></th>
                 </tr>
               </thead>
@@ -114,7 +120,7 @@ export default function Players() {
                       </td>
                       <td className="dim">{e.pos}</td>
                       <td className="dim">{e.team ?? 'fa'}</td>
-                      <td className="n dim hide-sm">{e.age ?? '—'}</td>
+                      {more.on && <td className="n dim">{e.age ?? '—'}</td>}
                       <td className={rid === meRid ? 'pos-c' : 'dim'}>
                         {!rosteredLeague ? '—' : rid === meRid ? 'my team' : rid ? (rosterOf.get(rid) ?? `team ${rid}`) : 'free agent'}
                       </td>
@@ -129,6 +135,7 @@ export default function Players() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
     </div>

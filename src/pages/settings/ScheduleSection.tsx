@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { loadPrefs, savePrefs } from '../../app/prefs';
+import { Disclosure } from '../../components/Disclosure';
 
 export function ScheduleSection() {
   const [auto, setAuto] = useState(() => loadPrefs().autoRefresh);
   return (
-    <section className="section" aria-labelledby="set-schedule">
-      <h2 id="set-schedule">Refresh schedule</h2>
-      <p>Refreshes on open when data is older than 6 hours; the players file at most once a day.</p>
-      <p className="note">The Refresh button on each page always goes back to the network. Requests are kept well under Sleeper’s limits.</p>
+    <Disclosure title="Refresh schedule" id="set-schedule" hint={auto ? 'auto-refresh on' : 'auto-refresh off'}>
+      <p>Refreshes on open when data is older than 6 hours; the players file at most once a day. The Refresh button on each page always goes back to the network, and requests stay well under Sleeper’s limits.</p>
       <label className="row">
         <input
           type="checkbox" checked={auto}
@@ -15,6 +14,6 @@ export function ScheduleSection() {
         />
         <span>Auto-refresh on open</span>
       </label>
-    </section>
+    </Disclosure>
   );
 }

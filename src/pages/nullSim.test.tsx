@@ -20,9 +20,11 @@ describe('a cancelled simulation (null result)', () => {
     const { user } = renderApp({ linked: [sampleAccount()], route: '/race' });
     const table = await screen.findByRole('table', { name: 'Playoff picture standings' });
     expect(within(table).getAllByRole('row')).toHaveLength(5);
-    expect(screen.getByText(/simming the season for the win-total chart/)).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: 'odds detail' }));
+    expect(await screen.findByText(/simming the season for the win-total chart/)).toBeInTheDocument();
 
     // picks still update marks and records immediately
+    await user.click(screen.getByRole('radio', { name: 'playoff machine' }));
     await user.click(await screen.findByRole('button', { name: 'you win out' }));
     expect(within(screen.getByRole('table', { name: 'Playoff machine standings' })).getByRole('img', { name: 'clinched a playoff spot' })).toBeInTheDocument();
     expect(err).not.toHaveBeenCalled();
@@ -36,7 +38,7 @@ describe('a cancelled simulation (null result)', () => {
   });
 
   it('keeps the lab usable', async () => {
-    const { user } = renderApp({ linked: [sampleAccount()], route: '/team' });
+    const { user } = renderApp({ linked: [sampleAccount()], route: '/team?tab=lab' });
     const lab = (await screen.findByRole('heading', { level: 2, name: 'the lab' })).closest('section')!;
     await user.click(within(lab).getByRole('button', { name: /^add \w+ Free Agent Fran/ }));
     expect(within(lab).getByRole('button', { name: 'Remove Free Agent Fran' })).toBeInTheDocument();

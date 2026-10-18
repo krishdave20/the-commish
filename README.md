@@ -61,4 +61,4 @@ Every push to `main` runs lint, tests and the smoke test, builds the site, runs 
 ## Credits
 
 League data: Sleeper public API. Play-by-play and snap data: nflverse. Charting data: FTN Data via nflverse. Values: FantasyCalc.
-Fonts: DM Mono and Instrument Serif (SIL Open Font License).
+Fonts: Instrument Serif (SIL Open Font License); body text uses your device's system font.
