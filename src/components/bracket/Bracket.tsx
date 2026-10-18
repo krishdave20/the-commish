@@ -5,6 +5,7 @@ import {
   championOf, matchupOf, oddsFor, playOnce, prunePicks, resolveBracket, scoringFor,
   type Bracket as BracketData, type BracketCtx, type BracketPicks, type ResolvedMatch,
 } from '../../engine';
+import { Uprights } from '../art/Uprights';
 import { OddsCell } from '../OddsCell';
 import { useReducedMotion } from '../motion';
 import { TOUCH_QUERY, useMediaQuery } from '../useMediaQuery';
@@ -247,6 +248,7 @@ export function Bracket({ bracket, ctx, names, meRid, caption, compact = false, 
             >
               {champion !== null ? (
                 <>
+                  {bracket.kind === 'championship' && <Uprights key={champion} />}
                   <span className="br-champ-label micro">{copy.champ}</span>
                   <span className="br-champ-name">{nameOf(names, champion)}</span>
                   <span className="br-rule" aria-hidden="true" />

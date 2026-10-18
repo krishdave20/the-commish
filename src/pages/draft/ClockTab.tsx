@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { StadiumLights } from '../../components/art/StadiumLights';
 import { PlayerLink } from '../../components/PlayerLink';
 import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
@@ -115,7 +116,10 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
             <div><button type="button" className="btn solid" onClick={replay.start}>replay your draft</button></div>
           </>
         ) : (
-          <p className="note">no draft in progress. the assistant wakes up when your league’s draft starts.</p>
+          <div className="art-empty">
+            <StadiumLights size={48} />
+            <p className="note">no draft in progress. the assistant wakes up when your league’s draft starts.</p>
+          </div>
         )}
       </section>
     );

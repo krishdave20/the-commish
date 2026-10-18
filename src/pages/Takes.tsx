@@ -3,6 +3,7 @@ import { EnginePage } from '../app/EnginePage';
 import { useNflverse } from '../app/nflverseData';
 import { TAKE_KIND_LABEL } from '../app/names';
 import { useTakes } from '../app/useTakes';
+import { PlayDiagram } from '../components/art/PlayDiagram';
 import { HeadlineStrip } from '../components/HeadlineStrip';
 import { SectionHeader } from '../components/SectionHeader';
 import { Segmented } from '../components/Segmented';
@@ -73,9 +74,12 @@ function Feed() {
       </section>
 
       {shown.length === 0 ? (
-        <p className="empty-take" role="status">
-          {t.takes.length === 0 ? 'quiet week. no takes clear the bar.' : 'nothing in this filter. try another.'}
-        </p>
+        <div className={t.takes.length === 0 ? 'art-empty' : undefined}>
+          {t.takes.length === 0 && <PlayDiagram size={52} />}
+          <p className="empty-take" role="status">
+            {t.takes.length === 0 ? 'quiet week. no takes clear the bar.' : 'nothing in this filter. try another.'}
+          </p>
+        </div>
       ) : (
         <div className="take-feed" role="list" aria-label="Hot takes">
           {shown.slice(0, limit).map((x) => <div role="listitem" key={x.id} className="take-item"><TakeCard take={x} /></div>)}

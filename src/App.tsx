@@ -11,6 +11,7 @@ import GameDay from './pages/GameDay';
 import Home from './pages/Home';
 import LeagueRace from './pages/LeagueRace';
 import MyTeam from './pages/MyTeam';
+import Nfl from './pages/Nfl';
 import PlayerProfile from './pages/PlayerProfile';
 import Players from './pages/Players';
 import Settings from './pages/Settings';
@@ -27,6 +28,7 @@ export function AppRoutes() {
       <Route element={<AppShell />}>
         <Route index element={<Home />} />
         <Route path="/gameday" element={<GameDay />} />
+        <Route path="/nfl" element={<Nfl />} />
         <Route path="/takes" element={<Takes />} />
         <Route path="/players" element={<Players />} />
         <Route path="/players/:pid" element={<PlayerProfile />} />

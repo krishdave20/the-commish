@@ -1,0 +1,14 @@
+/* Streamers tab: per-position cards. Tokens only. */
+.stream-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); gap: var(--s-5) var(--s-5); align-items: start; margin-top: var(--s-3); }
+.stream-grid.wide { grid-template-columns: minmax(0, 1fr); }
+.stream-pos { min-width: 0; display: grid; gap: var(--s-2); align-content: start; }
+.stream-pos h3 { margin: 0; }
+.stream-fill { margin: 0; font-size: var(--fs-sm); color: var(--gold-text); }
+.stream-over { display: block; font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; }
+.stream-ahead { display: inline-flex; gap: var(--s-3); white-space: nowrap; }
+.stream-ahead .matchup { font-size: var(--fs-xs); }
+.stream-ahead .wk { color: var(--ink-3); margin-right: var(--s-1); }
+.stream-note { margin: 0; }
+.stream-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); margin-top: var(--s-2); }
+.stream-tools .more-cols { margin-left: auto; }
+.stream-empty { margin-top: var(--s-3); }

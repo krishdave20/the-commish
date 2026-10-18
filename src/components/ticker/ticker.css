@@ -1,85 +1,107 @@
-/* The score ticker and the live dot. Tokens only (fonts, radii, spacing, colours). Depth: the bar is a translucent layer that blurs
-   what scrolls under it; where the browser cannot blur it is a solid sheet. */
+/* The score ticker and the live dot. A dark band (the inverse-surface tokens: dark in the light look, a lifted dark in the dark look).
+   My live matchup is pinned at the left; the rotation scrolls beside it in two labelled segments, "your league" and "nfl", with a divider.
+   Tokens only (fonts, radii, spacing, colours). */
 
 /* ---------- shell layout around the ticker: --ticker-h is the bar's height (0 when there is none) ---------- */
 .shell { --ticker-h: 0px; }
-.shell[data-ticker='on'] { --ticker-h: 36px; }
+.shell[data-ticker='on'] { --ticker-h: 40px; }
 .shell[data-ticker='collapsed'] { --ticker-h: 28px; }
 @media (max-width: 760px), (pointer: coarse) {
   .shell[data-ticker='on'], .shell[data-ticker='collapsed'] { --ticker-h: var(--touch, 44px); }
 }
-.shell .app { min-height: calc(100vh - var(--ticker-h)); }
-@media (min-width: 761px) {
-  /* the sidebar column is painted by the grid itself, so its sheet runs the full height of a long page; the sidebar sticks under the ticker with its own scroll */
-  .shell .app { background: linear-gradient(90deg, var(--sheet) calc(var(--sidebar-w) - 1px), var(--rule-2) calc(var(--sidebar-w) - 1px) var(--sidebar-w), transparent var(--sidebar-w)); }
-  .shell .sidebar { top: var(--ticker-h); height: calc(100vh - var(--ticker-h)); height: calc(100dvh - var(--ticker-h)); overflow-y: auto; background: transparent; box-shadow: none; }
-}
 
 /* ---------- the bar ---------- */
 .ticker {
-  height: var(--ticker-h); background: var(--sheet); box-shadow: 0 1px 0 var(--rule-2);
+  height: var(--ticker-h); background: var(--surface-inverse); color: var(--on-inverse); box-shadow: 0 0 0 1px var(--edge-inverse);
   font-family: var(--sans, -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif); font-size: var(--fs-xs, 12px);
   position: relative; z-index: 40; min-width: 0;
 }
-@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .ticker { background: var(--bar-glass, rgba(250, 248, 243, 0.8)); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); }
-}
 /* on a wide screen it stays at the top while the page scrolls; on a phone it scrolls away, so it never crowds the sticky top bar */
 @media (min-width: 761px) { .ticker { position: sticky; top: 0; } }
+.ticker :focus-visible { outline-color: var(--on-inverse); }
 
-.tk-bar { display: flex; align-items: center; height: 100%; gap: var(--s-2, 8px); padding-inline: max(var(--s-3, 16px), env(safe-area-inset-left, 0px)) max(var(--s-2, 8px), env(safe-area-inset-right, 0px)); min-width: 0; }
-.tk-tag { display: inline-flex; align-items: center; gap: var(--s-2, 8px); flex: none; color: var(--ink-2); font-size: var(--fs-micro, 11px); letter-spacing: var(--ls-micro, 0.05em); }
-.tk-tag[data-replay='true'] { color: var(--gold-text); background: var(--gold-soft); border-radius: var(--r-sm, 6px); padding: 1px var(--s-2, 8px); }
+.tk-bar { display: flex; align-items: center; height: 100%; gap: var(--s-2, 8px); padding-inline: max(var(--s-2, 8px), env(safe-area-inset-left, 0px)) max(var(--s-2, 8px), env(safe-area-inset-right, 0px)); min-width: 0; }
+.tk-tag { display: inline-flex; align-items: center; gap: var(--s-2, 8px); flex: none; color: var(--on-inverse-2); font-size: var(--fs-micro, 11px); letter-spacing: var(--ls-micro, 0.05em); }
+.tk-tag[data-replay='true'] { color: var(--gold-on-inverse); }
+
+/* my matchup, pinned: a pill that stays put while the rotation scrolls */
+.tk-pin {
+  flex: none; display: inline-flex; align-items: center; gap: var(--s-2, 8px); max-width: 60%; min-height: 28px; padding: 0 var(--s-3, 16px) 0 var(--s-2, 8px);
+  border-radius: var(--r, 8px); background: var(--fill-inverse); color: var(--on-inverse); text-decoration: none; white-space: nowrap; overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--rule-inverse); transition: background var(--t-fast, 150ms) var(--ease);
+}
+.tk-pin:hover { color: var(--on-inverse); box-shadow: inset 0 0 0 1px var(--gold-on-inverse); }
+.tk-pin .tk-tag { color: var(--on-inverse-2); }
+.tk-pin[data-live='true'] .tk-tag { color: var(--gold-on-inverse); }
+.tk-pin .tk-team { max-width: 12ch; }
+.tk-mini { flex: none; width: 48px; height: 4px; border-radius: var(--r-xs, 3px); background: var(--rule-inverse); overflow: hidden; align-self: center; }
+.tk-mini > i { display: block; height: 100%; background: var(--green-on-inverse); border-radius: var(--r-xs, 3px); transition: width var(--t-slow, 550ms) var(--ease); }
+
 .tk-view { flex: 1 1 auto; min-width: 0; overflow: hidden; height: 100%; display: flex; align-items: center;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--s-3, 16px), #000 calc(100% - var(--s-3, 16px)), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 var(--s-3, 16px), #000 calc(100% - var(--s-3, 16px)), transparent 100%); }
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, var(--ink) var(--s-3, 16px), var(--ink) calc(100% - var(--s-3, 16px)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, var(--ink) var(--s-3, 16px), var(--ink) calc(100% - var(--s-3, 16px)), transparent 100%); }
 .tk-track { display: flex; width: max-content; will-change: transform; }
-.tk-half { display: flex; align-items: center; flex: none; min-width: 100vw; margin: 0; padding: 0; list-style: none; gap: var(--s-4, 24px); padding-right: var(--s-4, 24px); }
-.tk-li, .tk-nfl { flex: none; }
+
+/* one copy of the rotation: the "your league" segment, a divider, the "nfl" segment, a divider. Two copies make the loop. */
+.tk-half { display: flex; align-items: center; flex: none; min-width: 100vw; gap: var(--s-4, 24px); padding-right: var(--s-4, 24px); }
+.tk-seg { flex: none; }
+.tk-seg > ul { display: flex; align-items: center; margin: 0; padding: 0; list-style: none; gap: var(--s-4, 24px); }
+.tk-li { flex: none; }
+.tk-label {
+  flex: none; font-size: var(--fs-micro, 11px); letter-spacing: var(--ls-micro, 0.05em); color: var(--on-inverse-2);
+  padding: 1px var(--s-2, 8px); border-radius: var(--r-sm, 6px); background: var(--fill-inverse);
+}
+.tk-split { flex: none; width: 1px; height: 18px; background: var(--rule-inverse); margin-inline: var(--s-3, 16px); }
 
 .tk-item {
-  display: inline-flex; align-items: baseline; gap: var(--s-1, 4px); color: var(--ink-2); text-decoration: none; white-space: nowrap;
+  display: inline-flex; align-items: baseline; gap: var(--s-1, 4px); color: var(--on-inverse-2); text-decoration: none; white-space: nowrap;
   min-height: 28px; padding: 0 var(--s-2, 8px); border-radius: var(--r-sm, 6px); align-self: center; line-height: 28px;
   transition: background var(--t-fast, 150ms) var(--ease);
 }
-.tk-item:hover { background: var(--rule-2); color: var(--ink); }
-.tk-item[data-mine='true'] { background: var(--gold-soft); color: var(--ink); }
-.tk-item[data-mine='true']:hover { background: var(--gold-soft); box-shadow: inset 0 0 0 1px var(--gold); }
-.tk-item:focus-visible { outline-offset: 0; }
+.tk-item:hover { background: var(--fill-inverse); color: var(--on-inverse); }
+.tk-item[data-mine='true'] { box-shadow: inset 0 0 0 1px var(--rule-inverse); color: var(--on-inverse); }
+.tk-item:focus-visible, .tk-pin:focus-visible { outline-offset: 0; }
 .tk-team { max-width: 14ch; overflow: hidden; text-overflow: ellipsis; }
-.tk-team[data-lead='true'] { color: var(--ink); font-weight: 600; }
-.tk-score { font-variant-numeric: tabular-nums; color: var(--ink); }
+.tk-team[data-lead='true'] { color: var(--on-inverse); font-weight: 600; }
+.tk-score { font-variant-numeric: tabular-nums; color: var(--on-inverse); }
 .tk-score[data-lead='true'] { font-weight: 600; }
-.tk-dash { color: var(--ink-3); }
+.tk-dash { color: var(--on-inverse-2); }
 .tk-pct { margin-inline: var(--s-1, 4px); font-variant-numeric: tabular-nums; font-weight: 600; }
-.tk-pct[data-tone='ok'] { color: var(--green); }
-.tk-pct[data-tone='warn'] { color: var(--gold-text); }
-.tk-pct[data-tone='bad'] { color: var(--red); }
-.tk-note { color: var(--ink-2); font-size: var(--fs-micro, 11px); margin-left: var(--s-1, 4px); }
-.tk-sep { width: 1px; height: 14px; background: var(--rule); flex: none; }
-.tk-nfl { color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.tk-nfl[data-live='true'] { color: var(--ink); }
+.tk-pct[data-tone='ok'] { color: var(--green-on-inverse); }
+.tk-pct[data-tone='warn'] { color: var(--gold-on-inverse); }
+.tk-pct[data-tone='bad'] { color: var(--red-on-inverse); }
+.tk-note { color: var(--on-inverse-2); font-size: var(--fs-micro, 11px); margin-left: var(--s-1, 4px); }
+
+/* nfl games: live in a warm accent, finals muted, kickoffs quiet */
+.tk-game { font-variant-numeric: tabular-nums; }
+.tk-game .tk-gscore { color: var(--on-inverse); }
+.tk-game[data-state='live'] .tk-gstat { color: var(--gold-on-inverse); font-weight: 600; }
+.tk-game[data-state='final'] .tk-gscore, .tk-game[data-state='final'] .tk-gstat { color: var(--on-inverse-2); }
+.tk-game[data-state='pre'] .tk-gscore { color: var(--on-inverse-2); }
 
 .tk-close, .tk-open {
-  font: inherit; font-size: var(--fs-micro, 11px); color: var(--ink-2); background: none; border: 0; border-radius: var(--r-sm, 6px); cursor: pointer;
+  font: inherit; font-size: var(--fs-micro, 11px); color: var(--on-inverse-2); background: none; border: 0; border-radius: var(--r-sm, 6px); cursor: pointer;
   flex: none; min-height: 28px; padding: 0 var(--s-2, 8px); display: inline-flex; align-items: center; gap: var(--s-2, 8px);
   transition: background var(--t-fast, 150ms) var(--ease), color var(--t-fast, 150ms) var(--ease);
 }
-.tk-close:hover, .tk-open:hover { background: var(--rule-2); color: var(--ink); }
+.tk-close:hover, .tk-open:hover { background: var(--fill-inverse); color: var(--on-inverse); }
 .tk-open { height: 100%; width: 100%; justify-content: center; border-radius: 0; }
 @media (max-width: 760px), (pointer: coarse) {
   .tk-close { min-height: var(--touch, 44px); min-width: var(--touch, 44px); justify-content: center; }
   .tk-item { min-height: var(--touch, 44px); line-height: var(--touch, 44px); }
+  .tk-pin { min-height: var(--touch, 44px); }
 }
+/* a narrow screen keeps the pill short: names go, the bar and the scores stay */
+@media (max-width: 560px) { .tk-pin .tk-team { display: none; } .tk-pin { max-width: 70%; } }
 
-/* the gentle marquee: the list is there twice, so moving by half its width loops without a seam. It stops on hover and focus. */
+/* the gentle marquee: the rotation is there twice, so moving by half its width loops without a seam. It stops on hover and focus. */
 @media (prefers-reduced-motion: no-preference) {
   .ticker[data-motion='ok'] .tk-track { animation: tk-scroll var(--tk-dur, 60s) linear infinite; }
   .ticker[data-held='true'] .tk-track { animation-play-state: paused; }
 }
 @keyframes tk-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-/* reduced motion: a plain strip you scroll yourself, one copy of the list */
+/* reduced motion: a plain strip you scroll yourself, one copy of the rotation, same labels and dividers */
 .ticker[data-motion='reduced'] .tk-view { overflow-x: auto; scrollbar-width: none; }
 .ticker[data-motion='reduced'] .tk-half { min-width: 0; }
 @media (prefers-reduced-motion: reduce) {
@@ -88,8 +110,9 @@
   .ticker .tk-half[aria-hidden='true'] { display: none; }
 }
 
-/* ---------- the live dot: calm, not blinking. A soft ring breathes out slowly. ---------- */
+/* ---------- the live dot: calm, not blinking. A soft ring breathes out slowly. Green on the page, a warm gold on the dark band. ---------- */
 .live-dot { position: relative; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex: none; vertical-align: middle; }
+.ticker .live-dot, .ticker .live-dot::after { background: var(--gold-on-inverse); }
 @media (prefers-reduced-motion: no-preference) {
   .live-dot::after {
     content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--green); opacity: 0.45;
@@ -97,6 +120,3 @@
   }
 }
 @keyframes live-breathe { 0% { transform: scale(1); opacity: 0.45; } 70%, 100% { transform: scale(2.6); opacity: 0; } }
-
-/* beside a nav label ("game day") */
-.nav a .live-dot { margin-left: var(--s-2); }

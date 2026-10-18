@@ -66,6 +66,29 @@ describe('Bracket: click to advance', () => {
     expect(champ().textContent).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 
+  it('crowning a champion raises the uprights behind the slot; reduced motion shows them standing, and nothing shows before a champion', async () => {
+    const { user } = setup();
+    expect(champ().querySelector('.art-uprights')).toBeNull();
+    await user.click(slot(/^seed \d+, Team 101,/));
+    await user.click(slot(/^seed \d+, Team 103,/));
+    await user.click(screen.getAllByRole('button', { name: /^seed \d+, Team 101,.*round 2/ })[0]!);
+    const up = champ().querySelector('.art-uprights')!;
+    expect(up).toBeInTheDocument();
+    expect(up).toHaveAttribute('aria-hidden', 'true');
+    // jsdom has no matchMedia: reduced motion, so the uprights are drawn in their end state without the rise
+    expect(up).toHaveAttribute('data-motion', 'still');
+    expect(up.querySelector('svg')).toBeInTheDocument();
+    // the champ's text and the rule are still the content
+    expect(champ()).toHaveTextContent('Team 101');
+  });
+
+  it('the toilet bowl worst-team crown gets no uprights', async () => {
+    const { user } = setup({ kind: 'toilet', n: 4 });
+    await user.click(screen.getByRole('button', { name: 'sim it' }));
+    expect(champ()).toHaveAttribute('data-state', 'crowned');
+    expect(champ().querySelector('.art-uprights')).toBeNull();
+  });
+
   it('changing an earlier pick clears the picks that depended on it, and only those', async () => {
     const { user } = setup({ n: 8 });
     // round 1: 101 and 104 and 103 and 102 win (chalk), round 2: 101 beats 104, 103 beats 102, final: 101

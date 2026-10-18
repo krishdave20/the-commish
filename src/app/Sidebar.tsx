@@ -1,10 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { AccountSwitcher } from './AccountSwitcher';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { LiveDot } from '../components/ticker/LiveDot';
+import { AccountSwitcher } from './AccountSwitcher';
+import { useActive } from './hooks';
 import { useLiveMaybe } from './live/liveContext';
-import { FOOTER_NAV, NAV, NAV_GROUP_LIST } from './routes';
+import { useModel } from './modelContext';
+import { FOOTER_NAV, NAV } from './routes';
 import { PAGES } from './names';
+import '../styles/topnav.css';
 
 /** The name of the page a path belongs to ("/players/123" is the scouting report). */
 function currentPageName(pathname: string): string {
@@ -13,8 +17,28 @@ function currentPageName(pathname: string): string {
   return hit?.name ?? PAGES.home.name;
 }
 
-/** The site header. From 760px up it is the left sidebar. Under that it is a sticky top bar with a menu button:
-    the page names open as a grid, so every page is one tap away and the current one is named on the button. */
+/** Pages that get the calm pulse beside their tab while NFL games are on. */
+const LIVE_TABS: ReadonlySet<string> = new Set([PAGES.gameday.path, PAGES.nfl.path]);
+
+/** "icemen", and under it one muted line: league, week and record. Decorative banner, not a heading: each page keeps its own single h1. */
+function TeamHeader() {
+  const { model } = useModel();
+  const { data: active } = useActive();
+  const me = model?.teams.find((t) => t.rid === model.meRid) ?? model?.teams.find((t) => t.isMe) ?? null;
+  const name = me?.team ?? active?.account.displayName ?? 'the commish';
+  const ctx = model && me
+    ? [model.meta.leagueName, `week ${model.meta.currentWeek}`, `you’re ${me.wins}–${me.losses}${me.ties ? `–${me.ties}` : ''}`].join(' · ')
+    : model ? [model.meta.leagueName, `week ${model.meta.currentWeek}`].join(' · ') : '';
+  return (
+    <div className="tn-id">
+      <p className="tn-team">{name}</p>
+      {ctx && <p className="tn-ctx">{ctx}</p>}
+    </div>
+  );
+}
+
+/** The site header. Wide screens: a large team name, the league switcher and appearance toggle at the right, and a row of section tabs
+    under it. Under 760px: a compact bar (team name and a menu button); the tabs and the switcher open from the button as a grid. */
 export function Sidebar() {
   // the menu is open for one path only, so any navigation closes it without an effect
   const { pathname } = useLocation();
@@ -26,7 +50,6 @@ export function Sidebar() {
   const header = useRef<HTMLElement>(null);
   const here = currentPageName(pathname);
   const live = useLiveMaybe()?.live ?? false;
-  const groupId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -53,6 +76,7 @@ export function Sidebar() {
         the commish
         <small>fantasy football, from public data</small>
       </NavLink>
+      <TeamHeader />
       <button
         type="button" className="menu-btn" ref={button}
         aria-expanded={open} aria-controls={menuId} aria-label={open ? 'close menu' : `menu, you are on ${here}`}
@@ -63,28 +87,34 @@ export function Sidebar() {
       </button>
       <div className="menu" id={menuId}>
         <nav className="nav" aria-label="Primary">
-          {NAV_GROUP_LIST.map((g, i) => (
-            <div className="nav-group" role="group" aria-labelledby={`${groupId}-${i}`} key={g.label}>
-              <span className="nav-label" id={`${groupId}-${i}`}>{g.label}</span>
-              {g.items.map((n) => (
-                <NavLink key={n.path} to={n.path} end={n.path === '/'}>
-                  {n.label}
-                  {n.path === PAGES.gameday.path && live && (
-                    <>
-                      <LiveDot />
-                      <span className="sr-only"> (live)</span>
-                    </>
-                  )}
-                </NavLink>
-              ))}
-            </div>
+          {NAV.map((n) => (
+            <NavLink key={n.path} to={n.path} end={n.path === '/'}>
+              {n.label}
+              {LIVE_TABS.has(n.path) && live && (
+                <>
+                  <LiveDot />
+                  <span className="sr-only"> (live)</span>
+                </>
+              )}
+            </NavLink>
           ))}
         </nav>
-        <nav className="nav nav-sub" aria-label="Reference">
-          {FOOTER_NAV.map((n) => <NavLink key={n.path} to={n.path}>{n.label}</NavLink>)}
-        </nav>
-        <AccountSwitcher />
+        <div className="tn-tools">
+          <AccountSwitcher />
+          <ThemeToggle className="tn-theme" />
+        </div>
       </div>
     </header>
+  );
+}
+
+/** Under the hood sits quietly at the bottom of every page. */
+export function SiteFooter() {
+  return (
+    <footer className="site-foot">
+      <nav className="nav-sub" aria-label="Reference">
+        {FOOTER_NAV.map((n) => <NavLink key={n.path} to={n.path}>{n.label}</NavLink>)}
+      </nav>
+    </footer>
   );
 }

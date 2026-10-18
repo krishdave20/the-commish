@@ -173,7 +173,7 @@ tr.me > td { background: var(--gold-soft); }
 .seg { display: inline-flex; padding: 2px; border-radius: var(--r); flex-wrap: wrap; gap: 2px; background: var(--rule-2); max-width: 100%; justify-self: start; }
 .seg button { font: inherit; font-size: var(--fs-sm); background: none; color: var(--ink-2); border: 0; border-radius: var(--r-sm); padding: 5px 12px; cursor: pointer; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
 .seg button:hover { color: var(--ink); }
-.seg button[aria-checked='true'], .seg button[aria-pressed='true'] { background: var(--sheet); color: var(--ink); font-weight: 500; box-shadow: 0 0 0 1px var(--rule), 0 1px 2px rgba(31, 29, 25, 0.1); }
+.seg button[aria-checked='true'], .seg button[aria-pressed='true'] { background: var(--sheet); color: var(--ink); font-weight: 500; box-shadow: 0 0 0 1px var(--rule), var(--shadow-thumb); }
 .seg button:focus-visible { outline-offset: -2px; }
 
 /* odds cell */
@@ -215,7 +215,7 @@ th[aria-sort='ascending'], th[aria-sort='descending'] { color: var(--ink); }
 th.n .th-btn { flex-direction: row-reverse; }
 tr.click { cursor: pointer; transition: background var(--t-fast) var(--ease); }
 tr.click:hover > td { background: var(--sheet); }
-tr.me.click:hover > td { background: #efe0bd; }
+tr.me.click:hover > td { background: var(--gold-soft-hover); }
 
 /* charts */
 .chart { position: relative; width: 100%; }
@@ -325,7 +325,7 @@ a.plink:hover { color: var(--green); text-decoration: underline; text-underline-
 .preview-note { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: center; padding: var(--s-2) var(--s-3); border-radius: var(--r); background: var(--gold-soft); color: var(--gold-text); font-size: var(--fs-sm); }
 .banner { display: grid; gap: var(--s-2); padding: var(--s-4); background: var(--green); color: var(--paper); border-radius: var(--r); }
 .banner h2 { color: var(--paper); font-size: 44px; line-height: 1; }
-.banner .micro, .banner .note { color: #cfdcc9; }
+.banner .micro, .banner .note { color: var(--on-green-2); }
 .banner a { color: var(--paper); }
 .banner a:hover { color: var(--paper); }
 .banner .btn.solid { background: var(--paper); color: var(--green); justify-self: start; }
@@ -370,7 +370,7 @@ a.plink:hover { color: var(--green); text-decoration: underline; text-underline-
   th.sticky-col, td.sticky-col { position: sticky; left: 0; z-index: 1; background: var(--paper); box-shadow: 1px 0 0 var(--rule-2); }
   tr.me > td.sticky-col { background: var(--gold-soft); }
   tr.click:hover > td.sticky-col { background: var(--sheet); }
-  tr.me.click:hover > td.sticky-col { background: #efe0bd; }
+  tr.me.click:hover > td.sticky-col { background: var(--gold-soft-hover); }
 }
 
 /* ---------- loading skeletons: quiet, still blocks that hold a panel's space until its data lands ---------- */

@@ -88,7 +88,10 @@ describe('hot takes feed (/takes)', () => {
 
   it('says it is a quiet week when no take clears the bar', async () => {
     renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes(() => []) });
-    expect(await screen.findByText('quiet week. no takes clear the bar.')).toBeInTheDocument();
+    const quiet = await screen.findByText('quiet week. no takes clear the bar.');
+    expect(quiet).toBeInTheDocument();
+    // the play diagram sits beside it, as decoration
+    expect(quiet.closest('.art-empty')!.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.queryAllByRole('article')).toHaveLength(0);
   });
 

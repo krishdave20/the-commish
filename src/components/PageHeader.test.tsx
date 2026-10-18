@@ -40,6 +40,25 @@ describe('PageHeader', () => {
     expect(screen.getByRole('button', { name: /refresh/i })).toBeDisabled();
   });
 
+  it('draws the loading bar as a yard-line track with a football: still and at midfield with nothing to measure', () => {
+    render(<PageHeader kicker="k" title="t" data={{ ...base, loading: true }} />);
+    const bar = screen.getByRole('progressbar', { name: 'Refreshing data' });
+    expect(bar).toHaveClass('yard');
+    expect(bar).toHaveAttribute('data-mode', 'indeterminate');
+    expect(bar.querySelector('.yard-ball svg')).toBeInTheDocument();
+    // jsdom counts as reduced motion: the ball does not roll
+    expect(bar).toHaveAttribute('data-motion', 'still');
+  });
+
+  it('advances the ball with the pull: the right yard for the share done', () => {
+    const { rerender } = render(<PageHeader kicker="k" title="t" data={{ ...base, loading: true, progress: { done: 10, total: 40, label: 'a' } }} />);
+    const ball = () => parseFloat((screen.getByRole('progressbar').querySelector('.yard-ball') as HTMLElement).style.left);
+    const early = ball();
+    rerender(<PageHeader kicker="k" title="t" data={{ ...base, loading: true, progress: { done: 30, total: 40, label: 'b' } }} />);
+    expect(ball()).toBeGreaterThan(early);
+    expect(screen.getByRole('progressbar')).toHaveAttribute('data-mode', 'determinate');
+  });
+
   it('explains a network failure when saved data is shown', () => {
     render(<PageHeader kicker="k" title="t" data={{ ...base, fromCache: true, error: 'offline' }} />);
     expect(screen.getByRole('status')).toHaveTextContent('showing the saved copy');

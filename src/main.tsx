@@ -7,6 +7,7 @@ import './styles/base.css';
 import './styles/layout.css';
 import './styles/components.css';
 import './styles/bracket.css';
+import './styles/theme.css';
 import { App } from './App.tsx';
 import { StartupError } from './app/StartupError.tsx';
 import { createAccountStore, createDataLayer } from './data';

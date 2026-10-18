@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
+import { MomentBanner } from '../components/MomentBanner';
 import { formatOdds, formatPoints1, signed, signedPct } from '../app/format';
 import { useModel, useScenario } from '../app/modelContext';
 import { FEATURE } from '../app/names';
@@ -13,6 +14,7 @@ import { SectionHeader } from '../components/SectionHeader';
 import { SortableTable } from '../components/SortableTable';
 import type { Column } from '../components/useSort';
 import { Kpi } from '../components/Kpi';
+import { Avatar, AvatarName } from '../components/Avatar';
 import { PlayerLink } from '../components/PlayerLink';
 import type { Engine, ModelPlayer, TradeIdea, TradeProposal } from '../engine';
 import { evaluateDynastyTrade } from '../engine/dynasty/index.ts';
@@ -40,7 +42,7 @@ function PickList({ title, ids, checked, onToggle, value, idx }: {
         {rows.map(({ p, v }) => (
           <label key={p.pid}>
             <input type="checkbox" checked={checked.includes(p.pid)} onChange={() => onToggle(p.pid)} aria-label={`${title}: ${p.name}`} />
-            <span><span className="dim">{p.pos} </span>{p.name}<PlayerTags p={p} /></span>
+            <span className="avatar-name"><Avatar pid={p.pid} name={p.name} pos={p.pos} team={p.nfl ?? undefined} size={20} /><span><span className="dim">{p.pos} </span>{p.name}<PlayerTags p={p} /></span></span>
             <span className="dim" title="expected points, rest of regular season">{formatPoints1(v)}</span>
             <PlayerLink pid={p.pid} name="↗" className="dim" aria-label={`Scouting report for ${p.name}`} />
           </label>
@@ -162,10 +164,11 @@ export default function Trades() {
 /** Win-win one-for-one ideas, ranked. "load" puts one into the analyzer. */
 function HandshakeDeals({ engine, own, onLoad }: { engine: Engine; own: boolean; onLoad: (x: TradeIdea) => void }) {
   const { model } = engine;
+  const pos = useMemo(() => new Map(model.players.map((p) => [p.pid, p.pos as string])), [model]);
   const columns: Column<TradeIdea>[] = [
     { key: 'idea', header: '#', more: true, numeric: true, value: (x) => x.idea, className: 'dim' },
-    { key: 'give', header: 'you send', value: (x) => x.give, render: (x) => <PlayerLink pid={x.givePid} name={x.give} /> },
-    { key: 'get', header: 'you get', value: (x) => x.get, render: (x) => <PlayerLink pid={x.getPid} name={x.get} /> },
+    { key: 'give', header: 'you send', value: (x) => x.give, render: (x) => <AvatarName pid={x.givePid} name={x.give} pos={pos.get(x.givePid)} size={28}><PlayerLink pid={x.givePid} name={x.give} /></AvatarName> },
+    { key: 'get', header: 'you get', value: (x) => x.get, render: (x) => <AvatarName pid={x.getPid} name={x.get} pos={pos.get(x.getPid)} size={28}><PlayerLink pid={x.getPid} name={x.get} /></AvatarName> },
     { key: 'partner', header: 'partner', value: (x) => x.partner, className: 'dim' },
     { key: 'mine', header: `your ${FEATURE.lift}`, numeric: true, value: (x) => x.myGain, render: (x) => <span className="pos-c">{signed(x.myGain)}</span> },
     { key: 'theirs', header: `their ${FEATURE.lift}`, more: true, numeric: true, value: (x) => x.theirGain, render: (x) => <span className="pos-c">{signed(x.theirGain)}</span> },
@@ -223,6 +226,7 @@ function TradeBlock({ engine }: { engine: Engine }) {
 
   return (
     <>
+      <MomentBanner page="trades" />
       <ScenarioBar />
       <PageTabs
         label="Trade block sections" defaultTab="analyzer"

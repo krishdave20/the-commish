@@ -1,7 +1,9 @@
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
+import { MomentBanner } from '../components/MomentBanner';
 import { Disclosure } from '../components/Disclosure';
 import { PageTabs } from '../components/PageTabs';
+import { Hinges } from './gameday/matchup';
 import { AlertsCard } from './team/AlertsCard';
 import { LabCard } from './team/LabCard';
 import { LineupCard } from './team/LineupCard';
@@ -14,6 +16,7 @@ export default function MyTeam() {
     <EnginePage page="team" suffix={(e) => `week ${e.model.meta.currentWeek}`}>
       {(engine) => (
         <>
+          <MomentBanner page="team" />
           <ScenarioBar />
           <TeamStrip engine={engine} />
           <PageTabs
@@ -24,6 +27,7 @@ export default function MyTeam() {
               <>
                 <LineupCard engine={engine} />
                 <AlertsCard engine={engine} />
+                <Hinges />
                 <Disclosure title="weekly projection" hint="expected points, floor to ceiling">
                   <ProjectionCard engine={engine} />
                 </Disclosure>

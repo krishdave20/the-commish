@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { formatOdds, formatPoints1 } from '../../app/format';
 import { formatKickoff, leadText } from '../../app/live/format';
 import { FEATURE } from '../../app/names';
+import { Whistle } from '../../components/art/Whistle';
 import { CountUp } from '../../components/CountUp';
 import { Segmented } from '../../components/Segmented';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -114,7 +115,7 @@ export function MainEvent({ m, ctx, frames, projected, status, assumed, onBackTo
     <section className="gd-hero" aria-labelledby="gd-main">
       <SectionHeader
         id="gd-main" title={FEATURE.mainEvent}
-        kicker={<span className="gd-status-line" data-replay={status.replay ? 'true' : undefined}>{status.live && <LiveDot />}{status.label}</span>}
+        kicker={<span className="gd-status-line" data-replay={status.replay ? 'true' : undefined}>{status.live && <LiveDot />}{status.label}{decided && <Whistle size={22} className="art-blow" />}</span>}
         action={onBackToMine ? <button type="button" className="btn quiet" onClick={onBackToMine}>back to my matchup</button> : undefined}
         tip={(
           <>
@@ -125,11 +126,10 @@ export function MainEvent({ m, ctx, frames, projected, status, assumed, onBackTo
       />
       <div className="gd-board" role="group" aria-label="scoreboard">
         <Side t={left} projected={projected} lead={lead > 0} />
-        <span className="gd-dash" aria-hidden="true">–</span>
+        <WinMeter leftName={left.name} rightName={right.name} leftIsMe={left.isMe} p={m.winA} pre={m.preWinA} final={decided} projected={projected} />
         <Side t={right} projected={projected} lead={lead < 0} />
       </div>
       <p className="gd-line-text" role="status">{line}</p>
-      <WinMeter leftName={left.name} rightName={right.name} p={m.winA} pre={m.preWinA} final={decided} />
       {assumed && <p className="note">a game clock is missing, so half of each live game is assumed left (marked *).</p>}
       <div className="gd-chart">
         <h3 className="gd-h3">{FEATURE.winOverTime}</h3>

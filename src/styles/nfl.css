@@ -1,0 +1,88 @@
+/* The nfl page: scoreboard cards, the game drawer, standings. Hybrid look: system sans for text, Instrument Serif for the scores.
+   Tokens only (colours, fonts, radii, spacing). No team colours and no logos: a team is its letters and its city. */
+.nf { gap: var(--s-5); }
+.nf-meta { color: var(--ink-3); font-size: var(--fs-xs); }
+.nf-sub-h { font-family: var(--sans); font-style: normal; font-size: var(--fs-micro); letter-spacing: var(--ls-micro); color: var(--ink-2); font-weight: 400; margin: 0; }
+
+/* week picker */
+.nf-weeks { display: flex; flex-wrap: wrap; align-items: end; gap: var(--s-2); }
+.nf-weeks .btn { min-width: var(--touch); min-height: var(--touch); font-size: var(--fs-base); }
+.nf-weeks select { min-height: var(--touch); }
+
+/* the scoreboard */
+.nf-board { display: grid; gap: var(--s-5); min-width: 0; }
+.nf-slot { display: grid; gap: var(--s-3); min-width: 0; }
+.nf-slot-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
+.nf-slot-head h3 { font-size: 24px; }
+.nf-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: var(--s-3); }
+.nf-cards > li { display: grid; min-width: 0; }
+.nf-card {
+  font: inherit; text-align: left; color: inherit; width: 100%; display: grid; gap: var(--s-2); padding: var(--s-3); cursor: pointer; min-height: var(--touch);
+  background: var(--sheet); border: 0; border-radius: var(--r); box-shadow: 0 0 0 1px var(--rule-2); align-content: start;
+  transition: box-shadow var(--t-fast) var(--ease);
+}
+.nf-card:hover { box-shadow: 0 0 0 1px var(--ink-3), var(--shadow-pop); }
+.nf-card[data-mine='true'] { box-shadow: 0 0 0 1px var(--gold); }
+.nf-top { display: flex; justify-content: space-between; gap: var(--s-2); align-items: baseline; font-size: var(--fs-xs); color: var(--ink-2); }
+.nf-status { display: inline-flex; align-items: center; gap: var(--s-2); white-space: nowrap; }
+.nf-status[data-state='live'] { color: var(--green); }
+.nf-status[data-state='final'] { color: var(--ink-3); }
+.nf-chan { color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nf-teams { display: grid; gap: var(--s-1); }
+.nf-team { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; align-items: baseline; gap: var(--s-2); color: var(--ink); }
+.nf-team[data-lose='true'] { color: var(--ink-3); }
+.nf-abbr { font-weight: 600; letter-spacing: var(--ls-micro); }
+.nf-city { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); font-size: var(--fs-sm); }
+.nf-team[data-win='true'] .nf-city { color: var(--ink); }
+.nf-rec { color: var(--ink-3); font-size: var(--fs-xs); }
+.nf-score { font-family: var(--serif); font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums lining-nums; }
+.nf-team[data-win='true'] .nf-score { color: var(--ink); }
+.nf-bar { display: block; height: 3px; background: var(--rule-2); border-radius: var(--r-sm); overflow: hidden; }
+.nf-bar > i { display: block; height: 100%; background: var(--green); border-radius: var(--r-sm); transition: width var(--t-slow) var(--ease); }
+.nf-card[data-state='final'] .nf-bar > i { background: var(--ink-3); }
+.nf-mine { font-size: var(--fs-xs); color: var(--gold-text); }
+
+/* the game drawer */
+.nf-hero { display: grid; gap: var(--s-2); }
+.nf-hero-score { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+.nf-hero-side { display: grid; gap: 0; justify-items: start; color: var(--ink-2); }
+.nf-hero-side:last-child { justify-items: end; text-align: right; }
+.nf-hero-side[data-win='true'] { color: var(--ink); }
+.nf-hero-pts { font-family: var(--serif); font-size: 72px; line-height: 0.95; font-variant-numeric: tabular-nums lining-nums; }
+.nf-hero-line { font-size: var(--fs-sm); color: var(--ink-2); }
+.nf-mix { display: grid; gap: var(--s-3); min-width: 0; }
+.nf-players { list-style: none; margin: 0; padding: 0; display: grid; }
+.nf-player {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: var(--s-3); row-gap: 2px; align-items: baseline; padding: var(--s-2) 0; border-top: 1px solid var(--rule-2);
+}
+.nf-player:first-child { border-top: 0; }
+.nf-player[data-me='true'] { box-shadow: inset 2px 0 0 var(--gold); padding-left: var(--s-2); }
+.nf-pwho { display: grid; min-width: 0; }
+.nf-pwho > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nf-powner { font-size: var(--fs-xs); color: var(--ink-2); max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+.nf-ppts { font-family: var(--serif); font-size: 26px; line-height: 1; text-align: right; font-variant-numeric: tabular-nums lining-nums; min-width: 2.6rem; }
+.nf-pproj { grid-column: 3; text-align: right; font-size: var(--fs-xs); color: var(--ink-3); }
+
+/* standings */
+.nf-divs { display: grid; gap: var(--s-4); }
+.nf-nick { color: var(--ink-3); }
+@media (max-width: 560px) { .nf-nick { display: none; } }
+tr.lead > td:first-child { box-shadow: inset 2px 0 0 var(--green); }
+
+@media (prefers-reduced-motion: reduce) { .nf-bar > i { transition: none; } }
+
+/* the toolbar: pickers in a wrapped row; "nfl only" sits at the right */
+.nf-toolbar { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center; }
+.nf-top-tools { justify-content: flex-end; margin-top: calc(var(--s-3) * -1); }
+.nf-top-tools .btn[aria-pressed='true'] { background: var(--ink); color: var(--paper); }
+
+/* the drawer: box score leaders, and the divider before the fantasy sections */
+.nf-ldrs { display: grid; gap: var(--s-3); }
+.nf-ldr-team { display: grid; gap: var(--s-1); }
+.nf-ldr-list { display: grid; gap: var(--s-1); margin: 0; }
+.nf-ldr { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: var(--s-2); align-items: baseline; }
+.nf-ldr dt { color: var(--ink-2); font-size: var(--fs-xs); }
+.nf-ldr dd { margin: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: 0 var(--s-2); align-items: baseline; }
+.nf-ldr-line { color: var(--ink-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.nf-divider { border: 0; border-top: 1px solid var(--rule); width: 100%; margin: var(--s-2) 0 0; }
+.nf-fantasy-label { font-size: var(--fs-micro); letter-spacing: var(--ls-micro); color: var(--ink-2); margin-top: calc(var(--s-2) * -1); }

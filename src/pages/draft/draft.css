@@ -1,8 +1,4 @@
 /* Draft room: board, tier rules, position colours (muted), pick feed. Tokens only; no new hues beyond the position tints. */
-:root {
-  --pos-qb: #ecd9d0; --pos-rb: #dbe6d6; --pos-wr: #efe3c5; --pos-te: #d9dfe6; --pos-k: #e4dded; --pos-def: #e2dccf; --pos-x: #ebe6da;
-}
-
 .mode-bar .seg { flex-wrap: wrap; }
 .check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--ink-2); padding-bottom: 7px; }
 
@@ -41,7 +37,7 @@
 /* live */
 .otc-banner { padding: 14px 20px; }
 .otc-banner h2 { font-size: 40px; }
-.otc-banner p { color: #e5eee0; }
+.otc-banner p { color: var(--on-green-2); }
 .otc-line { color: var(--green); }
 .feed { list-style: none; margin: 0; padding: 0; display: grid; }
 .feed li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr) minmax(0, 1.3fr) 7rem; gap: 10px; align-items: baseline; padding: 6px 4px; border-bottom: 1px solid var(--rule-2); font-size: var(--fs-sm); }

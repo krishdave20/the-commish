@@ -1,0 +1,21 @@
+/* Appearance (light, dark, follow the system). The colours themselves live in tokens.css; this file holds only what is not a token:
+   the appearance toggle, and a short list of TEMPORARY shims.
+
+   Shims: a few stylesheets still hard-code a literal colour that is wrong on a dark surface (a pale text colour on a surface that flips,
+   a pale hover). Each rule below overrides one of them with a token. Every line says which file it stands in for; delete the rule when that
+   file uses the token itself (the allow-list in tokens.test.ts names the same lines). `:root` in front out-ranks a page stylesheet that loads
+   after this one. Light mode is unchanged: each token equals the literal it replaces. */
+
+/* ---------- the appearance toggle (components/ThemeToggle.tsx) ---------- */
+.theme-toggle {
+  display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px; padding: 0;
+  border: 0; border-radius: var(--r); background: none; color: var(--ink-2); cursor: pointer;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.theme-toggle:hover { background: var(--rule-2); color: var(--ink); }
+.theme-toggle svg { display: block; }
+@media (max-width: 760px), (pointer: coarse) {
+  .theme-toggle { width: var(--touch); height: var(--touch); }
+}
+
+/* ---------- shims ---------- */

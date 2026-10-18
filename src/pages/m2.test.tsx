@@ -385,7 +385,9 @@ describe('waiver wire (/waivers)', () => {
       return m;
     });
     const { user } = renderApp({ linked, route: '/waivers', loadModel });
-    expect(await screen.findByText('nobody on the wire beats your bench this window.')).toBeInTheDocument();
+    const none = await screen.findByText('nobody on the wire beats your bench this window.');
+    expect(none).toBeInTheDocument();
+    expect(none.closest('.art-empty')!.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     // usage risers are the second tab
     expect(screen.queryByRole('heading', { level: 2, name: 'usage risers' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'trending & risers' }));

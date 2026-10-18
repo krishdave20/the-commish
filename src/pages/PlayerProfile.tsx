@@ -6,6 +6,7 @@ import { PAGES } from '../app/names';
 import { usePlayersFile } from '../app/playersData';
 import { displayName } from '../app/playersIndex';
 import { useTitle } from '../app/usePageTitle';
+import { Avatar } from '../components/Avatar';
 import { PageHeader } from '../components/PageHeader';
 import { PageTabs } from '../components/PageTabs';
 import { GameLogCard } from './player/GameLogCard';
@@ -64,7 +65,10 @@ export default function PlayerProfile() {
     <div className="page page-fade">
       <PageHeader kicker={`${PAGES.players.name} · ${pos || '—'} · ${team}`} title={name} data={{ ...file, refresh: refreshAll }} />
       <div className="row between">
-        <Link to="/players">← all players</Link>
+        <span className="row">
+          <Avatar pid={pid} name={name} pos={pos} team={team} size={40} />
+          <Link to="/players">← all players</Link>
+        </span>
         <WatchButton pid={pid} />
       </div>
       {model && mp && <PlayerStrip model={model} mp={mp} league={extras?.league ?? null} />}

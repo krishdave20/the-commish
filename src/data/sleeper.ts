@@ -22,7 +22,12 @@ export const TTL = {
   bracket: 5 * 60_000,
   /** game day: matchup points and NFL game clocks change every few seconds, so a copy is fresh for 30 s */
   live: 30_000,
+  /** a finished NFL week never changes, so its scores are fresh for a day */
+  final: 24 * 3_600_000,
 };
+
+/** a game that kicked off this long ago and is still not `complete` in a cached copy means the copy was taken mid-game */
+const SETTLE_AFTER_MS = 5 * 3_600_000;
 
 /** Fetched plus what the network call cost; health checks and the Settings screen read the extras. */
 export interface Loaded<T> extends Fetched<T> {
@@ -163,6 +168,24 @@ export function createSleeperClient(deps: SleeperClientDeps) {
   const scores = (season: string, week: number, o?: FetchOpts) =>
     load<ScoreGame[]>({ url: sleeperUrls.scores(season, week), label: `week ${week} NFL scores`, guard: shapes.scores, ttl: TTL.live, nullAs: [], o });
 
+  /** A finished week's scores: fresh for a day (the nfl page's standings read weeks 1 to now). If the saved copy still has a game that
+      should be over by now (it was saved mid-game), the copy is not trusted and the week is fetched again. */
+  const pastScores = async (season: string, week: number, o?: FetchOpts): Promise<Loaded<ScoreGame[]>> => {
+    const spec = { url: sleeperUrls.scores(season, week), label: `week ${week} NFL scores`, guard: shapes.scores, ttl: TTL.final, nullAs: [] as unknown, o };
+    const r = await load<ScoreGame[]>(spec);
+    const open = r.fromCache && !r.stale && r.data.some((g) => g.status !== 'complete' && (g.start_time ?? Infinity) < now() - SETTLE_AFTER_MS);
+    return open ? load<ScoreGame[]>({ ...spec, o: { ...o, force: true } }) : r;
+  };
+
+  /** One NFL week's stat lines, fresh for 30 s: the game drawer on the nfl page reads it for free agents while games are on */
+  const liveStats = (season: string, week: number, o?: FetchOpts) =>
+    load<WeekStats>({ url: sleeperUrls.stats(season, week), label: `week ${week} stats`, guard: shapes.weekStats, ttl: TTL.live, nullAs: {}, o });
+
+  /** A finished week's stat lines, fresh for a day (the nfl page's league leaders sum weeks 1 to now). The caller checks that the copy was
+      saved after the week's games ended (see fetchSeasonStats), since a copy taken mid-week is partial. */
+  const pastStats = (season: string, week: number, o?: FetchOpts) =>
+    load<WeekStats>({ url: sleeperUrls.stats(season, week), label: `week ${week} stats`, guard: shapes.weekStats, ttl: TTL.final, nullAs: {}, o });
+
   /* ---------- FantasyCalc ---------- */
 
   const fantasyCalc = (p: FantasyCalcParams, o?: FetchOpts) =>
@@ -188,7 +211,7 @@ export function createSleeperClient(deps: SleeperClientDeps) {
   return {
     nflState, user, userFetched, userLeagues, league, rosters, users, matchups, liveMatchups, transactions, tradedPicks,
     drafts, draft, draftPicks, draftTradedPicks, players, trending, winnersBracket, losersBracket,
-    stats, projections, seasonProjections, schedule, scores, fantasyCalc, leagueBundle,
+    stats, liveStats, pastStats, projections, seasonProjections, schedule, scores, pastScores, fantasyCalc, leagueBundle,
   };
 }
 

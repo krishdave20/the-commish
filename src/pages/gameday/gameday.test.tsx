@@ -55,6 +55,10 @@ describe('game day: pre-game', () => {
     // answer first: the meter says who is favored before anyone plays, and the starters wait on deck
     expect(screen.getByRole('img', { name: /Sunday Scaries \d+% to win/ })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /on deck 6/ })).toBeInTheDocument();
+    // the win meter is a field: the ball sits on a yard, the labels say the same in words
+    expect(document.querySelector('.art-ball')).toHaveAttribute('data-yard');
+    expect(screen.getByText(/of every 100 simulations on the projections/)).toBeInTheDocument();
+    expect(document.querySelectorAll('.art-turf-ez')).toHaveLength(2);
   });
 });
 
@@ -76,10 +80,18 @@ describe('game day: live', () => {
     await user.click(screen.getByRole('button', { name: 'Refresh' }));
     await waitFor(() => expect(board()).toHaveTextContent('27.4'));
 
+    // the win meter field moved the ball to the yard of the new win chance, and its label says where
+    expect(document.querySelector('.art-ball')).toHaveAttribute('data-yard');
+    expect(screen.getByRole('img', { name: /the ball is on / })).toBeInTheDocument();
+
     // the drive chart saw the +6.4
     await user.click(screen.getByRole('radio', { name: 'the drive chart' }));
     const feed = await screen.findByRole('list', { name: /scoring updates/ });
     expect(within(feed).getByText('+6.4')).toBeInTheDocument();
+    // and a field strip above the list has one mark for each play in it
+    const field = screen.getByRole('img', { name: /scoring updates?, oldest at the left/ });
+    expect(field.querySelectorAll('[data-mark]')).toHaveLength(within(feed).getAllByRole('listitem').length);
+    expect(field.querySelectorAll('[data-mark="me"]').length).toBeGreaterThan(0);
     expect(within(feed).getByText('alex arm')).toBeInTheDocument();
     expect(within(feed).getByText(/n1 vs n2/)).toBeInTheDocument();
   });
@@ -94,7 +106,7 @@ describe('game day: live', () => {
     expect(within(cards[0]!).getByText('blowout')).toBeInTheDocument();
     // focus the other matchup: mine becomes a card with the nail-biter tag, and the page offers a way back
     await user.click(cards[0]!);
-    const mine = await screen.findByRole('button', { name: /Sunday Scaries 21\.0/ });
+    const mine = await within(screen.getByRole('main')).findByRole('button', { name: /Sunday Scaries 21\.0/ });
     expect(within(mine).getByText('nail-biter')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'back to my matchup' }));
     await waitFor(() => expect(board()).toHaveTextContent('Sunday Scaries'));
@@ -122,6 +134,9 @@ describe('game day: off-day', () => {
     expect(screen.getByText(/next kickoff: /)).toBeInTheDocument();
     // a final matchup shows the result, not a live chance
     expect(screen.getByRole('img', { name: /won/ })).toBeInTheDocument();
+    // the final whistle: a whistle beside the status, and the off-day field strip beside the next kickoff
+    expect(document.querySelector('.gd-status-line .art-blow')).toBeInTheDocument();
+    expect(document.querySelector('.gd-next-row svg.gd-off-art')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('can switch to this week’s projections', async () => {

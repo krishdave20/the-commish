@@ -1,0 +1,110 @@
+/* Time-aware surfaces: the live activity pill, the page banners, the huddle's sentence and its dark game plan card.
+   Tokens only. The dark surfaces use the inverse tokens, so they stay dark on the light page and lift in dark mode. */
+
+/* ---------- the live activity: a Dynamic Island–style pill ---------- */
+/* Pill-shaped corners come from a local --r: a 44 px pill has a 22 px radius, the open card 20 px (the tokens file has no pill radius). */
+.la-wrap {
+  position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); display: flex; align-items: flex-start; gap: var(--s-1);
+  top: var(--activity-top, calc(var(--ticker-h, 0px) + var(--s-2)));
+  max-width: calc(100vw - var(--s-3) * 2); pointer-events: none;
+}
+.la-wrap > * { pointer-events: auto; }
+.la { --r: 22px; --la-spring: cubic-bezier(0.34, 1.4, 0.64, 1); min-width: 0; }
+.la-card {
+  background: var(--surface-inverse); color: var(--on-inverse); border-radius: var(--r); box-shadow: 0 0 0 1px var(--edge-inverse), var(--shadow-pop);
+  overflow: hidden; max-width: 100%;
+}
+.la[data-open='true'] .la-card { --r: 20px; width: min(22rem, calc(100vw - var(--s-3) * 2 - var(--touch))); animation: la-open var(--t-base) var(--la-spring) both; }
+.la-head {
+  display: flex; align-items: center; gap: var(--s-2); width: 100%; min-height: 40px; padding: 0 var(--s-3); font: inherit; font-size: var(--fs-sm);
+  color: inherit; background: none; border: 0; border-radius: var(--r); cursor: pointer; text-align: left; white-space: nowrap;
+}
+.la-head:focus-visible { outline-color: var(--on-inverse); outline-offset: -3px; }
+.la-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; font-weight: 500; }
+.la-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--green-on-inverse); }
+.la[data-urgency='soon'] .la-dot { background: var(--gold-on-inverse); }
+.la[data-urgency='urgent'] .la-dot { background: var(--red-on-inverse); }
+.la[data-live='true'] .la-dot { box-shadow: 0 0 0 0 var(--green-on-inverse); animation: la-pulse 1600ms var(--ease) infinite; }
+.la[data-urgency='urgent'] .la-text { color: var(--red-on-inverse); }
+.la-bar { flex: none; width: 36px; height: 4px; border-radius: 2px; background: var(--fill-inverse); overflow: hidden; }
+.la-bar i { display: block; height: 100%; background: var(--green-on-inverse); border-radius: 2px; transition: width var(--t-base) var(--ease); }
+.la-tag { flex: none; font-size: var(--fs-micro); letter-spacing: var(--ls-micro); color: var(--gold-on-inverse); }
+.la-panel { display: grid; gap: var(--s-1); padding: 0 var(--s-3) var(--s-3); white-space: normal; }
+.la-title { font-weight: 500; }
+.la-detail { color: var(--on-inverse-2); font-size: var(--fs-sm); }
+.la-big { font-family: var(--serif); font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.la[data-urgency='urgent'] .la-big { color: var(--red-on-inverse); }
+.la-go {
+  justify-self: start; margin-top: var(--s-1); padding: 6px var(--s-3); border-radius: var(--r-sm); font-size: var(--fs-sm); font-weight: 500;
+  color: var(--surface-inverse); background: var(--on-inverse); text-decoration: none;
+}
+.la-go:hover { color: var(--surface-inverse); background: var(--on-inverse-2); }
+.la-go:focus-visible, .la-x:focus-visible { outline-color: var(--ink); }
+.la-x {
+  flex: none; width: 28px; height: 28px; margin-top: 6px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; font: inherit; line-height: 1;
+  color: var(--on-inverse-2); background: var(--surface-inverse); box-shadow: 0 0 0 1px var(--edge-inverse), var(--shadow-pop);
+}
+.la-x:hover { color: var(--on-inverse); }
+/* room for the pill so it does not sit on the first lines of a page */
+@media (min-width: 761px) { body[data-la] .shell > .app { padding-top: var(--s-5); } }
+@media (max-width: 760px) {
+  .la-wrap { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + var(--s-3)); align-items: flex-end; flex-direction: row; }
+  .la-head { min-height: var(--touch); }
+  .la-x { width: var(--touch); height: var(--touch); margin-top: 0; }
+  .la-go { min-height: var(--touch); display: inline-flex; align-items: center; }
+  body[data-la] .main { padding-bottom: calc(var(--touch) + var(--s-6) + env(safe-area-inset-bottom, 0px)); }
+}
+@keyframes la-open { from { transform: scale(0.9); opacity: 0.6; } to { transform: none; opacity: 1; } }
+@keyframes la-pulse { 0% { box-shadow: 0 0 0 0 var(--green-on-inverse); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.la[data-motion='reduced'] .la-card, .la[data-motion='reduced'] .la-dot, .la[data-motion='reduced'] .la-bar i { animation: none; transition: none; }
+
+/* ---------- the banner at the top of a page ---------- */
+.mb {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); padding: var(--s-2) var(--s-3); border-radius: var(--r);
+  background: var(--rule-2); color: var(--ink); font-size: var(--fs-sm);
+}
+.mb-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.mb[data-live='true'] .mb-dot { background: var(--red); }
+.mb-line { flex: 1 1 14rem; min-width: 0; max-width: none; }
+.mb-left { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.mb-detail { color: var(--ink-2); }
+.mb-go { white-space: nowrap; }
+@media (max-width: 760px) { .mb-detail { display: none; } .mb-go { display: inline-flex; align-items: center; min-height: var(--touch); } }
+
+/* ---------- the huddle's sentence ---------- */
+.hero { display: grid; gap: var(--s-2); padding-block: var(--s-2) var(--s-1); }
+.hero-line { font-family: var(--serif); font-size: clamp(34px, 6vw, 60px); line-height: 1.05; letter-spacing: -0.012em; max-width: 24ch; text-wrap: balance; }
+.hero-sides { display: flex; align-items: center; gap: var(--s-3); }
+.hero-vs { color: var(--ink-3); font-size: var(--fs-sm); }
+.hero-odds { color: var(--ink-2); font-size: var(--fs-base); }
+
+/* ---------- the dark game plan card ---------- */
+.plan {
+  display: grid; gap: var(--s-3); padding: var(--s-4); border-radius: var(--r); background: var(--surface-inverse); color: var(--on-inverse);
+  box-shadow: 0 0 0 1px var(--edge-inverse); min-width: 0;
+}
+.plan h2 { color: var(--on-inverse); font-size: 28px; }
+.plan-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-3); }
+.plan-when { color: var(--on-inverse-2); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.plan-list { list-style: none; padding: 0; display: grid; gap: 0; }
+.plan-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); padding: var(--s-3) 0; border-top: 1px solid var(--rule-inverse); }
+.plan-n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--fill-inverse); color: var(--on-inverse-2); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.plan-row:first-child .plan-n { background: var(--green-on-inverse); color: var(--surface-inverse); }
+.plan-row[data-live='true'] .plan-t::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: var(--s-2); border-radius: 50%; background: var(--green-on-inverse); }
+.plan-t { font-weight: 500; font-size: var(--fs-base); }
+.plan-d { color: var(--on-inverse-2); font-size: var(--fs-sm); margin-top: 2px; }
+.plan-go {
+  width: var(--touch); height: var(--touch); border-radius: 50%; display: grid; place-items: center; text-decoration: none; font-size: 20px; line-height: 1;
+  color: var(--on-inverse); background: var(--fill-inverse); transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.plan-go:hover { background: var(--on-inverse); color: var(--surface-inverse); }
+.plan a:focus-visible, .plan button:focus-visible { outline-color: var(--on-inverse); }
+.plan-more {
+  justify-self: start; font: inherit; font-size: var(--fs-sm); color: var(--on-inverse); background: none; border: 1px solid var(--rule-inverse);
+  border-radius: var(--r); padding: 6px var(--s-3); cursor: pointer; min-height: var(--touch);
+}
+.plan-more:hover { background: var(--fill-inverse); }
+.plan-empty { color: var(--on-inverse-2); }
+@media (prefers-reduced-motion: reduce) {
+  .la-card, .la-dot, .la-bar i { animation: none !important; transition: none !important; }
+}

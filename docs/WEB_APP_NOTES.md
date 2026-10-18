@@ -77,6 +77,20 @@ corner rules:
   44 px touch targets; one primary action per view; progressive disclosure; brief spring-like motion; short copy;
   consistent patterns. See `docs/DECLUTTER.md`.
 
+## Cues from a reference app (owner request, Oct 18, 2026)
+The owner shared screenshots of another Sleeper app and asked to take cues from it. Adopted:
+- **Navigation:** horizontal section tabs (with sub-tabs) under a large serif team-name header replace the
+  sidebar on desktop; phones keep the compact menu.
+- **Player headshots:** Sleeper's CDN (`https://sleepercdn.com/content/nfl/players/thumb/{player_id}.jpg`), the
+  owner's explicit choice. Team defenses never show a team logo (NFL marks); they get a monogram. Any image that
+  fails or is offline falls back to an initials monogram. Images are decorative next to names (alt="").
+- **Dark mode:** follows the system appearance, with a toggle; the light parchment look stays the default.
+- **Content cues:** a sentence hero ("icemen leads killa k im gay 95.0 to 58.8"), plain-language odds
+  ("you win 82 of every 100 simulations from here"), a dark "game plan" card of ranked actions, a "who this week
+  hinges on" table (win-chance drop if each starter were replaced by a typical free agent), starters head to head,
+  a field-style win meter, and a dark ticker band with the live matchup pinned on the left.
+- Not adopted: betting odds and daily fantasy (no free data source that fits SPEC section 1).
+
 ## CORS (checked Oct 16, 2026)
 - Sleeper (`api.sleeper.app`, documented and undocumented) and FantasyCalc send `Access-Control-Allow-Origin: *`, so the browser calls them directly.
 - nflverse GitHub release assets send no CORS header, and `pbp_participation_2025.csv` is 49 MB. Decided (Oct 16, 2026): a scheduled GitHub Action downloads nflverse files, builds per-player-week aggregates, and publishes small JSON next to the site. Until then the app shows nflverse panels as unavailable.
@@ -154,3 +168,60 @@ the page in `src/pages/GameDay.tsx` + `src/pages/gameday/`. Names: `PAGES.gameda
 - Upset alert: pre-game chance under 35% and ahead now. Nail-biter: closest matchup within 12 points with players left. Blowout: biggest margin from 35 points. Game balls: top 5 starters. Left on the sideline: best lineup of the roster (actual points) minus the started lineup.
 - Replay of last week: same `LiveSource` interface and same reducer. Kickoffs keep their order, gaps longer than a game + 20 minutes are squeezed (a Sunday takes about 2 minutes at 1×); each player's final points arrive in 3 to 6 chunks during his game.
 - The ticker's collapsed state is kept under `wr.ticker.v1` in localStorage (not in `prefs.ts`).
+
+## Headshots, hinges and head to head (owner request, Oct 18, 2026)
+- `src/components/Avatar.tsx` (`Avatar`, `AvatarStack`, `AvatarName`; helpers in `avatarUtils.ts`; sizes 20 / 28 / 40). A player is a round crop of the Sleeper thumb
+  (`loading="lazy"`, `decoding="async"`, explicit width and height); a failed or offline image, a non-numeric id, or a team defense (`pos` "DEF") is an initials monogram.
+  Defenses never request an image. Always decorative (`alt=""`, monogram `aria-hidden`); the visible name stays the accessible name.
+- **Who this week hinges on** (`src/engine/hinges/`, UI in `src/pages/gameday/matchup/Hinges.tsx`, mounted in the locker room's lineup tab): at stake = win chance now minus win
+  chance if the starter were swapped for a typical free agent, in percentage points. The win chance is `liveWinProb`, which is exactly `winProb` before kickoff; points already
+  scored stay and only the unplayed share of his game is swapped (`projection - (mu - replacement) x remaining`), so a finished game is worth 0. Negative means a free agent beats him.
+- **Replacement level** (`replacementLevels`): per position, the median of the 12 best free agents' expected points for the week (free agents with a game, not already played, not on IR,
+  from the model's capped free-agent pool); a position with no free agent replaces to 0.
+- The opponent's view scores their starters against their own win chance. Source: the live feed once any starter has played (the what-if is ignored then), else the model (what-if applied to
+  my side; the opponent's set lineup, or his best lineup when none is set). Per game is the season average, snaps is nflverse's season `snap_pct`.
+- `src/pages/gameday/matchup/index.ts` exports `HeadToHead` and `Hinges`, both self-sufficient (no props), for game day to mount.
+
+## Moments: time-aware intelligence (owner request, Oct 18, 2026)
+"Like an Apple app, it knows what time it is." Rules over real data and the clock (SPEC section 1: no LLM, ever). Pure engine in `src/engine/moments/`
+(`moments(ctx)` → `Moment[]`, plus `hero(ctx)`, the huddle's sentence), the app glue in `src/app/moments/` (`MomentsProvider`, `MomentsScope`, `useMoments`, the preview clock),
+`<LiveActivity />` in `src/components/live-activity/`, `<MomentBanner page="…" />`, and the huddle's `Hero` and `GamePlan` in `src/pages/home/`. Styles: `src/styles/moments.css`.
+
+**Waiver timing, checked on the real league (krishd20's "fantasy", Oct 18, 2026)**: `waiver_day_of_week: 2`, `daily_waivers: 0`, `waiver_type: 2` (FAAB, budget 1800), `waiver_clear_days: 2`,
+`trade_deadline: 11`, `playoff_week_start: 15`. The league's `transactions` for weeks 3 to 6 show every weekly claim finishing **Wednesday 3:05 am US Eastern** (`status_updated`), so
+`waiver_day_of_week` counts from Monday (0 = Monday, 2 = Wednesday) and the weekly run is 3:00 am Eastern (2:00 am Central). Unverified: the clock in winter (all claims seen were in daylight saving time),
+and daily-waiver leagues (they fall back to the weekly rule). With no setting the fallback is "wednesday morning". The `trade_deadline` week is treated as closing when that week starts (conservative; unverified).
+
+**The rules** (each fires only when the data it quotes exists; a moment has `startsAt`, `endsAt`, a priority 0 to 100, and the highest current one leads)
+| Moment | When | Says | Priority |
+|---|---|---|---|
+| draft countdown | pre-draft, start time set | "the draft starts in 3d 4h", your slot | 70 (85 inside a day) |
+| mock at your slot, study a tier, empty queue | pre-draft, prep items not ticked | "run a mock draft at your real slot (9th)", "study rb tier 2", "your queue is empty" | 56, 48, 44 |
+| on the clock | drafting | "you're on the clock in 4 picks", "you're on the clock" (pick feed polled every 8 s while it is on) | 80 / 95 / 99 |
+| draft grade | draft complete, weeks 1 to 3 | "your draft grade: B", lineup rank | 50 |
+| waivers tonight | the 30 h before the run (Tuesday on) | "waivers process tonight at 2:00 am: your top add is …, bid $76" | 62, 86 inside 9 h |
+| waivers cleared | 24 h after the run | "see who you got, and re-check your lineup for week N" | 74 |
+| game day | the day of a non-Sunday opener, until kickoff | "game day starts tonight at 7:15 pm: 2 of your 6 starters play thursday", lineup status | 88 |
+| lineup swap | Wednesday to the last kickoff | "swap X in for Y", the gain | 58 Wed, 66 Thu, 72 Fri/Sat, 84 Sun |
+| injury report | Friday and Saturday | "X is questionable", best bench fallback at his position | 76 (80 if out) |
+| lineup optimal | Friday and Saturday, nothing to fix | "your lineup is optimal" | 30 |
+| final check | Sunday until the first Sunday kickoff | inactives ~90 minutes before kickoff, who is flagged; countdown to the inactives | 90 |
+| live matchup | a game day with games on or to come, your points on the board | "icemen leads … 95.0 to 58.8", live odds | 92 |
+| monday night | only Monday games left, matchup undecided (3% to 97%) | "you need 12.4 from X" | 94 |
+| week recap | Tuesday | "week 6 recap: you won 112.3–98.0 · playoff odds 66% → 74%" (delta from the stored first look at that week) | 78 morning, 52 later |
+| trade deadline | the week before and the deadline week | best handshake deal | 64, 74 |
+| clinch | late season, `winsToClinch` close | "win and you're in", "win out and you're in" | 68, 78 |
+| clinched, toilet bowl, playoffs | by standing | seed odds, bracket odds, title odds | 40, 46, 82 |
+| dynasty movers, rookie prep | offseason | FantasyCalc 30-day moves on your roster, top rookies | 40, 36 |
+| a hot take | in season | the best take on your players | 34 |
+
+**Live activity**: the highest ongoing moment (`live`, or a countdown inside its `ongoingFrom`, default 12 h before: waivers 12 h, kickoff 6 h, inactives 4 h, draft 72 h). Floats top-centre under the ticker, bottom-centre above the safe
+area on a phone; reserves room with `body[data-la]`. `--activity-top` moves it. Tap opens a card; Esc or a tap outside folds it; × hides it until a different moment leads; a polite live region speaks only "you're on the clock"
+and a change of lead. The countdown ticks each second only while the page is visible. Pill corners come from a local `--r` (a pill radius is not a token). Dark surfaces use the inverse tokens.
+
+**Preview clock**: `#/?now=2026-10-20T20:00` (local time of the browser; `#/?now=live` clears it). Works in production builds on purpose; kept in sessionStorage so it survives page changes; the huddle says
+"previewing the clock" with a back-to-live link and the pill carries a "preview" tag. Only the clock changes: the data is today's (lineups, scores, who has played), and games' states are worked out from kickoff times.
+`?phase=pre_draft` etc. still previews a huddle layout; combine them.
+
+**Mounting**: `<LiveActivity />` (from `src/components/live-activity`) goes in the app shell inside `LiveProvider`. `MomentsProvider` can wrap the frame so everything shares one computation; without it each user
+(`LiveActivity`, a `MomentBanner`, the huddle) starts its own through `MomentsScope`. The huddle's start/sit alerts card and waiver adds card are replaced by the game plan.

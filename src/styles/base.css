@@ -48,7 +48,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 }
 .banner :focus-visible, .skip-link:focus-visible { outline-color: var(--paper); }
 /* a focus target that is only moved to by script (main after a page change, the drawer panel) draws no ring */
-main:focus-visible, .drawer:focus-visible { outline: none; }
+main:focus-visible, main[tabindex]:focus-visible, .drawer:focus-visible { outline: none; }
 
 /* skip link: first tab stop, off-screen until it has focus */
 .skip-link {

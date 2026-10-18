@@ -2,6 +2,7 @@ import { EnginePage } from '../app/EnginePage';
 import { formatAsOf, formatCount, formatMoney, formatNum, formatPct, formatPoints, formatPoints1 } from '../app/format';
 import { MIN_CAL_SAMPLES } from '../engine';
 import type { Engine } from '../engine';
+import { PlayDiagram } from '../components/art/PlayDiagram';
 import { MarkLegend } from '../components/ClinchMark';
 import { Disclosure } from '../components/Disclosure';
 import { useGrown } from '../components/motion';
@@ -36,9 +37,12 @@ function Body({ engine }: { engine: Engine }) {
   const positions = Object.keys(meta.floorCeil);
   return (
     <>
-      <p className="note">
-        built from your league’s sleeper data: rosters, schedule, weekly stats, injury tags, and sleeper’s weekly projections through week {meta.maxWeek}.
-      </p>
+      <div className="art-aside">
+        <p className="note">
+          built from your league’s sleeper data: rosters, schedule, weekly stats, injury tags, and sleeper’s weekly projections through week {meta.maxWeek}.
+        </p>
+        <PlayDiagram size={44} />
+      </div>
       <div className="accordion">
         <Disclosure title="where the data comes from" id="mth-data">
           <p className="note">
@@ -168,6 +172,20 @@ function Body({ engine }: { engine: Engine }) {
             the contender-or-rebuilder lens scores every team on now (expected points, rest of season) and later (dynasty value), then reads each as a contender (strong now and later),
             all-in (strong now, thin later), retool (weak now, strong later) or rebuilder (weak now and thin later). the trade verdict weighs the value moved against your lens.
           </p>
+        </Disclosure>
+
+        <Disclosure title="the nfl page" id="mth-nfl">
+          <p>
+            scores, clocks and kickoff times come from sleeper’s scores feed, one request per week. the live games ride on the same single poller as game day, so the nfl page adds no polling of its own.
+            standings are sums over every final game this season: wins, losses and ties, points for and against, division and conference records, the streak and the last five.
+            league leaders add up sleeper’s weekly stat lines (a finished week is kept for a day), and a game’s box score reads the same lines for its two teams.
+          </p>
+          <p>
+            <b>simplified tiebreakers.</b> teams are ordered by win percentage (a tie counts half), then head-to-head among the tied teams, then division record (only when all of them share a division),
+            then point differential, then city. the official nfl procedure has more steps (common games, conference record, strength of victory and more), so a close race can differ from the league’s own.
+            the playoff picture is “if the season ended today”: the four division leaders take seeds 1 to 4 by record, then the next three best records are the wild cards. it is a snapshot, not a forecast.
+          </p>
+          <p className="note">“nfl only” hides the fantasy layer (owners, your players, the fantasy sections of a game) and is remembered on this device.</p>
         </Disclosure>
 
         <Disclosure title="team defenses" id="mth-def">

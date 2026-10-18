@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { formatPoints1 } from '../../app/format';
 import { useScenario } from '../../app/modelContext';
 import { PAGES } from '../../app/names';
+import { AvatarName } from '../../components/Avatar';
 import { PlayerLink } from '../../components/PlayerLink';
 import { MatchupGrade } from '../../components/MatchupGrade';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -37,7 +38,7 @@ export function RosterCard({ engine }: { engine: Engine }) {
   const columns: Column<Row>[] = [
     {
       key: 'player', header: 'player', value: (r) => r.p.name, className: 'sticky-col',
-      render: (r) => <><PlayerLink pid={r.p.pid} name={r.p.name} /><PlayerTags p={r.p} added={r.added} /></>,
+      render: (r) => <AvatarName pid={r.p.pid} name={r.p.name} pos={r.p.pos} team={r.p.nfl ?? undefined} size={28}><PlayerLink pid={r.p.pid} name={r.p.name} /><PlayerTags p={r.p} added={r.added} /></AvatarName>,
     },
     { key: 'pos', header: 'pos', value: (r) => r.p.pos },
     { key: 'nfl', header: 'team', value: (r) => r.p.nfl ?? '', more: true },

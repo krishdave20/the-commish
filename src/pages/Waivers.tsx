@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { EnginePage } from '../app/EnginePage';
+import { Goalposts } from '../components/art/Goalposts';
 import { ScenarioBar } from '../app/ScenarioBar';
+import { MomentBanner } from '../components/MomentBanner';
 import { compact, formatPoints1, signed, formatMoney } from '../app/format';
 import { useModel, useScenario } from '../app/modelContext';
 import { useNflverse } from '../app/nflverseData';
@@ -11,6 +13,7 @@ import { useTryWaiver } from '../app/tryWaiver';
 import { useComputed } from '../app/useComputed';
 import { useDebounced } from '../app/useSimulation';
 import { MatchupGrade } from '../components/MatchupGrade';
+import { AvatarName } from '../components/Avatar';
 import { PlayerLink } from '../components/PlayerLink';
 import { HeadlineStrip } from '../components/HeadlineStrip';
 import { PageTabs } from '../components/PageTabs';
@@ -22,6 +25,7 @@ import { POS_ORDER, WAIVER_WINDOWS } from '../engine';
 import type { Engine, WaiverEntry, WaiverWindow } from '../engine';
 import { PlayerTags } from './team/PlayerTags';
 import { UsageRisers } from './waivers/UsageRisers';
+import { Streamers } from './waivers/streamers/Streamers';
 import type { RiserPlayer } from './waivers/UsageRisers';
 
 const NONE: WaiverEntry[] = [];
@@ -65,7 +69,7 @@ function Board({ engine }: { engine: Engine }) {
   const columns: Column<WaiverEntry>[] = [
     {
       key: 'player', header: 'player', value: (w) => w.player.name, className: 'nowrap sticky-col',
-      render: (w) => <><PlayerLink pid={w.player.pid} name={w.player.name} /> <span className="dim">{w.player.nfl ?? ''}</span><PlayerTags p={w.player} /></>,
+      render: (w) => <AvatarName pid={w.player.pid} name={w.player.name} pos={w.player.pos} team={w.player.nfl ?? undefined} size={28}><PlayerLink pid={w.player.pid} name={w.player.name} /> <span className="dim">{w.player.nfl ?? ''}</span><PlayerTags p={w.player} /></AvatarName>,
     },
     { key: 'pos', header: 'pos', value: (w) => w.player.pos, className: 'dim' },
     { key: 'gain', header: FEATURE.lift, numeric: true, value: (w) => w.gain, render: (w) => <span className="pos-c">{signed(w.gain)}</span> },
@@ -93,13 +97,14 @@ function Board({ engine }: { engine: Engine }) {
 
   return (
     <>
+      <MomentBanner page="waivers" />
       <ScenarioBar />
       <HeadlineStrip label="Best add" items={[
         { label: 'best add', value: <span className="strip-name">{best ? best.player.name : board.pending ? '…' : '—'}</span>, sub: best ? `${best.player.pos} ${best.player.nfl ?? ''}, drop ${best.drop.name}` : board.pending ? 'working it out…' : 'nobody beats your bench' },
         { label: FEATURE.lift, value: <span className="pos-c">{best ? signed(best.gain) : '—'}</span>, sub: range ? `${range} points added to your best lineup` : 'points added to your best lineup' },
         { label: 'faab bid', value: <span>{best ? formatMoney(best.bid) : '—'}</span>, sub: 'scales with your remaining faab' },
       ]} />
-      <PageTabs label="Waiver wire sections" defaultTab="wire" tabs={[{ value: 'wire', label: 'the wire' }, { value: 'risers', label: 'trending & risers' }]}>
+      <PageTabs label="Waiver wire sections" defaultTab="wire" tabs={[{ value: 'wire', label: 'the wire' }, { value: 'streamers', label: 'streamers' }, { value: 'risers', label: 'trending & risers' }]}>
         {(tab) => tab === 'wire' ? (
           <section className="card" aria-labelledby="wire-title">
             <SectionHeader
@@ -117,11 +122,16 @@ function Board({ engine }: { engine: Engine }) {
             </div>
             <p className="note" role="status">{board.pending ? 'working out lineup lift for every free agent…' : ''}</p>
             {board.value === null ? null : !board.pending && list.length === 0 ? (
-              <p className="take">nobody on the wire beats your bench this window.</p>
+              <div className="art-empty">
+                <Goalposts size={36} />
+                <p className="take">nobody on the wire beats your bench this window.</p>
+              </div>
             ) : (
               <SortableTable caption="Waiver wire" columns={columns} rows={list} rowKey={(w) => w.pid} initialSort={{ key: 'gain', dir: 'desc' }} tableId="waivers" pageSize={PAGE} />
             )}
           </section>
+        ) : tab === 'streamers' ? (
+          <Streamers engine={engine} />
         ) : (
           <UsageRisers weeks={nv.bundle?.weekly ?? null} through={nv.bundle?.manifest.throughWeek ?? null} freeAgents={freeAgents} loading={nv.loading} />
         )}

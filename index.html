@@ -4,8 +4,28 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#f4f1eb" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f1eb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171512" media="(prefers-color-scheme: dark)" />
+    <!-- Before the first paint: the page background for the system setting, and the owner's stored override (src/app/theme.ts has the same
+         key and colours; theme.test.ts runs this script against it). Without it a dark-mode owner sees a flash of parchment. -->
+    <style>
+      html { background: #f4f1eb; }
+      @media (prefers-color-scheme: dark) { html:not([data-theme="light"]) { background: #171512; } }
+      html[data-theme="dark"] { background: #171512; }
+    </style>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('wr.theme.v1');
+          if (t !== 'light' && t !== 'dark') return;
+          document.documentElement.setAttribute('data-theme', t);
+          var c = t === 'dark' ? '#171512' : '#f4f1eb';
+          var m = document.querySelectorAll('meta[name="theme-color"]');
+          for (var i = 0; i < m.length; i++) m[i].setAttribute('content', c);
+        } catch (e) {}
+      })();
+    </script>
     <title>the commish</title>
   </head>
   <body>

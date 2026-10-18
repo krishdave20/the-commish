@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { CommissionersOffice } from '../components/art/CommissionersOffice';
 import { AccountList } from '../components/AccountList';
 import { InfoTip } from '../components/InfoTip';
 import { SkipLink } from '../components/SkipLink';
@@ -102,16 +103,19 @@ export default function SignIn() {
       <SkipLink />
       <main className="signin-wrap" id="main" tabIndex={-1}>
         <div className="signin page-fade">
-          <header className="page-head">
-            <div className="micro">the commish · {PAGES.signin.kicker}</div>
-            <h1>{PAGES.signin.name}</h1>
-            <div className="title-row">
-              <p className="note">Enter a Sleeper username to follow your leagues.</p>
-              <InfoTip label="no password">
-                There is no password: Sleeper does not offer one to third-party apps, and this app only reads public league data.
-              </InfoTip>
-            </div>
-          </header>
+          <div className="art-head">
+            <header className="page-head">
+              <div className="micro">the commish · {PAGES.signin.kicker}</div>
+              <h1>{PAGES.signin.name}</h1>
+              <div className="title-row">
+                <p className="note">Enter a Sleeper username to follow your leagues.</p>
+                <InfoTip label="no password">
+                  There is no password: Sleeper does not offer one to third-party apps, and this app only reads public league data.
+                </InfoTip>
+              </div>
+            </header>
+            <CommissionersOffice className="art-head-office" size={136} />
+          </div>
 
           <form className="stack" onSubmit={(e) => { void find(e); }}>
             <div className="form-row">

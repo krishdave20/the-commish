@@ -1,0 +1,4 @@
+/* Locker room lineup rows. Tokens only. */
+.tog-pair { display: inline-flex; gap: var(--s-1); }
+/* a phone has no room for pin and bench side by side beside a name with a headshot: stack them (each stays a 44 px target) */
+@media (max-width: 480px) { .tog-pair { display: inline-grid; justify-items: stretch; } }

@@ -10,5 +10,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
+    // fixture tests decode several MB of saved Sleeper data; 5 s is too tight on a busy machine or CI runner
+    testTimeout: 20_000,
   },
 })

@@ -16,18 +16,18 @@ describe('app shell', () => {
     expect(await screen.findByLabelText('Sleeper username')).toBeInTheDocument();
   });
 
-  it('shows the 9 grouped nav routes in the sidebar', async () => {
+  it('shows the 11 section tabs and the footer link', async () => {
     renderApp({ linked: [sampleAccount()] });
     const nav = await screen.findByRole('navigation', { name: 'Primary' });
     const links = within(nav).getAllByRole('link');
-    expect(links).toHaveLength(9);
+    expect(links).toHaveLength(11);
     expect(links.map((a) => a.textContent)).toEqual(NAV.map((n) => n.label));
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/gameday', '/team', '/race', '/takes', '/waivers', '/trades', '/players', '/draft']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/gameday', '/team', '/race', '/takes', '/nfl', '/waivers', '/trades', '/players', '/draft', '/settings']);
     const ref = within(screen.getByRole('navigation', { name: 'Reference' })).getAllByRole('link');
-    expect(ref.map((a) => a.getAttribute('href'))).toEqual(['/settings', '/method']);
+    expect(ref.map((a) => a.getAttribute('href'))).toEqual(['/method']);
   });
 
-  it('puts the wordmark and account switcher in the sidebar', async () => {
+  it('puts the wordmark and account switcher in the header', async () => {
     renderApp({ linked: [sampleAccount()] });
     expect(await screen.findByText('Sam Sample')).toBeInTheDocument();
     expect(screen.getByText('the commish')).toBeInTheDocument();

@@ -17,23 +17,27 @@ function withGames(a: FakeGameState, b: FakeGameState) {
   return renderApp({ linked, sleeper, loadModel: sampleLoadModel(liveSampleModel) });
 }
 
-describe('grouped navigation', () => {
-  it('has four labelled groups and the two quiet pages at the bottom', async () => {
+describe('section tabs', () => {
+  it('has one row of tabs in order, with front office last, and under the hood in the footer', async () => {
     renderApp({ linked });
     const nav = await screen.findByRole('navigation', { name: 'Primary' });
-    const groups: Record<string, string[]> = {
-      'this week': ['huddle', 'game day', 'locker room'],
-      league: ['playoff picture', 'hot takes'],
-      moves: ['waiver wire', 'trade block'],
-      players: ['scouting report', 'draft room'],
-    };
-    for (const [label, links] of Object.entries(groups)) {
-      const g = within(nav).getByRole('group', { name: label });
-      expect(within(g).getAllByRole('link').map((a) => a.textContent)).toEqual(links);
-      expect(within(g).getByText(label)).toHaveClass('nav-label');
-    }
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual([
+      'huddle', 'game day', 'locker room', 'playoff picture', 'hot takes', 'nfl', 'waiver wire', 'trade block', 'scouting report', 'draft room', 'front office',
+    ]);
     const ref = screen.getByRole('navigation', { name: 'Reference' });
-    expect(within(ref).getAllByRole('link').map((a) => a.textContent)).toEqual(['front office', 'under the hood']);
+    expect(within(ref).getAllByRole('link').map((a) => a.textContent)).toEqual(['under the hood']);
+    expect(within(nav).getByRole('link', { name: 'nfl' })).toHaveAttribute('href', '/nfl');
+  });
+
+  it('puts the team name over the tabs as a banner, not a heading, with the league, week and record under it', async () => {
+    renderApp({ linked, loadModel: sampleLoadModel(liveSampleModel) });
+    const team = await screen.findByText('Sunday Scaries', { selector: '.tn-team' });
+    expect(team.closest('header')).toBe(document.querySelector('.sidebar'));
+    expect(screen.queryByRole('heading', { name: 'Sunday Scaries' })).not.toBeInTheDocument();
+    expect(document.querySelector('.tn-ctx')).toHaveTextContent('Sample League · week 5 · you’re 3–1');
+    // the page keeps exactly one h1
+    await screen.findByRole('heading', { level: 1, name: 'huddle' });
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
   it('keeps the active page marked with aria-current, game day included', async () => {
@@ -53,6 +57,12 @@ describe('grouped navigation', () => {
     await screen.findByRole('region', { name: 'league scores' }, { timeout: 4000 });
     const plain = screen.getByRole('link', { name: 'game day' });
     expect(plain.querySelector('.live-dot')).toBeNull();
+  });
+
+  it('shows the live dot beside the nfl tab too', async () => {
+    withGames('live', 'final');
+    const link = await screen.findByRole('link', { name: /^nfl\s*\(live\)$/ }, { timeout: 4000 });
+    expect(link.querySelector('.live-dot')).not.toBeNull();
   });
 
   it('names the current page on the phone menu button', async () => {

@@ -8,6 +8,7 @@ import type { PlayerEntry } from '../app/playersIndex';
 import { usePageTitle } from '../app/usePageTitle';
 import { useWatchlist } from '../app/useWatchlist';
 import { PageHeader } from '../components/PageHeader';
+import { AvatarName } from '../components/Avatar';
 import { PlayerLink } from '../components/PlayerLink';
 import { MoreColumns } from '../components/MoreColumns';
 import { SectionHeader } from '../components/SectionHeader';
@@ -103,7 +104,7 @@ export default function Players() {
               <caption className="sr-only">Player search results</caption>
               <thead>
                 <tr>
-                  <th scope="col">player</th><th scope="col">pos</th><th scope="col">team</th>{more.on && <th scope="col" className="n">age</th>}
+                  <th scope="col" className="sticky-col">player</th><th scope="col">pos</th><th scope="col">team</th>{more.on && <th scope="col" className="n">age</th>}
                   <th scope="col">owner</th><th scope="col"><span className="sr-only">watch</span></th>
                 </tr>
               </thead>
@@ -113,10 +114,12 @@ export default function Players() {
                   const watching = watch.has(e.pid);
                   return (
                     <tr key={e.pid}>
-                      <td className="nowrap">
-                        <PlayerLink pid={e.pid} name={e.name} />
-                        {e.injury && <> <span className="pill warn">{e.injury}</span></>}
-                        {!e.active && <> <span className="pill mute">inactive</span></>}
+                      <td className="nowrap sticky-col">
+                        <AvatarName pid={e.pid} name={e.name} pos={e.pos} team={e.team ?? undefined} size={28}>
+                          <PlayerLink pid={e.pid} name={e.name} />
+                          {e.injury && <> <span className="pill warn">{e.injury}</span></>}
+                          {!e.active && <> <span className="pill mute">inactive</span></>}
+                        </AvatarName>
                       </td>
                       <td className="dim">{e.pos}</td>
                       <td className="dim">{e.team ?? 'fa'}</td>

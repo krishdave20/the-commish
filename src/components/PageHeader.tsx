@@ -1,5 +1,6 @@
 import type { Freshness } from '../app/hooks';
 import { formatAsOf } from '../app/format';
+import { YardTrack } from './art/YardTrack';
 
 export interface LoadStatus { done: number; total: number; label: string }
 
@@ -42,20 +43,7 @@ export function PageHeader({ kicker, title, data }: Props) {
           {`pulling ${progress.label} · ${progress.done} of ${progress.total}`}
         </p>
       )}
-      {loading && (
-        progress ? (
-          <div
-            className="progress determinate" role="progressbar" aria-label="Refreshing data"
-            aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.done}
-          >
-            <i style={{ width: `${Math.max(3, Math.round((progress.done / Math.max(1, progress.total)) * 100))}%` }} />
-          </div>
-        ) : (
-          <div className="progress" role="progressbar" aria-label="Refreshing data" aria-valuetext="Refreshing">
-            <i />
-          </div>
-        )
-      )}
+      {loading && <YardTrack label="Refreshing data" progress={progress} />}
     </header>
   );
 }

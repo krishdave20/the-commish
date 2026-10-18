@@ -217,6 +217,8 @@ describe('draft room: mock draft', () => {
     expect(within(card).getByRole('heading', { name: 'reaches' })).toBeInTheDocument();
     expect(within(card).getAllByRole('table', { name: /projected lineup points/i })).toHaveLength(1);
     expect(screen.getByText(/draft complete · 24 picks/)).toBeInTheDocument();
+    // a ball lands beside the line when the draft finishes (at rest: jsdom counts as reduced motion)
+    expect(screen.getByText(/draft complete · 24 picks/).querySelector('.art-spiral')).toHaveAttribute('data-motion', 'still');
     expect(screen.queryByRole('heading', { name: 'best available' })).not.toBeInTheDocument();
     // the board is full: 24 cells with a player in them
     const board = screen.getByRole('table', { name: 'Mock draft board' });
@@ -421,7 +423,10 @@ describe('draft room: on the clock', () => {
 
   it('says so when there is no draft to follow or replay', async () => {
     mount({ route: '/draft?tab=clock', draft: sampleDraft({ status: 'pre_draft' }) });
-    expect(await screen.findByText('no draft in progress. the assistant wakes up when your league’s draft starts.')).toBeInTheDocument();
+    const note = await screen.findByText('no draft in progress. the assistant wakes up when your league’s draft starts.');
+    expect(note).toBeInTheDocument();
+    // the empty state gets the stadium lights, and they are decoration
+    expect(note.closest('.art-empty')!.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.queryByRole('button', { name: 'replay your draft' })).not.toBeInTheDocument();
   });
 

@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { formatOdds, formatPoints1, signed } from '../../app/format';
 import { formatClockTime } from '../../app/live/format';
+import { DriveField } from '../../components/art/DriveField';
+import type { DriveMark } from '../../components/art/drive';
 import { useGrown } from '../../components/motion';
 import type { BenchRow, GameBall, LiveCtx, LiveSnapshot, MatchupLive, RawChange, Tag } from '../../engine/live';
 import { gameText, gamesByTeam, metaOf } from '../../engine/live';
@@ -86,12 +88,21 @@ export function Sideline({ rows }: { rows: BenchRow[] }) {
 
 /* ---------- the drive chart ---------- */
 
-export function DriveChart({ changes, ctx, snapshot, empty }: { changes: RawChange[]; ctx: LiveCtx; snapshot: LiveSnapshot | null; empty: string }) {
+export function DriveChart({ changes, ctx, snapshot, empty, oppRid = null }: { changes: RawChange[]; ctx: LiveCtx; snapshot: LiveSnapshot | null; empty: string; oppRid?: number | null }) {
   const byTeam = useMemo(() => (snapshot ? gamesByTeam(snapshot.games) : new Map()), [snapshot]);
+  const shown = useMemo(() => changes.slice(0, 60), [changes]);
+  // one mark per play on the field strip: green for your team, warm red for your opponent, grey for everyone else
+  const marks = useMemo<DriveMark[]>(() => shown.map((c) => ({
+    id: c.id, t: c.clock, points: c.delta,
+    side: c.rid === ctx.meRid ? 'me' : c.rid === oppRid ? 'opp' : 'other',
+    text: `${signed(c.delta)} ${metaOf(ctx, c.pid).name.toLowerCase()}`,
+  })), [shown, ctx, oppRid]);
   if (!changes.length) return <p className="note">{empty}</p>;
   return (
+    <>
+    <DriveField marks={marks} meName={ctx.teams[ctx.meRid]?.name ?? 'you'} oppName={oppRid !== null ? ctx.teams[oppRid]?.name ?? 'your opponent' : 'your opponent'} />
     <ol className="gd-feed" aria-label="scoring updates, newest first">
-      {changes.slice(0, 60).map((c) => {
+      {shown.map((c) => {
         const meta = metaOf(ctx, c.pid);
         const where = gameText(meta.nfl ? byTeam.get(meta.nfl) : null, meta.nfl);
         return (
@@ -107,5 +118,6 @@ export function DriveChart({ changes, ctx, snapshot, empty }: { changes: RawChan
         );
       })}
     </ol>
+    </>
   );
 }

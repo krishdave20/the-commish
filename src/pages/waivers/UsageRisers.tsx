@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { AvatarName } from '../../components/Avatar';
 import { PlayerLink } from '../../components/PlayerLink';
 import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
@@ -55,7 +56,7 @@ export function UsageRisers({ weeks, through, freeAgents, loading }: Props) {
                     const p = freeAgents.get(r.pid);
                     return (
                       <tr key={r.pid}>
-                        <td className="nowrap"><PlayerLink pid={r.pid} name={p?.name ?? r.pid} /> <span className="dim">{r.team}</span></td>
+                        <td className="nowrap"><AvatarName pid={r.pid} name={p?.name ?? r.pid} pos={p?.pos} team={r.team} size={28}><PlayerLink pid={r.pid} name={p?.name ?? r.pid} /> <span className="dim">{r.team}</span></AvatarName></td>
                         <td className="dim">{p?.pos}</td>
                         <td className="n">{formatPct(r.recent, 1)}</td>
                         <td className="n dim">{formatPct(r.prior, 1)}</td>

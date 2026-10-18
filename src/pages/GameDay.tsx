@@ -6,6 +6,7 @@ import { formatKickoff } from '../app/live/format';
 import { useLive } from '../app/live/liveContext';
 import { useModel } from '../app/modelContext';
 import { FEATURE, PAGES } from '../app/names';
+import { FieldStrip } from '../components/art/FieldStrip';
 import { Attribution } from '../components/Attribution';
 import { PageHeader } from '../components/PageHeader';
 import { PageSkeleton } from '../components/Skeleton';
@@ -16,15 +17,18 @@ import { isPreGame } from '../engine/live';
 import type { LiveCtx, LiveSnapshot, LiveView, RawChange } from '../engine/live';
 import { AroundLeague, DriveChart, GameBalls, Sideline } from './gameday/League';
 import { MainEvent } from './gameday/MainEvent';
+import { HeadToHead, Hinges } from './gameday/matchup';
 import { ReplayBar } from './gameday/ReplayBar';
 import { useWeekView } from './gameday/useWeekView';
 import './gameday/gameday.css';
 
 type Which = 'now' | 'last';
-type LeagueTab = 'around' | 'balls' | 'drive' | 'sideline';
+type LeagueTab = 'around' | 'h2h' | 'hinges' | 'balls' | 'drive' | 'sideline';
 
 const TABS: Array<{ value: LeagueTab; label: string }> = [
   { value: 'around', label: FEATURE.aroundLeague },
+  { value: 'h2h', label: 'head to head' },
+  { value: 'hinges', label: 'hinges on' },
   { value: 'balls', label: FEATURE.gameBalls },
   { value: 'drive', label: FEATURE.driveChart },
   { value: 'sideline', label: FEATURE.sideline },
@@ -78,6 +82,9 @@ export default function GameDay() {
     if (!shown) return null;
     return shown.view.matchups.find((x) => x.id === focusId) ?? shown.view.mine ?? shown.view.matchups[0] ?? null;
   }, [shown, focusId]);
+  // the other side of your own matchup: its plays are the red marks on the drive chart
+  const mineView = shown?.view.mine ?? null;
+  const oppRid = mineView ? (mineView.a.isMe ? mineView.b.rid : mineView.a.rid) : null;
   const focusIsMine = !!focus && (focus.a.isMe || focus.b.isMe);
 
   const header = {
@@ -124,7 +131,12 @@ export default function GameDay() {
         )}
         <ReplayBar />
       </div>
-      {nextLine && <p className="gd-next">{nextLine}</p>}
+      {(nextLine || mode === 'off') && (
+        <div className="gd-next-row">
+          {nextLine && <p className="gd-next">{nextLine}</p>}
+          {mode === 'off' && !live.replay && <FieldStrip className="gd-off-art" size={120} />}
+        </div>
+      )}
 
       {shown && !focus ? (
         <p className="note" role="status">no matchups this week. a bye or an open week has nothing to score.</p>
@@ -160,6 +172,9 @@ export default function GameDay() {
                       />
                     </div>
                   )}
+                  {/* your matchup in depth: these read the model, the what-if and the live feed themselves */}
+                  {tab === 'h2h' && <div className="gd-panel"><HeadToHead /></div>}
+                  {tab === 'hinges' && <div className="gd-panel"><Hinges /></div>}
                   {tab === 'balls' && (
                     <div className="gd-panel">
                       <div className="title-row">
@@ -173,10 +188,11 @@ export default function GameDay() {
                     <div className="gd-panel">
                       <div className="title-row">
                         <h2>{FEATURE.driveChart}</h2>
-                        <InfoTip label={FEATURE.driveChart}><p>each update compared with the one before: every starter whose points changed. kept in memory for this visit only, so it starts empty when you open the page.</p></InfoTip>
+                        <InfoTip label={FEATURE.driveChart}><p>each update compared with the one before: every starter whose points changed. kept in memory for this visit only, so it starts empty when you open the page.</p>
+                          <p>on the field, each play is a mark, oldest at the left end zone and newest at the right. bigger means more points. green is your team, warm red your opponent, small grey the rest of the league; a ring is a correction that took points away.</p></InfoTip>
                       </div>
                       <DriveChart
-                        changes={shown.changes} ctx={shown.ctx} snapshot={shown.snapshot}
+                        changes={shown.changes} ctx={shown.ctx} snapshot={shown.snapshot} oppRid={oppRid}
                         empty={which === 'last' ? 'replay last week to watch the plays arrive.' : 'no scoring updates yet. plays appear here as they happen.'}
                       />
                     </div>

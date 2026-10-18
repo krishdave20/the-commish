@@ -21,18 +21,40 @@ import { Movers } from './home/Movers';
 import { PreDraft } from './home/PreDraft';
 import { RookieClass } from './home/RookieClass';
 import { TopTakes } from './home/TopTakes';
-import { WaiversCard } from './home/WaiversCard';
 import { PostseasonBrackets } from './home/PostseasonBrackets';
-import { AlertsCard } from './team/AlertsCard';
+import { HuddleHero } from './home/Hero';
+import { GamePlan } from './home/GamePlan';
+import { MomentsProvider } from '../app/moments/MomentsProvider';
+import { useMoments } from '../app/moments/momentsContext';
+import { formatStamp } from '../engine/moments';
 import { useSleeperBrackets } from '../components/bracket/useBracketData';
 import { buildStandings } from './standings';
 import type { StandingRow } from './standings';
 import type { LeagueBundle } from '../data';
 import type { Engine } from '../engine';
 
-/** The huddle: one slim row of figures that answers "how am I doing", and under it only what you can act on this week.
-    The league panel and the standings live in the front office and the playoff picture. `?phase=` previews another layout. */
+/** The huddle: a sentence that says where you stand, the game plan (the few things worth doing right now, from the clock and the data),
+    one slim row of figures, and only what else you can act on this week. The league panel and the standings live in the front office
+    and the playoff picture. `?phase=` previews another layout and `?now=` another moment (see src/app/moments/nowOverride.ts). */
 export default function Home() {
+  const [params] = useSearchParams();
+  const forced = parsePreviewPhase(params.get('phase'));
+  // the huddle reads the full set of moments (hot takes, rankings, the draft grade), so it makes its own
+  return <MomentsProvider phase={forced}><HomeBody /></MomentsProvider>;
+}
+
+function PreviewTime() {
+  const { ctx, previewing } = useMoments();
+  if (!previewing || !ctx) return null;
+  return (
+    <p className="preview-note" role="status">
+      <span>{FEATURE.preview} the clock: {formatStamp(ctx.now.getTime(), ctx.tz)}</span>
+      <Link to={`${PAGES.home.path}?now=live`}>back to live</Link>
+    </p>
+  );
+}
+
+function HomeBody() {
   const bundle = useLeagueBundle();
   usePageTitle(PAGES.home.path);
   const nfl = useNflState();
@@ -71,6 +93,11 @@ export default function Home() {
         </p>
       )}
 
+      <PreviewTime />
+
+      {data && <HuddleHero />}
+      {data && <GamePlan />}
+
       {!active?.leagueId && (
         <p className="note">No league is selected yet. Use “Add an account” in the sidebar to follow one.</p>
       )}
@@ -88,7 +115,7 @@ export default function Home() {
   );
 }
 
-/** The strip, then start/sit alerts, the top three waiver adds and the top three takes for my players. */
+/** The strip, the injury flags and the top three takes for my players. Start/sit alerts and the waiver adds are in the game plan now. */
 function InSeasonSections({ engine, loading, error, phase, mine, teams }: {
   engine: Engine | null; loading: boolean; error: string | undefined; phase: Phase | null; mine: StandingRow | null; teams: number;
 }) {
@@ -106,13 +133,7 @@ function InSeasonSections({ engine, loading, error, phase, mine, teams }: {
     <>
       {mine && <HuddleStrip mine={mine} teams={teams} engine={engine} showPath={phase !== 'postseason'} />}
       {phase === 'postseason' && <PostseasonBrackets engine={engine} />}
-      <div className="grid2">
-        <div className="stack">
-          <AlertsCard engine={engine} withWire={false} />
-          <InjuriesCard engine={engine} />
-        </div>
-        <WaiversCard engine={engine} />
-      </div>
+      <InjuriesCard engine={engine} />
       <TopTakes />
     </>
   );

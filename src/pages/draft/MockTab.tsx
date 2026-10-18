@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { BallSpiral } from '../../components/art/BallSpiral';
 import { PlayerLink } from '../../components/PlayerLink';
 import { SectionHeader } from '../../components/SectionHeader';
 import { Segmented } from '../../components/Segmented';
@@ -25,6 +26,10 @@ export function MockTab({ room, plan }: Props) {
   const m = useMockDraft({ leagueId: league.league_id, rankings, plan, defaultSlot });
   const { state } = m;
   const [pos, setPos] = useState('all');
+  // the ball spirals in only for a draft that finishes while you watch, not for one that was already done when the tab opened
+  const [wasComplete, setWasComplete] = useState(state.complete);
+  const [justDone, setJustDone] = useState(false);
+  if (wasComplete !== state.complete) { setWasComplete(state.complete); setJustDone(state.complete); }
 
   const gone = useMemo(() => state.picks.map((p) => ({ player_id: p.pid })), [state.picks]);
   const best = useMemo(
@@ -74,7 +79,7 @@ export function MockTab({ room, plan }: Props) {
         <div className="stack">
           <div className="row between">
             <span className="note" role="status">
-              {state.complete ? `draft complete · ${total} picks`
+              {state.complete ? <>{`draft complete · ${total} picks`}<BallSpiral play={justDone} /></>
                 : state.userOnClock ? <strong className="otc-line">you’re on the clock · pick {next!.pickNo} ({ordinalPick(next!.round, next!.slot)})</strong>
                 : next ? `pick ${next.pickNo} of ${total} · ${teamLabel(teams, next.rosterId)} is on the clock` : ''}
               {m.busy ? ' · simulating…' : ''}

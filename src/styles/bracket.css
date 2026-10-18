@@ -11,7 +11,7 @@
 .br-lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
 .br-line { fill: none; stroke: var(--rule); stroke-width: 1; }
 .br-line.on { stroke: var(--green-2); }
-.br[data-kind='toilet'] .br-line.on { stroke: #b9806a; }
+.br[data-kind='toilet'] .br-line.on { stroke: var(--toilet); }
 .br[data-kind='consolation'] .br-line.on { stroke: var(--ink-3); }
 .br-head { position: absolute; top: 0; height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -43,15 +43,15 @@
 .br-champ-name.dim { font-size: 20px; }
 .br-champ-label { color: var(--ink-2); }
 .br-rule { display: block; height: 2px; width: 3.2rem; background: var(--gold); border-radius: 1px; }
-.br-champ[data-kind='toilet'][data-state='crowned'] { border-color: #d3b3a6; }
-.br-champ[data-kind='toilet'] .br-rule { background: #b9806a; }
+.br-champ[data-kind='toilet'][data-state='crowned'] { border-color: var(--toilet-edge); }
+.br-champ[data-kind='toilet'] .br-rule { background: var(--toilet); }
 .br-champ[data-kind='consolation'][data-state='crowned'] { border-color: var(--rule); }
 .br-champ[data-kind='consolation'] .br-rule { background: var(--ink-3); }
 .br-champ-line { font-size: var(--fs-xs); color: var(--ink-2); }
 
 /* head-to-head tooltip */
 .br-tip { position: absolute; z-index: 6; width: min(26rem, 80vw); background: var(--ink); color: var(--paper); border-radius: var(--r); padding: 8px 10px; font-size: var(--fs-xs); display: grid; gap: 4px; pointer-events: none; box-shadow: var(--shadow-pop); }
-.br-tip .note, .br-tip .dim { color: #cfc8b6; }
+.br-tip .note, .br-tip .dim { color: var(--on-ink-2); }
 .br-tip-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 10px; align-items: baseline; }
 .br-tip-row > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .br-tip-row .n { text-align: right; white-space: nowrap; }

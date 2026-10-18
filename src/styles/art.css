@@ -1,0 +1,148 @@
+/* Illustrations and field animations (the commish). One hand: fine ink line art, round caps, a 1.4 px line that stays 1.4 px at any size,
+   and at most one accent (gold or green) per piece as a small detail. Tokens only; no new hues. Every motion is under 600 ms and stands
+   still under prefers-reduced-motion, showing its end state. */
+
+.art { display: block; flex: none; color: var(--ink-2); overflow: visible; }
+.art *, .art-field svg * { vector-effect: non-scaling-stroke; }
+.art-body { fill: var(--sheet); }
+.art-gold { stroke: var(--gold); }
+.art-green { stroke: var(--green); }
+.art-thin { stroke-width: 1; }
+.art-floor { stroke: var(--rule); }
+.art-edge { stroke: currentColor; opacity: 0.55; }
+.art-upright { stroke: currentColor; }
+
+/* field markings, shared by the strip (ink on the page) and the win-meter and drive-chart fields (paper tones) */
+.art-ez { fill: currentColor; opacity: 0.07; stroke: none; }
+.art-yl { stroke: currentColor; opacity: 0.3; }
+.art-yl.art-mid { opacity: 0.55; }
+.art-hash { stroke: currentColor; opacity: 0.22; stroke-width: 1; }
+
+/* ---------- turf: the little field the game day win meter plays on ---------- */
+:root { --art-spring: cubic-bezier(0.34, 1.45, 0.5, 1); }
+.art-field { position: relative; }
+.art-turf {
+  height: 60px; border-radius: var(--r-sm); overflow: hidden; box-shadow: 0 0 0 1px var(--turf-edge);
+  background: var(--turf);
+}
+.art-turf > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.art-stripe { fill: var(--turf); stroke: none; }
+.art-stripe[data-alt='true'] { fill: var(--turf-2); }
+.art-turf-line { stroke: var(--turf-line); stroke-width: 1; }
+.art-turf-hash { stroke: var(--turf-line); stroke-width: 1; opacity: 0.55; }
+.art-turf-ez {
+  position: absolute; top: 0; bottom: 0; width: calc(100% / 12); display: grid; place-items: center; overflow: hidden;
+  color: var(--turf-on); font-size: var(--fs-micro); line-height: 1; letter-spacing: 0.02em;
+}
+.art-turf-ez[data-side='left'] { left: 0; background: var(--surface-inverse); color: var(--on-inverse); }
+.art-turf-ez[data-side='right'] { right: 0; background: var(--turf-ez-red); color: var(--turf-on); }
+.art-turf-ez > span { writing-mode: vertical-rl; transform: rotate(180deg); max-height: calc(100% - var(--s-2)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.art-turf-ez[data-side='right'] > span { transform: none; }
+.art-turf-nums { position: absolute; left: 0; right: 0; bottom: 2px; height: 12px; pointer-events: none; }
+.art-turf-nums > span { position: absolute; bottom: 0; transform: translateX(-50%); font-size: var(--fs-micro); line-height: 1; color: var(--turf-num); font-variant-numeric: tabular-nums; }
+
+/* the ball and the marks on the field: they ease with a small overshoot, like a spring, and sit still under reduced motion */
+.art-ball { position: absolute; top: 42%; width: 22px; height: 15px; transform: translate(-50%, -50%) rotate(-14deg); transition: left var(--t-slow) var(--art-spring); pointer-events: none; }
+.art-ball .art { width: 100%; height: 100%; color: var(--turf-ball-line); }
+.art-ball .art-body { fill: var(--turf-ball); }
+.art-ball .art-gold { stroke: var(--turf-num); }
+.art-ball .art-body ~ path:not(.art-gold) { stroke: var(--turf-num); }
+.art-tick { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--gold); opacity: 0.9; pointer-events: none; }
+.art-trail { position: absolute; top: 42%; height: 2px; margin-top: -1px; background: var(--turf-line); border-radius: 1px; pointer-events: none; transition: left var(--t-slow) var(--ease), width var(--t-slow) var(--ease); }
+@media (prefers-reduced-motion: reduce) {
+  .art-ball, .art-trail { transition: none; }
+}
+
+/* ---------- the drive chart's field strip: marks in time order, sized by points ---------- */
+.art-drive { margin: 0; display: grid; gap: var(--s-1); }
+.art-strip { height: 56px; border-radius: var(--r-sm); color: var(--ink-2); background: var(--sheet); box-shadow: 0 0 0 1px var(--rule); overflow: hidden; }
+.art-strip > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.art-marks { position: absolute; inset: 0; }
+.art-mark { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; background: var(--green); opacity: 0.85; }
+.art-mark[data-mark='opp'] { background: var(--red); }
+.art-mark[data-mark='other'] { background: var(--ink-3); opacity: 0.5; }
+.art-mark[data-neg='true'] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.art-mark[data-neg='true'][data-mark='me'] { box-shadow: inset 0 0 0 1.5px var(--green); }
+.art-mark[data-neg='true'][data-mark='opp'] { box-shadow: inset 0 0 0 1.5px var(--red); }
+.art-drive-key { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); font-size: var(--fs-xs); color: var(--ink-2); }
+.art-drive-key > span[data-key]::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: var(--s-1); background: var(--ink-3); opacity: 0.6; }
+.art-drive-key > span[data-key='me']::before { background: var(--green); opacity: 1; }
+.art-drive-key > span[data-key='opp']::before { background: var(--red); opacity: 1; }
+.art-drive-dir { margin-left: auto; color: var(--ink-3); }
+@media (prefers-reduced-motion: no-preference) {
+  .art-mark { animation: art-pop var(--t-base) var(--art-spring) both; }
+}
+@keyframes art-pop { from { transform: translate(-50%, -50%) scale(0.2); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); } }
+
+/* ---------- the loading track in the page header: a yard-line track with a football on it ---------- */
+.page-head { position: relative; }
+.yard { position: absolute; left: 0; right: 0; bottom: calc(var(--s-3) * -1); height: 12px; pointer-events: none; }
+.yard::before {
+  /* the two end zones, faint, and the line the ball runs along */
+  content: ''; position: absolute; inset: 3px 0; border-radius: var(--r-xs);
+  background:
+    linear-gradient(90deg, var(--rule) 0 calc(100% / 12), transparent calc(100% / 12) calc(100% * 11 / 12), var(--rule) calc(100% * 11 / 12)),
+    var(--rule-2);
+  opacity: 0.8;
+}
+.yard-ticks { position: absolute; inset: 0; background-image: linear-gradient(90deg, var(--ink-3) 1px, transparent 1px); background-size: calc(100% / 12) 100%; background-position: 0 0; opacity: 0.35; clip-path: inset(3px 0 3px 0); }
+.yard-fill { position: absolute; left: 0; top: 5px; height: 2px; background: var(--gold); border-radius: 1px; transition: width var(--t-base) var(--ease); }
+.yard-ball { position: absolute; top: 50%; width: 16px; height: 11px; margin: -5.5px 0 0 -8px; left: 50%; transition: left var(--t-base) var(--ease); }
+.yard-ball .art { width: 100%; height: 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  /* between the 20s: the 20-yard lines sit a quarter and three quarters of the way across a 120-yard field */
+  .yard[data-motion='moving'] .yard-ball { left: 25%; animation: yard-roll 1.3s var(--ease) infinite alternate; transition: none; }
+}
+@keyframes yard-roll { from { left: 25%; } to { left: 75%; } }
+@media (prefers-reduced-motion: reduce) {
+  .yard-ball, .yard-fill { transition: none; }
+}
+
+/* ---------- small moments: each under 600 ms, once, and still under reduced motion (the end state is simply shown) ---------- */
+/* uprights behind a crowned champion */
+.art-uprights .art { color: var(--gold); }
+.art-uprights { position: absolute; right: var(--s-3); bottom: var(--s-2); z-index: -1; color: var(--gold); opacity: 0.5; pointer-events: none; transform-origin: 50% 100%; line-height: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .art-uprights[data-motion='play'] { animation: art-rise 500ms var(--art-spring) both; }
+}
+@keyframes art-rise { from { transform: scaleY(0.15); opacity: 0; } to { transform: none; opacity: 0.5; } }
+
+/* the ball that lands when a mock draft finishes */
+.art-spiral { display: inline-block; vertical-align: middle; margin-left: var(--s-2); line-height: 0; }
+.art-spiral .art { transform: rotate(-14deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .art-spiral[data-motion='play'] { animation: art-spiral 550ms var(--ease) both; }
+}
+@keyframes art-spiral {
+  from { transform: translate(-96px, -40px) rotate(-540deg) scale(0.6); opacity: 0; }
+  55% { transform: translate(-34px, -22px) rotate(-200deg) scale(1); opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
+
+/* the whistle at the final whistle: a quick blow */
+.art-blow { display: inline-block; margin-left: var(--s-1); vertical-align: middle; }
+@media (prefers-reduced-motion: no-preference) {
+  .art-blow { animation: art-blow 480ms var(--ease) both; transform-origin: 20% 60%; }
+}
+@keyframes art-blow {
+  from { transform: rotate(-24deg) scale(0.7); opacity: 0; }
+  40% { transform: rotate(12deg) scale(1.08); opacity: 1; }
+  70% { transform: rotate(-5deg); }
+  to { transform: none; }
+}
+
+/* an empty state with a spot illustration: the art sits quietly beside the sentence */
+.art-empty { display: flex; align-items: center; gap: var(--s-3); }
+.art-empty > p { margin: 0; min-width: 0; }
+.br-champ[data-state='crowned'] { isolation: isolate; }
+
+/* a page header with the commissioner's office at the right: the header keeps its own layout, the scene sits beside it and drops below on a phone */
+.art-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--s-3); }
+.art-head > .page-head { min-width: 0; }
+.art-head-office { width: clamp(88px, 24vw, 136px); height: auto; }
+.art-aside { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.art-aside > p { margin: 0; min-width: 0; }
+@media (max-width: 560px) {
+  .art-head { grid-template-columns: minmax(0, 1fr); gap: var(--s-2); }
+  .art-head-office { justify-self: end; width: 96px; }
+}

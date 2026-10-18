@@ -1,0 +1,33 @@
+/* Player avatars: a round crop of Sleeper's thumbnail, or an initials monogram. Tokens only (colours, spacing, motion), so dark mode
+   follows the palette. Sizes are 20 / 28 / 40; the circle is always a fixed box, so a late image never shifts the row. */
+.avatar {
+  --av: 28px;
+  position: relative; display: inline-grid; place-items: center; flex: none;
+  inline-size: var(--av); block-size: var(--av); border-radius: 50%; overflow: hidden;
+  background: var(--rule-2); color: var(--ink-2); vertical-align: middle;
+  font-family: var(--sans); font-weight: 500; line-height: 1; letter-spacing: 0; user-select: none;
+  font-size: calc(var(--av) * 0.4);
+}
+.avatar[data-size='20'] { --av: 20px; }
+.avatar[data-size='28'] { --av: 28px; }
+.avatar[data-size='40'] { --av: 40px; }
+.avatar-img { inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center top; display: block; }
+.avatar[data-kind='monogram'] { background: var(--rule); }
+.avatar[data-kind='monogram'][data-pos='DEF'] { font-size: calc(var(--av) * 0.34); letter-spacing: -0.02em; }
+
+/* overlapping groups: a paper ring cuts each circle from its neighbour (the reference's headline) */
+.avatar-stack { display: inline-flex; align-items: center; flex: none; vertical-align: middle; }
+.avatar-stack > .avatar { box-shadow: 0 0 0 2px var(--paper); }
+.avatar-stack[data-size='40'] > .avatar { box-shadow: 0 0 0 3px var(--paper); }
+.avatar-stack > .avatar + .avatar { margin-inline-start: calc(var(--av) * -0.3); }
+.avatar-more { background: var(--rule); color: var(--ink-2); }
+
+/* a name with its avatar: the one pattern the tables use */
+.avatar-name { display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; max-width: 100%; }
+.avatar-name > :last-child { min-width: 0; }
+
+/* phones: a table row has little width to spare, so the 28 px crop shrinks to 20 and the gap tightens */
+@media (max-width: 480px) {
+  .avatar-name { gap: var(--s-1); }
+  .avatar-name > .avatar[data-size='28'] { --av: 20px; }
+}

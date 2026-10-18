@@ -1,0 +1,57 @@
+/* Starters head to head, and who this week hinges on. Hybrid look: system sans for names and labels, tabular figures for numbers.
+   Tokens only. The two sides mirror around a slot column; a thin bar under each pair splits the slot's points. */
+
+/* ---------- head to head ---------- */
+.h2h { display: grid; gap: 0; min-width: 0; }
+.h2h-head, .h2h-row { display: grid; grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr); column-gap: var(--s-2); align-items: center; }
+.h2h-head { padding-bottom: var(--s-1); border-bottom: 1px solid var(--rule); }
+.h2h-team { font-size: var(--fs-xs); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.h2h-team[data-mirror='true'], .h2h-side[data-mirror='true'] { text-align: right; }
+.h2h-row { padding: var(--s-2) 0 0; border-bottom: 1px solid var(--rule-2); row-gap: var(--s-2); }
+.h2h-slot { text-align: center; }
+.h2h-side { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-width: 0; }
+.h2h-side[data-mirror='true'] { flex-direction: row-reverse; }
+.h2h-side[data-mirror='true'] .avatar-name { flex-direction: row-reverse; text-align: right; }
+.h2h-side .avatar-name { flex: 1 1 auto; min-width: 0; }
+.h2h-who { display: grid; min-width: 0; justify-items: start; }
+.h2h-side[data-mirror='true'] .h2h-who { justify-items: end; }
+.h2h-who .plink { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h2h-meta { color: var(--ink-3); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h2h-status[data-state='live'] { color: var(--green); }
+.h2h-nums { display: grid; justify-items: end; flex: none; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.h2h-side[data-mirror='true'] .h2h-nums { justify-items: start; }
+.h2h-pts { font-weight: 500; font-size: var(--fs-base); }
+.h2h-proj { color: var(--ink-3); font-size: var(--fs-xs); white-space: nowrap; }
+.h2h-side[data-state='final'] .h2h-proj, .h2h-side[data-state='idle'] .h2h-proj { visibility: hidden; }
+.h2h-bar { grid-column: 1 / -1; display: flex; height: 3px; border-radius: 999px; overflow: hidden; background: var(--rule-2); margin: 0 0 var(--s-2); }
+.h2h-bar i { display: block; height: 100%; transition: width var(--t-base) var(--ease); }
+.h2h-bar .a { background: var(--green); }
+.h2h-bar .b { background: var(--ink-3); }
+.h2h-bar[data-basis='projection'] { opacity: 0.45; }
+.h2h-total { border-bottom: 0; padding-top: var(--s-3); }
+.h2h-total .h2h-pts { font-family: var(--serif); font-size: 28px; font-weight: 400; }
+.h2h-total .h2h-side { justify-content: flex-start; }
+.h2h-total .h2h-side[data-mirror='true'] { justify-content: flex-start; }
+
+@media (max-width: 480px) {
+  .h2h-head, .h2h-row { grid-template-columns: minmax(0, 1fr) 2rem minmax(0, 1fr); column-gap: var(--s-1); }
+  /* two 160 px columns: the numbers go under the name instead of beside it */
+  .h2h-side { flex-direction: column; align-items: flex-start; gap: var(--s-1); }
+  .h2h-side[data-mirror='true'] { flex-direction: column; align-items: flex-end; }
+  .h2h-nums { display: flex; gap: var(--s-2); align-items: baseline; justify-items: unset; }
+  .h2h-side[data-mirror='true'] .h2h-nums { flex-direction: row-reverse; }
+  .h2h-who .plink { font-size: var(--fs-sm); white-space: normal; line-height: 1.25; }
+  .h2h-meta { white-space: normal; line-height: 1.3; }
+}
+
+/* ---------- who this week hinges on ---------- */
+.hinge-line { margin: 0; }
+.hinge-pos { font-size: var(--fs-xs); white-space: nowrap; }
+.hinge-opp { white-space: nowrap; }
+.hinge-stake { display: inline-flex; align-items: center; gap: var(--s-2); justify-content: flex-end; font-variant-numeric: tabular-nums; }
+.hinge-stake b { min-width: 2ch; text-align: right; font-weight: 500; }
+.hinge-bar { display: inline-block; width: 3.5rem; height: 4px; border-radius: 999px; background: var(--rule-2); overflow: hidden; }
+.hinge-bar i { display: block; height: 100%; background: var(--green); }
+.hinge-stake[data-sign='zero'] b { color: var(--ink-3); font-weight: 400; }
+.hinge-stake[data-sign='neg'] b { color: var(--red); }
+@media (max-width: 480px) { .hinge-bar { display: none; } }

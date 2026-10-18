@@ -1,5 +1,8 @@
 /* Design tokens. Palette from SPEC section 8; the type, corner and spacing rules come from the hybrid Apple look in docs/WEB_APP_NOTES.md.
-   One deliberate light look; there is no dark mode. Fonts, radii and spacing are tokens only: components never hard-code them. */
+   Two looks: the light parchment look is the default; a dark look follows the system appearance and can be forced from the toggle
+   (src/app/theme.ts sets data-theme="light" | "dark" on <html> only when the owner overrides; otherwise the media query decides).
+   Every colour token is defined for both; components use tokens only and never a literal colour (tokens.test.ts enforces it).
+   Fonts, radii and spacing are tokens only too: components never hard-code them. */
 :root {
   --paper: #f4f1eb;
   --sheet: #faf8f3;
@@ -17,6 +20,45 @@
   --gold: #c4922a;
   --gold-ink: #8a6418;
   --gold-soft: #f3e8cf;
+
+  /* text on a solid accent (green, red) or on an ink-coloured chip. On solid green this is the same pair as green on paper, so it stays AA in both themes. */
+  --on-accent: #f4f1eb;
+  /* quieter text on solid green (the banner's small print), and on an ink-coloured chip (the bracket tooltip) */
+  --on-green-2: #cfdcc9;
+  --on-ink-2: #cfc8b6;
+  /* the hover colour for the "you" row in a table (gold-soft, a step deeper) */
+  --gold-soft-hover: #efe0bd;
+
+  /* Surfaces that stay dark in the light look (the ticker band, the game plan card, the live activity pill) and stay a distinct,
+     slightly lifted dark in the dark look. Never ink/paper for these: those two swap with the theme. */
+  --surface-inverse: #1f1d19;
+  --on-inverse: #f4f1eb;
+  --on-inverse-2: #cfc8b6;
+  --rule-inverse: rgba(244, 241, 235, 0.16);
+  --fill-inverse: rgba(244, 241, 235, 0.1);
+  --edge-inverse: transparent;
+  /* accents lightened to read on an inverse surface */
+  --green-on-inverse: #9cc791;
+  --gold-on-inverse: #e0b45c;
+  --red-on-inverse: #eb9b7b;
+
+  /* The game day field. Green in both themes; the markings are white. */
+  --turf: #2d5a27;
+  --turf-2: #285022;
+  --turf-line: rgba(255, 255, 255, 0.7);
+  --turf-num: rgba(255, 255, 255, 0.88);
+  --turf-on: rgba(255, 255, 255, 0.92);
+  --turf-edge: #1f3f1b;
+  --turf-ez-red: #8b3a1a;
+  --turf-ball: #8b4719;
+  --turf-ball-line: #4c270e;
+
+  /* the toilet bowl bracket's warm clay (line, and the crowned card's edge) */
+  --toilet: #b9806a;
+  --toilet-edge: #d3b3a6;
+
+  /* draft board position tints (muted, behind ink text) */
+  --pos-qb: #ecd9d0; --pos-rb: #dbe6d6; --pos-wr: #efe3c5; --pos-te: #d9dfe6; --pos-k: #e4dded; --pos-def: #e2dccf; --pos-x: #ebe6da;
 
   /* body text and every control: the system UI font (San Francisco on Apple devices). Nothing is bundled. */
   --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -59,6 +101,7 @@
   --shadow-pop: 0 6px 24px rgba(31, 29, 25, 0.14), 0 1px 3px rgba(31, 29, 25, 0.08);
   --shadow-sheet: -8px 0 32px rgba(31, 29, 25, 0.16);
   --bar-glass: rgba(250, 248, 243, 0.8);
+  --shadow-thumb: 0 1px 2px rgba(31, 29, 25, 0.1);
   /* motion: one curve, and every duration sits between --t-fast and --t-slow (150 to 550 ms) */
   --t-fast: 150ms;
   --t-base: 300ms;
@@ -67,4 +110,128 @@
   --sidebar-w: 15.5rem;
 
   color-scheme: light;
+}
+
+/* ---------- dark ----------
+   The same block twice: once for the owner's override, once for the system setting (unless the owner forced light).
+   tokens.test.ts keeps the two identical and checks that every colour token above has a dark value. */
+:root[data-theme="dark"] {
+  /* Warm ink, not pure black. Depth comes from surface lightness more than shadow: the page is deepest, raised surfaces are lighter (Apple's
+     dark guidance). AA checked for every text pair in tokens.test.ts. */
+  --paper: #171512;
+  --sheet: #2a2622;
+  --ink: #ece6d9;
+  --ink-2: #b7b0a1;
+  --ink-3: #9a9487;
+  --rule: #3d3830;
+  --rule-2: #26221e;
+
+  --green: #82b878;
+  --green-2: #5f9358;
+  --green-soft: #233220;
+  --red: #e8906f;
+  --red-soft: #3b2318;
+  --gold: #d9a63e;
+  --gold-ink: #e2b863;
+  --gold-soft: #372c16;
+
+  --on-accent: #171512;
+  --on-green-2: #1f3a1b;
+  --on-ink-2: #4a453d;
+  --gold-soft-hover: #46381a;
+
+  --surface-inverse: #35312b;
+  --on-inverse: #f1ebde;
+  --on-inverse-2: #c7c0b0;
+  --rule-inverse: rgba(241, 235, 222, 0.16);
+  --fill-inverse: rgba(241, 235, 222, 0.09);
+  --edge-inverse: rgba(255, 248, 235, 0.07);
+  --green-on-inverse: #94c78a;
+  --gold-on-inverse: #e6b95c;
+  --red-on-inverse: #eb9b7b;
+
+  --turf: #2d5a27;
+  --turf-2: #285022;
+  --turf-line: rgba(255, 255, 255, 0.7);
+  --turf-num: rgba(255, 255, 255, 0.88);
+  --turf-on: rgba(255, 255, 255, 0.92);
+  --turf-edge: #1f3f1b;
+  --turf-ez-red: #8b3a1a;
+  --turf-ball: #8b4719;
+  --turf-ball-line: #4c270e;
+
+  --toilet: #cf9b85;
+  --toilet-edge: #7a5a4c;
+
+  --pos-qb: #3d2a22; --pos-rb: #26331f; --pos-wr: #3a3019; --pos-te: #232c37; --pos-k: #302838; --pos-def: #302b22; --pos-x: #2a2722;
+
+  /* deeper, softer shadows; the hairline ring keeps a lifted layer's edge when a shadow cannot be seen */
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 248, 235, 0.06);
+  --shadow-sheet: -8px 0 32px rgba(0, 0, 0, 0.55);
+  --bar-glass: rgba(42, 38, 34, 0.78);
+  --shadow-thumb: 0 1px 2px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Warm ink, not pure black. Depth comes from surface lightness more than shadow: the page is deepest, raised surfaces are lighter (Apple's
+       dark guidance). AA checked for every text pair in tokens.test.ts. */
+    --paper: #171512;
+    --sheet: #2a2622;
+    --ink: #ece6d9;
+    --ink-2: #b7b0a1;
+    --ink-3: #9a9487;
+    --rule: #3d3830;
+    --rule-2: #26221e;
+
+    --green: #82b878;
+    --green-2: #5f9358;
+    --green-soft: #233220;
+    --red: #e8906f;
+    --red-soft: #3b2318;
+    --gold: #d9a63e;
+    --gold-ink: #e2b863;
+    --gold-soft: #372c16;
+
+    --on-accent: #171512;
+    --on-green-2: #1f3a1b;
+    --on-ink-2: #4a453d;
+    --gold-soft-hover: #46381a;
+
+    --surface-inverse: #35312b;
+    --on-inverse: #f1ebde;
+    --on-inverse-2: #c7c0b0;
+    --rule-inverse: rgba(241, 235, 222, 0.16);
+    --fill-inverse: rgba(241, 235, 222, 0.09);
+    --edge-inverse: rgba(255, 248, 235, 0.07);
+    --green-on-inverse: #94c78a;
+    --gold-on-inverse: #e6b95c;
+    --red-on-inverse: #eb9b7b;
+
+    --turf: #2d5a27;
+    --turf-2: #285022;
+    --turf-line: rgba(255, 255, 255, 0.7);
+    --turf-num: rgba(255, 255, 255, 0.88);
+    --turf-on: rgba(255, 255, 255, 0.92);
+    --turf-edge: #1f3f1b;
+    --turf-ez-red: #8b3a1a;
+    --turf-ball: #8b4719;
+    --turf-ball-line: #4c270e;
+
+    --toilet: #cf9b85;
+    --toilet-edge: #7a5a4c;
+
+    --pos-qb: #3d2a22; --pos-rb: #26331f; --pos-wr: #3a3019; --pos-te: #232c37; --pos-k: #302838; --pos-def: #302b22; --pos-x: #2a2722;
+
+    /* deeper, softer shadows; the hairline ring keeps a lifted layer's edge when a shadow cannot be seen */
+    --scrim: rgba(0, 0, 0, 0.55);
+    --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 248, 235, 0.06);
+    --shadow-sheet: -8px 0 32px rgba(0, 0, 0, 0.55);
+    --bar-glass: rgba(42, 38, 34, 0.78);
+    --shadow-thumb: 0 1px 2px rgba(0, 0, 0, 0.45);
+
+    color-scheme: dark;
+  }
 }

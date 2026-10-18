@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { formatPoints1 } from '../../app/format';
 import { useScenario } from '../../app/modelContext';
+import { AvatarName } from '../../components/Avatar';
 import { PlayerLink } from '../../components/PlayerLink';
 import { MatchupGrade } from '../../components/MatchupGrade';
 import { MoreColumns } from '../../components/MoreColumns';
@@ -10,6 +11,7 @@ import { useMoreColumns } from '../../components/useMoreColumns';
 import { SLOT_LABEL } from '../../engine';
 import type { Engine, ModelPlayer, Scenario } from '../../engine';
 import { PlayerTags } from './PlayerTags';
+import './team.css';
 
 function pinned(s: Scenario, pid: string): Scenario {
   if (s.pins.includes(pid)) return { ...s, pins: s.pins.filter((x) => x !== pid) };
@@ -73,7 +75,7 @@ export function LineupCard({ engine }: { engine: Engine }) {
               return (
                 <tr key={p.pid} className={r.start ? undefined : 'bn'}>
                   <td className="micro">{SLOT_LABEL[r.slot] ?? r.slot}</td>
-                  <td><PlayerLink pid={p.pid} name={p.name} /> <span className="dim">{p.pos} · {p.nfl ?? ''}</span><PlayerTags p={p} /></td>
+                  <td><AvatarName pid={p.pid} name={p.name} pos={p.pos} team={p.nfl ?? undefined} size={28}><PlayerLink pid={p.pid} name={p.name} /> <span className="dim">{p.pos}<span className="hide-sm"> · {p.nfl ?? ''}</span></span><PlayerTags p={p} /></AvatarName></td>
  {more.on && <td><MatchupGrade opponent={p.opp[week]} dvp={p.dvp[week]} /></td>}
                   {more.on && <td>
                     <div className="rng" title={`floor ${formatPoints1(lo)} · expected ${formatPoints1(v)} · ceiling ${formatPoints1(hi)}`}>
@@ -85,12 +87,12 @@ export function LineupCard({ engine }: { engine: Engine }) {
                   <td className={`n${r.start ? '' : ' dim'}`}>{formatPoints1(v)}</td>
                   <td className="n">
                     {played ? <span className="dim">played</span> : (
-                      <>
+                      <span className="tog-pair">
                         <button type="button" className="tog pin" aria-pressed={scenario.pins.includes(p.pid)}
-                          aria-label={`pin ${p.name}: always start`} onClick={() => setScenario((s) => pinned(s, p.pid))}>pin</button>{' '}
+                          aria-label={`pin ${p.name}: always start`} onClick={() => setScenario((s) => pinned(s, p.pid))}>pin</button>
                         <button type="button" className="tog bench" aria-pressed={scenario.benches.includes(p.pid)}
                           aria-label={`bench ${p.name}: never start`} onClick={() => setScenario((s) => benched(s, p.pid))}>bench</button>
-                      </>
+                      </span>
                     )}
                   </td>
                 </tr>

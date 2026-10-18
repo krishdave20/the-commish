@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import type { LoadModel } from '../app/loadModel';
-import type { BracketRow, DraftPick, Matchup, PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient, ProjectionRow, ScoreGame, TrendingRow } from '../data';
+import type { BracketRow, DraftPick, Matchup, PlayersMap, SleeperClient, FantasyCalcRow, NflverseClient, ProjectionRow, ScoreGame, TrendingRow, WeekStats } from '../data';
 import { syntheticPool } from '../engine/draft/test-helpers';
 import { buildRankings, createMock, draftOrderFor } from '../engine';
 import { handModel } from '../engine/test-helpers';
@@ -383,6 +383,8 @@ export interface FakeSleeperOpts {
   bracketFails?: boolean;
   /** game day: what the live endpoints answer (functions, so a test can change them between polls). Without it the client has no live endpoints. */
   live?: FakeLive;
+  /** the players file `sleeper.players()` answers with (default: samplePlayersFile()) */
+  playersFile?: PlayersMap;
 }
 
 /** What the fake game day endpoints serve, by week. */
@@ -390,6 +392,8 @@ export interface FakeLive {
   matchups: (week: number) => Matchup[];
   scores: (week: number) => ScoreGame[];
   projections?: (week: number) => ProjectionRow[];
+  /** the week's stat lines (nfl page: league leaders and the game drawer); default none */
+  stats?: (week: number) => WeekStats;
 }
 
 /** The Sleeper client pieces the app reads outside the engine's pull: players, FantasyCalc, trending adds, past seasons and draft inputs. */
@@ -401,7 +405,7 @@ export function createFakeSleeper(o: FakeSleeperOpts = {}) {
     return s;
   };
   return {
-    players: vi.fn(async () => loaded(samplePlayersFile())),
+    players: vi.fn(async () => loaded(o.playersFile ?? samplePlayersFile())),
     fantasyCalc: vi.fn(async () => {
       if (o.fantasyCalcFails) throw new Error('FantasyCalc is down');
       return loaded(o.fantasyCalcRows ?? sampleFantasyCalc());
@@ -430,6 +434,11 @@ export function createFakeSleeper(o: FakeSleeperOpts = {}) {
       scores: vi.fn(async (_season: string, week: number) => loaded(o.live!.scores(week))),
       projections: vi.fn(async (_season: string, week: number) => loaded(o.live!.projections?.(week) ?? [])),
       schedule: vi.fn(async () => loaded([])),
+      pastScores: vi.fn(async (_season: string, week: number) => loaded(o.live!.scores(week))),
+      matchups: vi.fn(async (_id: string, week: number) => loaded(o.live!.matchups(week))),
+      stats: vi.fn(async (_season: string, week: number) => loaded(o.live!.stats?.(week) ?? {})),
+      liveStats: vi.fn(async (_season: string, week: number) => loaded(o.live!.stats?.(week) ?? {})),
+      pastStats: vi.fn(async (_season: string, week: number) => loaded(o.live!.stats?.(week) ?? {})),
     } : {}),
   } as unknown as SleeperClient & {
     players: ReturnType<typeof vi.fn>; fantasyCalc: ReturnType<typeof vi.fn>; trending: ReturnType<typeof vi.fn>;
@@ -668,4 +677,25 @@ export function sampleLiveProjections(mu: Record<string, number> = {}): Projecti
     t3qb: ['QB', 17], t3rb: ['RB', 13], t3wr: ['WR', 10], t4qb: ['QB', 15], t4rb: ['RB', 10], t4wr: ['WR', 8],
   };
   return Object.entries(base).map(([pid, [pos, v]]) => ({ player_id: pid, stats: { pts_ppr: mu[pid] ?? v }, player: { position: pos, first_name: pid, last_name: 'x' } }));
+}
+
+/** One game of Sleeper's scores feed with real team codes, for the nfl page tests. `q` is points by quarter [away, home]; the totals are their sums
+    unless `score` is given. */
+export function nflScoreGame(o: {
+  id: string; away: string; home: string; state?: FakeGameState; kickoff: number; score?: [number, number]; q?: [number[], number[]];
+  clock?: [string, string]; channel?: string;
+}): ScoreGame {
+  const state = o.state ?? 'final';
+  const [aq, hq] = o.q ?? [[], []];
+  const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+  const away = o.score?.[0] ?? sum(aq), home = o.score?.[1] ?? sum(hq);
+  const meta: Record<string, unknown> = {
+    home_team: o.home, away_team: o.away, home_score: state === 'pre' ? undefined : home, away_score: state === 'pre' ? undefined : away,
+    quarter: state === 'pre' ? '' : state === 'final' ? 'F' : (o.clock ?? ['2', '7:30'])[0], time_remaining: state === 'live' ? (o.clock ?? ['2', '7:30'])[1] : '00:00',
+    is_in_progress: state === 'live', is_over: state === 'final', channel: o.channel ?? 'FOX', home_record: '3-2-0', away_record: '2-3-0',
+    stadium_details: { city: 'Somewhere' },
+  };
+  aq.forEach((v, i) => { meta[`away_score_quarter${i + 1}`] = v; });
+  hq.forEach((v, i) => { meta[`home_score_quarter${i + 1}`] = v; });
+  return { game_id: o.id, status: state === 'pre' ? 'pre_game' : state === 'live' ? 'in_game' : 'complete', start_time: o.kickoff, metadata: meta };
 }

@@ -1,5 +1,8 @@
+import { useMemo } from 'react';
 import { interpolateRgb, range, rgb, sum } from 'd3';
 import { formatOdds, ordinal } from '../../app/format';
+import { readToken } from '../../app/theme';
+import { useTheme } from '../../app/useTheme';
 
 export interface SeedRow {
   id: string | number;
@@ -19,9 +22,20 @@ interface Props {
   sortRows?: boolean;
 }
 
-const GREEN = interpolateRgb('#e9e4d8', '#2d5a27');
-const GOLD = interpolateRgb('#e9e4d8', '#c4922a');
-const RED = interpolateRgb('#e9e4d8', '#8b3a1a');
+/** The cells are drawn in JS (a d3 colour ramp), so the colours are read off the page's tokens and read again when the theme changes.
+    The fallbacks are the light values, for a page that has no stylesheet (a test, a server render). */
+const FALLBACK = { base: '#e9e4d8', green: '#2d5a27', gold: '#c4922a', red: '#8b3a1a', paper: '#f4f1eb', ink: '#1f1d19' };
+function palette() {
+  const t = (name: string, fb: string) => readToken(name, fb);
+  const base = t('--rule-2', FALLBACK.base);
+  const green = t('--green', FALLBACK.green), gold = t('--gold', FALLBACK.gold), red = t('--red', FALLBACK.red);
+  return {
+    green, gold, red,
+    ramps: { green: interpolateRgb(base, green), gold: interpolateRgb(base, gold), red: interpolateRgb(base, red) },
+    paper: t('--paper', FALLBACK.paper), ink: t('--ink', FALLBACK.ink),
+  };
+}
+type Palette = ReturnType<typeof palette>;
 
 const NAME_W = 150;
 const CELL_W = 44;
@@ -29,11 +43,8 @@ const CELL_H = 24;
 const GAP = 2;
 const HEAD_H = 20;
 
-const PAPER = '#faf8f3';
-const INK = '#1f1d19';
-
-/** Numbers on a cell are drawn in whichever of paper and ink reads better on its fill. */
-function textOn(fill: string): string {
+/** Numbers on a cell are drawn in whichever of paper and ink (read off the tokens) reads better on its fill. */
+function textOn(fill: string, paper: string, ink: string): string {
   const lum = (c: string) => {
     const { r, g, b } = rgb(c);
     const f = (v: number) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; };
@@ -41,7 +52,7 @@ function textOn(fill: string): string {
   };
   const l = lum(fill);
   const contrast = (o: string) => { const m = lum(o); return (Math.max(l, m) + 0.05) / (Math.min(l, m) + 0.05); };
-  return contrast(PAPER) >= contrast(INK) ? PAPER : INK;
+  return contrast(paper) >= contrast(ink) ? paper : ink;
 }
 
 function cellText(v: number): string {
@@ -51,6 +62,8 @@ function cellText(v: number): string {
 
 /** Teams by seeds: darker means likelier. Green cells are division-winner seeds, gold wild cards, red a miss. */
 export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = true }: Props) {
+  const { resolved } = useTheme();
+  const pal: Palette = useMemo(() => (resolved ? palette() : palette()), [resolved]);
   const nSeeds = rows.reduce((m, r) => Math.max(m, r.seeds.length), 0);
   const cols = nSeeds + (showOut ? 1 : 0);
   const ordered = sortRows ? [...rows].sort((a, b) => sum(b.seeds) - sum(a.seeds)) : rows;
@@ -91,7 +104,7 @@ export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = tr
               </text>
               {values.map((v, i) => {
                 const k = Math.pow(Math.min(1, Math.max(0, v)), 0.6);
-                const fill = (i < divisionSeeds ? GREEN : i < nSeeds ? GOLD : RED)(k);
+                const fill = (i < divisionSeeds ? pal.ramps.green : i < nSeeds ? pal.ramps.gold : pal.ramps.red)(k);
                 const what = i < nSeeds ? `${ordinal(i + 1)} seed` : 'miss playoffs';
                 return (
                   <g key={i}>
@@ -103,7 +116,7 @@ export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = tr
                     </rect>
                     <text
                       x={colX(i) + CELL_W / 2} y={y + CELL_H / 2 + 4} textAnchor="middle" className="heat-val"
-                      fill={textOn(fill)} pointerEvents="none"
+                      fill={textOn(fill, pal.paper, pal.ink)} pointerEvents="none"
                     >
                       {cellText(v)}
                     </text>
@@ -140,9 +153,9 @@ export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = tr
       </table>
       </div>
       <div className="legend heat-legend">
-        <span><span className="swatch" style={{ background: '#2d5a27' }} />division winner seeds</span>
-        <span><span className="swatch" style={{ background: '#c4922a' }} />wild cards</span>
-        {showOut && <span><span className="swatch" style={{ background: '#8b3a1a' }} />misses the playoffs</span>}
+        <span><span className="swatch" style={{ background: 'var(--green)' }} />division winner seeds</span>
+        <span><span className="swatch" style={{ background: 'var(--gold)' }} />wild cards</span>
+        {showOut && <span><span className="swatch" style={{ background: 'var(--red)' }} />misses the playoffs</span>}
       </div>
     </div>
   );

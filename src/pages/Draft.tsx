@@ -9,6 +9,7 @@ import { usePageTitle } from '../app/usePageTitle';
 import { useWantsReducedMotion } from '../components/motion';
 import { Attribution } from '../components/Attribution';
 import { PageHeader } from '../components/PageHeader';
+import { MomentBanner } from '../components/MomentBanner';
 import { PageSkeleton } from '../components/Skeleton';
 import { PageTabs } from '../components/PageTabs';
 import { inferDraftMode, liveSnapshot } from '../engine';
@@ -146,6 +147,7 @@ function DraftPage() {
     <div className="page page-fade">
       <PageHeader kicker={league ? `${PAGES.draft.kicker} · ${league.season} season` : PAGES.draft.kicker} title={PAGES.draft.name} data={header} />
 
+      <MomentBanner page="draft" />
       {!active?.leagueId && <p className="note">no league is selected yet. use “add an account” in the sidebar to follow one.</p>}
       {active?.leagueId && !data && !bundle.loading && <p className="note neg-c" role="status">league data is not available yet. try refresh.</p>}
       {league && !room && (

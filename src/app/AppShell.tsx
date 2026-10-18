@@ -2,11 +2,13 @@ import { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { SkipLink } from '../components/SkipLink';
+import { LiveActivity } from '../components/live-activity';
 import { Ticker } from '../components/ticker/Ticker';
 import { useTickerMode } from '../components/ticker/useTickerMode';
 import { useActive } from './hooks';
 import { LiveProvider } from './live/LiveProvider';
-import { Sidebar } from './Sidebar';
+import { MomentsProvider } from './moments/MomentsProvider';
+import { Sidebar, SiteFooter } from './Sidebar';
 import { SIGN_IN_PATH } from './routes';
 import { useScrollRegions } from './useScrollRegions';
 import { usePageTitle } from './usePageTitle';
@@ -29,11 +31,13 @@ function Frame() {
       <SkipLink />
       <div className="shell" data-ticker={ticker}>
         <Ticker />
+        <LiveActivity />
         <div className="app">
           <Sidebar />
           <main className="main" id="main" tabIndex={-1} ref={main} key={location.pathname}>
             <ErrorBoundary key={location.pathname}><Outlet /></ErrorBoundary>
           </main>
+          <SiteFooter />
         </div>
       </div>
     </>
@@ -47,5 +51,6 @@ function Frame() {
 export function AppShell() {
   const { data: active } = useActive();
   if (!active) return <Navigate to={SIGN_IN_PATH} replace />;
-  return <LiveProvider><Frame /></LiveProvider>;
+  // one moments computation shared by the live activity pill, the page banners and the huddle
+  return <LiveProvider><MomentsProvider><Frame /></MomentsProvider></LiveProvider>;
 }

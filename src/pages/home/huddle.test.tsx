@@ -134,21 +134,15 @@ describe('huddle: in season (live phase)', () => {
     expect(screen.queryByRole('heading', { name: 'this week’s matchup' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'your path' })).not.toBeInTheDocument();
 
-    // alerts reuse the locker room's logic, minus the waiver adds (they have their own card)
-    const alerts = section('start/sit alerts');
-    expect(within(alerts).getByText('your lineup is already set right.')).toBeInTheDocument();
-    expect(alerts).not.toHaveTextContent('consider adding');
+    // the start/sit alerts and the waiver adds are in the game plan now, not cards of their own
+    expect(screen.queryByRole('heading', { name: 'start/sit alerts' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'top waiver adds' })).not.toBeInTheDocument();
+    const plan = section('your game plan');
+    expect(within(plan).getByRole('list', { name: 'Top actions right now' })).toBeInTheDocument();
+    expect(within(plan).getAllByRole('listitem').length).toBeLessThanOrEqual(3);
 
     // a clean bill of health is not news: no injury card
     expect(screen.queryByRole('heading', { name: 'injury flags' })).not.toBeInTheDocument();
-
-    const wire = section('top waiver adds');
-    await waitFor(() => expect(within(wire).getByRole('list', { name: 'Top waiver adds' })).toBeInTheDocument());
-    expect(wire).toHaveTextContent('Free Agent Fran');
-    expect(wire).toHaveTextContent('drop Backup Wideout');
-    expect(wire).toHaveTextContent(/\+\d/);
-    expect(within(wire).getAllByRole('listitem').length).toBeLessThanOrEqual(3);
-    expect(within(wire).getByRole('link', { name: /open the waiver wire/ })).toHaveAttribute('href', '/waivers');
 
     // top takes: only my own players'
     const takes = section('hot takes for your players');
@@ -214,14 +208,6 @@ describe('huddle: in season (live phase)', () => {
     await waitFor(() => expect(within(inj).getByText('Questionable')).toBeInTheDocument());
     expect(inj).toHaveTextContent('Walt Wideout');
     expect(inj).toHaveTextContent('Knee');
-  });
-
-  it('“try” on a waiver add updates the what-if and opens the locker room', async () => {
-    const { user } = renderApp({ linked, buildTakes: stubBuildTakes() });
-    const wire = (await screen.findByRole('heading', { level: 2, name: 'top waiver adds' })).closest('section')!;
-    await user.click(await within(wire).findByRole('button', { name: /try adding Free Agent Fran/ }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'locker room' })).toBeInTheDocument();
-    expect(JSON.parse(window.localStorage.getItem('wr.scenario.L1')!).adds).toEqual(['fa1']);
   });
 
   it('says so when none of my players has a take', async () => {
@@ -584,7 +570,7 @@ describe('huddle: drafting', () => {
 
   it('says when the draft is paused', async () => {
     renderApp({ linked, api: apiWith(live('paused')), buildTakes: stubBuildTakes() });
-    expect(await screen.findByText('the draft is paused')).toBeInTheDocument();
+    expect((await screen.findAllByText('the draft is paused')).length).toBeGreaterThan(0);
   });
 
   it('can be previewed', async () => {
