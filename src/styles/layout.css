@@ -1,4 +1,4 @@
-/* App shell: left sidebar + content. Under 760px the sidebar becomes a top bar. */
+/* App shell: left sidebar + content. Under 760px the sidebar becomes a sticky top bar with a menu button. */
 .app { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
 
 .sidebar {
@@ -10,7 +10,7 @@
 }
 .wordmark { font-family: var(--serif); font-size: 30px; line-height: 1; color: var(--ink); text-decoration: none; letter-spacing: -0.005em; }
 .wordmark:hover { color: var(--ink); }
-.wordmark small { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.09em; color: var(--ink-3); margin-top: 4px; }
+.wordmark small { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.09em; color: var(--ink-2); margin-top: 4px; }
 
 .nav { display: grid; gap: 1px; }
 .nav a {
@@ -19,10 +19,15 @@
   border-left: 2px solid transparent;
 }
 .nav a:hover { background: var(--paper); color: var(--ink); }
+.nav a[aria-current='page'] { font-weight: 500; }
 .nav a[aria-current='page'] { color: var(--ink); background: var(--paper); border-left-color: var(--green); }
 
+/* on a wide screen the menu is just its children: the sidebar's own column */
+.menu { display: contents; }
+.menu-btn { display: none; }
+
 .nav-sub { margin-top: -10px; }
-.nav-sub a { font-size: 11px; color: var(--ink-3); }
+.nav-sub a { font-size: 11px; color: var(--ink-2); }
 .switcher { margin-top: auto; display: grid; gap: 10px; border-top: 1px solid var(--rule); padding-top: 14px; }
 .switcher select { width: 100%; }
 .switcher .who { font-family: var(--serif); font-size: 20px; line-height: 1.1; }
@@ -48,22 +53,43 @@
 .section:first-of-type { border-top: 0; padding-top: 0; }
 
 @media (max-width: 760px) {
-  .app { grid-template-columns: minmax(0, 1fr); }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  html { scroll-padding-top: 4.5rem; }
   .sidebar {
-    position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--rule);
-    padding: 12px 16px; gap: 10px;
-    display: grid; grid-template-columns: 1fr auto; align-items: center;
+    position: sticky; top: 0; z-index: 30; height: auto; overflow: visible; border-right: 0; border-bottom: 1px solid var(--rule);
+    padding: 8px max(16px, env(safe-area-inset-left, 0px)); gap: 12px;
+    display: flex; flex-direction: row; align-items: center; justify-content: space-between;
   }
-  .wordmark { font-size: 24px; }
+  .wordmark { font-size: 24px; display: inline-flex; align-items: center; min-height: 40px; }
   .wordmark small { display: none; }
-  .nav { grid-column: 1 / -1; grid-row: 2; display: flex; overflow-x: auto; gap: 2px; padding-bottom: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-  .nav-sub { grid-row: auto; margin-top: 0; }
-  .nav a { white-space: nowrap; padding: 6px 9px; border-left: 0; border-bottom: 2px solid transparent; }
-  .nav a[aria-current='page'] { border-bottom-color: var(--green); }
-  .switcher { grid-column: 1 / -1; grid-row: 3; margin-top: 0; padding-top: 10px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; }
-  .switcher > div:first-child .micro { display: none; }
-  .switcher .who { font-size: 17px; }
-  .switcher label.ctl { flex: 1 1 9rem; }
-  .switcher .add { margin-left: auto; }
-  .main { padding-top: 20px; }
+
+  .menu-btn {
+    display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; max-width: 14rem;
+    font: inherit; font-size: 12px; letter-spacing: 0.06em; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--ink-3); border-radius: var(--r); cursor: pointer;
+  }
+  .menu-ico { width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); flex: none; }
+  .sidebar[data-open='true'] .menu-ico { transform: translateY(1px) rotate(-135deg); }
+
+  /* the menu opens over the page, so nothing underneath moves */
+  .menu {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; gap: 14px; align-content: start;
+    background: var(--sheet); border-bottom: 1px solid var(--rule); box-shadow: 0 10px 18px rgba(31, 29, 25, 0.1);
+    padding: 12px max(16px, env(safe-area-inset-left, 0px)) 18px; max-height: calc(100dvh - 3.6rem); overflow-y: auto; overscroll-behavior: contain;
+  }
+  .sidebar[data-open='true'] .menu { display: grid; }
+  .nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .nav a {
+    display: flex; align-items: center; min-height: 44px; padding: 8px 12px; font-size: 12.5px;
+    border: 1px solid var(--rule-2); border-left: 3px solid transparent; background: var(--sheet);
+  }
+  .nav a[aria-current='page'] { border-color: var(--rule); border-left-color: var(--green); background: var(--paper); }
+  .nav-sub { grid-template-columns: minmax(0, 1fr); margin-top: 0; }
+  .nav-sub a { font-size: 12px; color: var(--ink-2); }
+  .switcher { margin-top: 0; padding-top: 14px; display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+  .switcher > div:first-child { flex: 1 1 100%; }
+  .switcher .who { font-size: 20px; }
+  .switcher label.ctl { flex: 1 1 12rem; }
+  .switcher .add { margin-left: auto; padding: 10px 0; }
+  .main { padding-top: 20px; padding-bottom: 48px; }
 }

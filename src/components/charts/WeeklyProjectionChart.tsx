@@ -65,7 +65,7 @@ export function WeeklyProjectionChart({ weeks, width: fallbackWidth = 640, heigh
         <path
           className="expected" d={expected} fill="none" stroke="var(--green)" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"
           pathLength={1}
-          style={reduced ? undefined : { strokeDasharray: 1, strokeDashoffset: grown ? 0 : 1, transition: 'stroke-dashoffset 0.9s cubic-bezier(0.2, 0.7, 0.2, 1)' }}
+          style={reduced ? undefined : { strokeDasharray: 1, strokeDashoffset: grown ? 0 : 1, transition: 'stroke-dashoffset var(--t-slow) var(--ease)' }}
         />
         {weeks.filter(has).map((w) => (
           <circle key={`e${w.week}`} className="exp-dot" cx={cx(w.week)} cy={y(w.expected)} r={2.4} fill="var(--green)">

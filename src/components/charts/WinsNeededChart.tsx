@@ -1,5 +1,5 @@
 import { max, scaleBand, scaleLinear, sum } from 'd3';
-import { formatOdds } from '../../app/format';
+import { compact, formatCount, formatOdds } from '../../app/format';
 import { useGrown, useReducedMotion } from '../motion';
 import { useWidth } from './useWidth';
 
@@ -35,12 +35,15 @@ export function WinsNeededChart({ buckets, width: fallbackWidth = 480, height = 
   const y = scaleLinear().domain([0, 1]).range([height - M.b, M.t]);
   const base = height - M.b;
   const biggest = max(data, (d) => d.sims) ?? 1;
+  // labels need room: on a phone a ten-bar chart has 26px a bar, so the percent sign and ">" are left off
+  const roomy = x.bandwidth() >= 38;
+  const label = (p: number) => (roomy ? formatOdds(p) : p >= 1 ? '100' : String(Math.min(99, Math.round(p * 100))));
+  const summary = `Chance of making the playoffs by final win total: ${data.map((d) => `${d.wins} wins ${formatOdds(d.p)}`).join(', ')}`;
 
   return (
     <div className="chart" ref={ref}>
       <svg
-        viewBox={`0 0 ${width} ${height}`} width="100%" role="img"
-        aria-label={`Chance of making the playoffs by final win total, ${data[0].wins} to ${data[data.length - 1].wins} wins`}
+        viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label={summary}
       >
         {[0, 0.25, 0.5, 0.75, 1].map((t) => (
           <g key={t}>
@@ -62,20 +65,20 @@ export function WinsNeededChart({ buckets, width: fallbackWidth = 480, height = 
                   transformBox: 'fill-box',
                   transformOrigin: '50% 100%',
                   transform: `scaleY(${grown ? 1 : 0})`,
-                  transition: reduced ? undefined : `transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) ${i * 40}ms`,
+                  transition: reduced ? undefined : `transform var(--t-slow) var(--ease) ${Math.min(i, 5) * 30}ms`,
                 }}
               >
-                <title>{`${d.wins} final wins: ${formatOdds(d.p)} make the playoffs, in ${d.made.toLocaleString('en-US')} of ${d.sims.toLocaleString('en-US')} simulated seasons (${(share * 100).toFixed(1)}%)`}</title>
+                <title>{`${d.wins} final wins: ${formatOdds(d.p)} make the playoffs, in ${formatCount(d.made)} of ${formatCount(d.sims)} simulated seasons (${(share * 100).toFixed(1)}%)`}</title>
               </rect>
               {share >= 0.02 && (
-                <text className="ax" x={bx + x.bandwidth() / 2} y={y(d.p) - 6} textAnchor="middle" fill="var(--ink)">{formatOdds(d.p)}</text>
+                <text className="ax" x={bx + x.bandwidth() / 2} y={y(d.p) - 6} textAnchor="middle" fill="var(--ink)">{label(d.p)}</text>
               )}
               <text className="ax" x={bx + x.bandwidth() / 2} y={height - 24} textAnchor="middle">{d.wins}W</text>
               <text
                 className="ax sims" x={bx + x.bandwidth() / 2} y={height - 11} textAnchor="middle" fontSize={9}
-                opacity={0.45 + 0.55 * (d.sims / biggest)}
+                opacity={0.72 + 0.28 * (d.sims / biggest)}
               >
-                {d.sims.toLocaleString('en-US')}
+                {roomy ? formatCount(d.sims) : compact(d.sims)}
               </text>
             </g>
           );

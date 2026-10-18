@@ -5,6 +5,7 @@ import { FEATURE } from '../../app/names';
 import { AgeBars } from '../../components/charts/AgeBars';
 import type { AgeRow } from '../../components/charts/AgeBars';
 import type { LeagueBundle } from '../../data';
+import { formatNum } from '../../app/format';
 
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K'];
 
@@ -41,7 +42,7 @@ export function AgeProfile({ bundle, userId }: { bundle: LeagueBundle; userId: s
         : (
           <>
             <p className="take">
-              your roster averages {overall!.toFixed(1)} years old{leagueOverall !== null ? `; the league’s rostered players average ${leagueOverall.toFixed(1)}` : ''}.
+              your roster averages {formatNum(overall!)} years old{leagueOverall !== null ? `; the league’s rostered players average ${formatNum(leagueOverall)}` : ''}.
             </p>
             <AgeBars rows={rows} />
           </>

@@ -94,15 +94,15 @@ describe('scouting report search (/players)', () => {
 
     await user.click(screen.getByRole('radio', { name: 'all players' }));
     await user.type(screen.getByLabelText('search players'), 'walt');
-    await user.click(await screen.findByRole('button', { name: 'Add Walt Wideout to watchlist' }));
+    await user.click(await screen.findByRole('button', { name: 'watch Walt Wideout' }));
     expect(JSON.parse(window.localStorage.getItem(WATCHLIST_KEY)!)).toEqual(['t1wr']);
-    expect(screen.getByRole('button', { name: 'Remove Walt Wideout from watchlist' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'watching Walt Wideout' })).toHaveAttribute('aria-pressed', 'true');
 
     await user.clear(screen.getByLabelText('search players'));
     await user.click(screen.getByRole('radio', { name: 'watchlist' }));
     const table = await screen.findByRole('table', { name: 'Player search results' });
     expect(within(table).getAllByRole('row')).toHaveLength(1 + 1);
-    await user.click(within(table).getByRole('button', { name: 'Remove Walt Wideout from watchlist' }));
+    await user.click(within(table).getByRole('button', { name: 'watching Walt Wideout' }));
     expect(JSON.parse(window.localStorage.getItem(WATCHLIST_KEY)!)).toEqual([]);
   });
 

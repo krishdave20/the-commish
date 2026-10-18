@@ -117,18 +117,20 @@ describe('the bracket on the playoff picture', () => {
 
   it('the toilet bowl: click the team that gets flushed; it advances; the last one standing is crowned', async () => {
     const { user } = await raceReady();
+    // the projected seeds can still move while the first simulation runs, and a re-seed would clear a pick made too early
+    await waitFor(() => expect(screen.queryAllByText(/simming/)).toHaveLength(0));
     await user.click(toggle('the toilet bowl'));
     const b = bowl();
     // the four teams that miss the playoffs, worst first: seed 1 is the worst
     expect(round1(b)).toHaveLength(2);
-    const flush = within(b).getAllByRole('button', { name: /^flush / });
+    const flush = within(b).getAllByRole('button', { name: /, flush$/ });
     expect(flush.length).toBeGreaterThanOrEqual(4);
-    await user.click(within(b).getAllByRole('button', { name: /^flush Team \d, seed 1,/ })[0]!);
-    expect(within(b).getByText('flushed')).toBeInTheDocument();
+    await user.click(within(b).getAllByRole('button', { name: /^seed 1, Team \d,.*, flush$/ })[0]!);
+    expect(await within(b).findByText('flushed')).toBeInTheDocument();
     // picking a flush in game 2, then the final
-    const second = within(b).getAllByRole('button', { name: /^flush Team \d, seed 2,/ })[0]!;
+    const second = within(b).getAllByRole('button', { name: /^seed 2, Team \d,.*, flush$/ })[0]!;
     await user.click(second);
-    const finalists = within(b).getAllByRole('button', { name: /^flush .*round 2/ });
+    const finalists = within(b).getAllByRole('button', { name: /round 2.*, flush$/ });
     await user.click(finalists[0]!);
     expect(b.querySelector('.br-champ')).toHaveAttribute('data-state', 'crowned');
     expect(b).toHaveTextContent('toilet bowl champ');
@@ -191,10 +193,10 @@ describe('the front office setting', () => {
     const b = screen.getByRole('heading', { level: 2, name: 'the consolation prize' }).closest('section')!;
     expect(within(b).getByText('consolation bracket: winners advance')).toBeInTheDocument();
     // winners advance: the button says advance, not flush; the league agrees, so there is no "official bracket" note
-    expect(within(b).getAllByRole('button', { name: /^advance Team/ }).length).toBeGreaterThan(0);
-    expect(within(b).queryByRole('button', { name: /^flush / })).not.toBeInTheDocument();
+    expect(within(b).getAllByRole('button', { name: /, advance$/ }).length).toBeGreaterThan(0);
+    expect(within(b).queryByRole('button', { name: /, flush$/ })).not.toBeInTheDocument();
     expect(b).not.toHaveTextContent('official losers bracket');
-    await user.click(within(b).getAllByRole('button', { name: /^advance Team \d, seed 1,/ })[0]!);
+    await user.click(within(b).getAllByRole('button', { name: /^seed 1, Team \d,.*, advance$/ })[0]!);
     expect(within(b).queryByText('flushed')).not.toBeInTheDocument();
   });
 
@@ -214,7 +216,7 @@ describe('the front office setting', () => {
     await b.user.click(await screen.findByRole('radio', { name: 'the toilet bowl' }));
     expect(screen.getByRole('heading', { level: 2, name: 'the toilet bowl' })).toBeInTheDocument();
     expect(bowl()).not.toHaveTextContent('official losers bracket');
-    expect(within(bowl()).getAllByRole('button', { name: /^flush / }).length).toBeGreaterThan(0);
+    expect(within(bowl()).getAllByRole('button', { name: /, flush$/ }).length).toBeGreaterThan(0);
   });
 });
 
@@ -268,14 +270,14 @@ describe('the huddle', () => {
     const s = (await screen.findByRole('heading', { level: 2, name: 'road to the ’ship' })).closest('section')!;
     expect(s).toHaveTextContent('from sleeper’s bracket');
     // game 1 was played: Team 4 beat Team 1 and the result is locked
-    await waitFor(() => expect(within(s).getByRole('button', { name: /^Team 4, seed 4,.*advances \(final result\)/ })).toHaveAttribute('aria-disabled', 'true'));
+    await waitFor(() => expect(within(s).getByRole('button', { name: /^seed 4, Team 4,.*advances \(final result\)/ })).toHaveAttribute('aria-disabled', 'true'));
     // game 2 is open and pickable; the final gets its teams once game 2 is picked
-    await userClick(within(s).getByRole('button', { name: /^advance Team 3,/ }));
-    expect(within(s).getAllByRole('button', { name: /^advance Team (3|4),.*round 2/ })).toHaveLength(2);
+    await userClick(within(s).getByRole('button', { name: /^seed \d+, Team 3,/ }));
+    expect(within(s).getAllByRole('button', { name: /^seed \d+, Team (3|4),.*round 2/ })).toHaveLength(2);
     // the toilet bowl sits below it
     const t = screen.getByRole('heading', { level: 2, name: 'the toilet bowl' }).closest('section')!;
     expect(within(t).getByText('consolation bracket: losers advance')).toBeInTheDocument();
-    expect(within(t).getAllByRole('button', { name: /^flush / }).length).toBeGreaterThan(0);
+    expect(within(t).getAllByRole('button', { name: /, flush$/ }).length).toBeGreaterThan(0);
   });
 
   it('postseason preview without a Sleeper bracket: the projected one, and the preview note links back to live', async () => {

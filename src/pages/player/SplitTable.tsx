@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { minimumFor } from './nflverseSelect';
 import type { Gate } from './nflverseSelect';
+import { formatCount } from '../../app/format';
 
 export interface SplitRow {
   key: string;
@@ -41,7 +42,7 @@ export function SplitTable({ rows, caption }: { rows: SplitRow[]; caption: strin
                   {r.label}{r.tag && <> <span className="pill mute">{r.tag}</span></>}
                 </td>
                 <td className="n pname">{r.value ?? '—'}</td>
-                <td className="n dim">{r.sample === null ? '—' : `${r.sample.toLocaleString('en-US')} ${r.unit}`}</td>
+                <td className="n dim">{r.sample === null ? '—' : `${formatCount(r.sample)} ${r.unit}`}</td>
                 <td className="hide-sm dim">
                   {under ? `hidden: under ${minimumFor(r.gate as Gate)} ${r.unit}` : r.value === null ? (r.missing ?? 'not available') : r.note}
                 </td>

@@ -83,7 +83,8 @@ describe('locker room (/team)', () => {
     expect(within(roster).getAllByRole('row')).toHaveLength(1 + 4);
     expect(within(roster).getByText('Alex Arm')).toBeInTheDocument();
     expect(within(roster).getByText('Questionable')).toBeInTheDocument();
-    expect(screen.getByText(/snap and target share arrive with nflverse data in milestone 3/)).toBeInTheDocument();
+    expect(screen.getByText(/open a name on the scouting report for usage, trade value and takes/)).toBeInTheDocument();
+    expect(screen.queryByText(/milestone/i)).not.toBeInTheDocument();
 
     const lineup = screen.getByRole('table', { name: 'Lineup for week 5' });
     expect(within(lineup).getByText('total')).toBeInTheDocument();
@@ -105,8 +106,8 @@ describe('locker room (/team)', () => {
     await user.click(screen.getByRole('radio', { name: 'wk 5' }));
 
     expect(screen.queryByText(/looking at a what-if/)).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Always start Backup Wideout' }));
-    expect(screen.getByRole('button', { name: 'Always start Backup Wideout' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'pin Backup Wideout: always start' }));
+    expect(screen.getByRole('button', { name: 'pin Backup Wideout: always start' })).toHaveAttribute('aria-pressed', 'true');
     expect(await screen.findByText(/pins and benches cost/)).toHaveTextContent('6.0');
     expect(screen.getByText(/looking at a what-if: always start Backup Wideout/)).toBeInTheDocument();
   });
@@ -123,7 +124,7 @@ describe('locker room (/team)', () => {
     await user.click(within(lab).getByRole('checkbox', { name: 'Drop Backup Wideout' }));
     expect(screen.getByText(/drop Backup Wideout/)).toBeInTheDocument();
 
-    await user.click(within(lab).getByRole('button', { name: 'Add Free Agent Fran' }));
+    await user.click(within(lab).getByRole('button', { name: /^add \w+ Free Agent Fran/ }));
     expect(within(lab).getByRole('button', { name: 'Remove Free Agent Fran' })).toBeInTheDocument();
     expect(screen.getByText(/add Free Agent Fran/)).toBeInTheDocument();
 
@@ -292,7 +293,7 @@ describe('waiver wire (/waivers)', () => {
 
   it('try adds the add and the drop to the what-if and goes to the locker room', async () => {
     const { user } = renderApp({ linked, route: '/waivers' });
-    await user.click(await screen.findByRole('button', { name: 'Try adding Free Agent Fran and dropping Backup Wideout' }));
+    await user.click(await screen.findByRole('button', { name: 'try adding Free Agent Fran and dropping Backup Wideout' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'locker room' })).toBeInTheDocument();
     expect(screen.getByText(/looking at a what-if: add Free Agent Fran; drop Backup Wideout/)).toBeInTheDocument();
     expect(JSON.parse(window.localStorage.getItem('wr.scenario.L1')!)).toMatchObject({ adds: ['fa1'], drops: ['t1bw'] });
@@ -357,7 +358,7 @@ describe('trade block (/trades)', () => {
 describe('what-if scenario', () => {
   it('persists across pages and Reset clears it', async () => {
     const { user } = renderApp({ linked, route: '/waivers' });
-    await user.click(await screen.findByRole('button', { name: 'Try adding Free Agent Fran and dropping Backup Wideout' }));
+    await user.click(await screen.findByRole('button', { name: 'try adding Free Agent Fran and dropping Backup Wideout' }));
     expect(await screen.findByText(/looking at a what-if/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: 'trade block' }));

@@ -7,7 +7,10 @@ import { FEATURE, PAGES } from '../app/names';
 import { currentDraft } from '../app/phase';
 import { useDraftRoomInputs, useRoomRankings } from '../app/useDraftRoom';
 import { usePageTitle } from '../app/usePageTitle';
+import { useWantsReducedMotion } from '../components/motion';
+import { Attribution } from '../components/Attribution';
 import { PageHeader } from '../components/PageHeader';
+import { PageSkeleton } from '../components/Skeleton';
 import { Segmented } from '../components/Segmented';
 import { inferDraftMode, liveSnapshot } from '../engine';
 import type { DraftMode } from '../engine';
@@ -62,7 +65,9 @@ function DraftPage() {
 
   /* ---------- the pick feed: live, or a replay of the finished draft ---------- */
   const [replaySrc, setReplaySrc] = useState<ReplaySource | null>(null);
-  const [speed, setSpeed] = useState(1);
+  // with reduced motion a replay starts in step mode: the picks arrive when you ask for them, not on a timer
+  const wantsReduced = useWantsReducedMotion();
+  const [speed, setSpeed] = useState(() => (wantsReduced ? 0 : 1));
   const [paused, setPaused] = useState(false);
   const savedPicks = inputs.data?.picks;
   const tradedPicks = inputs.data?.tradedPicks;
@@ -152,9 +157,12 @@ function DraftPage() {
       {!active?.leagueId && <p className="note">no league is selected yet. use “add an account” in the sidebar to follow one.</p>}
       {active?.leagueId && !data && !bundle.loading && <p className="note neg-c" role="status">league data is not available yet. try refresh.</p>}
       {league && !room && (
-        <p className={`note${inputs.error && !inputs.loading ? ' neg-c' : ''}`} role="status">
-          {inputs.error && !inputs.loading ? `could not load the draft room. ${inputs.error}` : 'scoring season projections with your league’s settings…'}
-        </p>
+        <>
+          <p className={`note${inputs.error && !inputs.loading ? ' neg-c' : ''}`} role="status">
+            {inputs.error && !inputs.loading ? `could not load the draft room. ${inputs.error}` : 'scoring season projections with your league’s settings…'}
+          </p>
+          {!(inputs.error && !inputs.loading) && <PageSkeleton cards={2} />}
+        </>
       )}
 
       {room && mockPlan && (
@@ -171,6 +179,7 @@ function DraftPage() {
               canReplay={draft?.status === 'complete' && (savedPicks?.length ?? 0) > 0} draftPicks={savedPicks?.length ?? 0}
             />
           )}
+          <Attribution sources={room.fcUsed ? ['sleeper', 'fantasycalc'] : ['sleeper']} />
         </>
       )}
     </div>

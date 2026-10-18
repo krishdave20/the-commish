@@ -1,9 +1,10 @@
 import { EnginePage } from '../app/EnginePage';
-import { formatAsOf, formatCount, formatPct, formatPoints, formatPoints1 } from '../app/format';
+import { formatAsOf, formatCount, formatMoney, formatNum, formatPct, formatPoints, formatPoints1 } from '../app/format';
 import { MIN_CAL_SAMPLES } from '../engine';
 import type { Engine } from '../engine';
 import { MarkLegend } from '../components/ClinchMark';
 import { useGrown } from '../components/motion';
+import { LIVE_INTERVAL_MS } from './draft/pickFeed';
 
 /** Offline bake-off from SPEC section 5: mean absolute error of each approach on held-out weeks 4 and 5. */
 const BAKE_OFF: Array<[string, number]> = [
@@ -22,7 +23,7 @@ function Bars() {
         <div className="oddcell" key={name} role="listitem" style={{ gridTemplateColumns: '12em 1fr 3em' }}>
           <span>{name}</span>
           <div className={k ? 'bar gold' : 'bar'} aria-hidden="true"><i style={{ width: `${grown ? (100 * v) / mx : 0}%` }} /></div>
-          <span className="n">{v.toFixed(2)}</span>
+          <span className="n">{formatNum(v, 2)}</span>
         </div>
       ))}
     </div>
@@ -41,11 +42,16 @@ function Body({ engine }: { engine: Engine }) {
         <section className="card" aria-labelledby="mth-data">
           <header><h2 id="mth-data">where the data comes from</h2></header>
           <p className="note">
-            everything here is pulled from sleeper’s public api by your own browser. no account, no server; the copy that is kept lives only on this device.
+            three free public sources and no server of ours. your browser pulls sleeper and fantasycalc itself; nflverse comes through a nightly job.
+            nothing here is written by an ai, and the copy that is kept lives only on this device.
           </p>
           <ul className="plain">
+            <li><b>sleeper.</b> rosters, schedule, weekly stats, injury tags, projections through week {meta.maxWeek}, drafts, traded picks and playoff brackets, from sleeper’s public api.</li>
+            <li><b>nflverse.</b> play-by-play, snap counts and ftn charting. its files do not allow browser access and one is 49 mb, so a github action runs every night, downloads them, joins player ids to sleeper’s and publishes small per-player-week files next to this site. snap and target shares, red-zone shares, the charting splits and the usage-based takes read those files. the route and coverage splits are labeled 2025 until 2026 participation data is published.</li>
+            <li><b>fantasycalc.</b> trade and draft values for dynasty and redraft, from its free api. they feed the dynasty trade block, the dynasty and rookie draft rankings and the value movers on the huddle.</li>
+            <li><b>player ids.</b> nflverse and sleeper number players differently, so the join runs on the gsis id first, then on name, team and position. whatever cannot be matched is listed on the injury report in the front office.</li>
             <li><b>last pull.</b> {formatAsOf(meta.asOf)}, week {meta.currentWeek} of {meta.lastRegularWeek} regular-season weeks{meta.stale ? ' (some pieces came from the saved copy)' : ''}.</li>
-            <li><b>your league’s rules.</b> scoring is {meta.scoring}, with passing-touchdown and tight-end bonuses read from the league settings; roster slots ({meta.slots.join(', ')}), {meta.playoffTeams} playoff teams, {meta.divisions} {meta.divisions === 1 ? 'division' : 'divisions'} and the ${formatCount(meta.waiverBudget)} faab budget all come from the league itself.</li>
+            <li><b>your league’s rules.</b> scoring is {meta.scoring}, with passing-touchdown and tight-end bonuses read from the league settings; roster slots ({meta.slots.join(', ')}), {meta.playoffTeams} playoff teams, {meta.divisions} {meta.divisions === 1 ? 'division' : 'divisions'} and the {formatMoney(meta.waiverBudget)} faab budget all come from the league itself.</li>
             <li><b>player means.</b> sleeper’s projection, scored with those league settings.</li>
           </ul>
         </section>
@@ -85,7 +91,7 @@ function Body({ engine }: { engine: Engine }) {
                   return (
                     <tr key={p}>
                       <td className="pname">{p}</td>
-                      <td className="n">{lo.toFixed(2)}</td><td className="n">{hi.toFixed(2)}</td>
+                      <td className="n">{formatNum(lo, 2)}</td><td className="n">{formatNum(hi, 2)}</td>
                       <td className="n">{n === undefined ? '—' : n}{n !== undefined && n < MIN_CAL_SAMPLES && <> <span className="pill mute">fallback</span></>}</td>
                       <td className="n">{meta.residualSd[p] === undefined ? '—' : formatPoints1(meta.residualSd[p]!)}</td>
                     </tr>
@@ -135,6 +141,55 @@ function Body({ engine }: { engine: Engine }) {
           <p className="note">a division winner never takes a wildcard spot, which the math accounts for.</p>
         </section>
 
+        <section className="card" aria-labelledby="mth-takes">
+          <header><h2 id="mth-takes">hot takes</h2></header>
+          <p>
+            every take is a template filled with real numbers. fixed detectors (usage spike, target hog, buy low, sell high, red-zone role, box-count edge, blitz beater,
+            soft schedule, waiver riser, dynasty mover, coverage note) run over the nightly nflverse data, your rosters and the waiver wire. each has a threshold tuned
+            on 2025 data, and every card shows how that detector did in the backtest.
+          </p>
+          <p className="note">
+            headlines run twelve words or fewer, every card shows its sample size, no player gets more than three takes a week, and cards on your own players come first.
+          </p>
+        </section>
+
+        <section className="card" aria-labelledby="mth-draft">
+          <header><h2 id="mth-draft">draft room</h2></header>
+          <p>
+            rankings score sleeper’s season projections with your league’s settings, set a replacement level from the league’s starting slots, rank by value over replacement and cut
+            tiers where the gaps are natural. adp comes from the matching sleeper field (ppr, half, standard, 2qb, dynasty or rookie).
+          </p>
+          <p>
+            the mock draft puts you in your real slot; bots draft by adp with some noise and a nudge for roster need, and the grade compares your projected starting lineup
+            with the league’s. on the clock polls sleeper every {LIVE_INTERVAL_MS / 1000} seconds during a live draft and shows best available, positional runs, your open slots, who is likely gone
+            and each pick against its adp. a finished draft can be replayed pick by pick.
+          </p>
+        </section>
+
+        <section className="card" aria-labelledby="mth-dynasty">
+          <header><h2 id="mth-dynasty">dynasty trade block</h2></header>
+          <p>
+            in a dynasty league (or when you explore it in a redraft one) trades are also priced in fantasycalc value, with future picks included: the next draft is priced by early,
+            mid or late slot from each pick’s original owner’s projected finish, later drafts by round alone.
+          </p>
+          <p>
+            the contender-or-rebuilder lens scores every team on now (expected points, rest of season) and later (dynasty value), then reads each as a contender (strong now and later),
+            all-in (strong now, thin later), retool (weak now, strong later) or rebuilder (weak now and thin later). the trade verdict weighs the value moved against your lens.
+          </p>
+        </section>
+
+        <section className="card" aria-labelledby="mth-def">
+          <header><h2 id="mth-def">team defenses</h2></header>
+          <p>
+            sleeper marks a team defense’s weekly stat row with games played (gp), not the active-games field players use. the original reference engine only read that field, so a defense never
+            got actual points, locked points, calibration samples or matchup grades. this app counts a defense row as played when gp is above zero.
+          </p>
+          <p className="note">
+            on the saved oct 16 league that moves playoff odds by at most 2.7 points (one team; nine of twelve move half a point or less) and leaves the top three waiver adds the same.
+            a reference-compatible build still reproduces the original to 0.005 points, and a test holds it there.
+          </p>
+        </section>
+
         <section className="card" aria-labelledby="mth-assume">
           <header><h2 id="mth-assume">assumptions</h2></header>
           <ul className="plain">
@@ -149,8 +204,8 @@ function Body({ engine }: { engine: Engine }) {
         <header><h2 id="mth-credit">credits</h2></header>
         <ul className="plain">
           <li>league data: sleeper public api.</li>
-          <li>play-by-play and snap data: nflverse. charting data: ftn data via nflverse (arrives in milestone 3).</li>
-          <li>values: fantasycalc (arrives in milestone 5).</li>
+          <li>play-by-play and snap data: nflverse. charting data: ftn data via nflverse.</li>
+          <li>values: fantasycalc.</li>
         </ul>
       </section>
     </>

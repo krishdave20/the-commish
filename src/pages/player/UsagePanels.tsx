@@ -1,6 +1,6 @@
 import { UsageTrendChart } from '../../components/charts/UsageTrendChart';
 import type { TrendSeries } from '../../components/charts/UsageTrendChart';
-import { formatCount } from '../../app/format';
+import { formatCount, formatNum, formatPct, signed } from '../../app/format';
 import type { PlayerSeason, PlayerWeek } from '../../data/nflverseTypes';
 import { MIN_CARRIES, MIN_ROUTES, MIN_TARGETS } from '../../data/nflverseTypes';
 import type { PlayerNflverse } from './nflversePlayer';
@@ -8,9 +8,9 @@ import { gated } from './nflverseSelect';
 import { SplitTable } from './SplitTable';
 import type { SplitRow } from './SplitTable';
 
-const pct = (x: number | null, d = 1) => (x === null ? null : `${(x * 100).toFixed(d)}%`);
-const num = (x: number | null, d = 1) => (x === null ? null : x.toFixed(d));
-const signedNum = (x: number | null) => (x === null ? null : `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(x).toFixed(1)}`);
+const pct = (x: number | null, d = 1) => (x === null ? null : formatPct(x, d));
+const num = (x: number | null, d = 1) => (x === null ? null : formatNum(x, d));
+const signedNum = (x: number | null) => (x === null ? null : signed(x));
 
 function trend(weeks: PlayerWeek[], pos: string): TrendSeries[] {
   const mk = (id: string, label: string, color: string, unit: string, get: (w: PlayerWeek) => number | null, n: (w: PlayerWeek) => number): TrendSeries => ({
@@ -118,7 +118,7 @@ export function FtnSplits({ s }: { s: PlayerSeason }) {
 export function CoveragePanel({ cov }: { cov: NonNullable<PlayerNflverse['coverage']> }) {
   const row = cov.row;
   const label = cov.isCurrent ? `${cov.season} season` : `last season (${cov.season})`;
-  const ratio = (v: number | null) => (v === null ? null : v.toFixed(2));
+  const ratio = (v: number | null) => (v === null ? null : formatNum(v, 2));
   const rows: SplitRow[] = row ? [
     { key: 'yprr', label: 'yards per route run', tag: 'route proxy', value: ratio(gated(row.yprr, row.routes, 'routes')), sample: row.routes, unit: 'routes', gate: 'routes' },
     { key: 'tprr', label: 'targets per route run', tag: 'route proxy', value: ratio(gated(row.tprr, row.routes, 'routes')), sample: row.routes, unit: 'routes', gate: 'routes' },
@@ -145,7 +145,7 @@ export function CoveragePanel({ cov }: { cov: NonNullable<PlayerNflverse['covera
               {shells.map(([name, t]) => (
                 <tr key={name}>
                   <td>{name.replace(/_/g, ' ').toLowerCase()}</td>
-                  <td className="n">{formatCount(t[0])}</td><td className="n">{t[1]}</td><td className="n">{t[3]}</td><td className="n">{(t[3] / t[0]).toFixed(2)}</td>
+                  <td className="n">{formatCount(t[0])}</td><td className="n">{t[1]}</td><td className="n">{t[3]}</td><td className="n">{formatNum(t[3] / t[0], 2)}</td>
                 </tr>
               ))}
             </tbody>

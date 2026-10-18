@@ -1,4 +1,4 @@
-import { ordinal, signed } from '../../app/format';
+import { ordinal, signed, formatCount } from '../../app/format';
 import { useFantasyCalc } from '../../app/playersData';
 import type { SleeperLeague } from '../../data';
 
@@ -19,7 +19,7 @@ export function ValueCard({ pid, league }: { pid: string; league: SleeperLeague 
         : !row ? <p className="note">fantasycalc has no value for this player.</p>
         : (
           <div className="stats">
-            <div className="stat"><span className="micro">value</span><span className="v">{Math.round(row.value).toLocaleString('en-US')}</span>
+            <div className="stat"><span className="micro">value</span><span className="v">{formatCount(row.value)}</span>
               <span className="note">{row.overallRank !== null ? `${ordinal(row.overallRank)} overall` : ''}{row.positionRank !== null ? ` · ${row.position}${row.positionRank}` : ''}</span></div>
             <div className="stat"><span className="micro">30-day change</span>
               <span className={`v ${row.trend30Day === null ? '' : row.trend30Day > 0 ? 'pos-c' : row.trend30Day < 0 ? 'neg-c' : ''}`}>

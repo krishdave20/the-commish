@@ -4,11 +4,19 @@
    two things that feed it. That keeps every game level with its feeders whatever the team count, byes included. */
 import type { Bracket, Source } from '../../engine';
 
-export const SLOT_H = 30;
-export const MATCH_H = SLOT_H * 2 + 1;
+/** The vertical sizes that change with the device: a team's slot, and the room one team takes in the first column. */
+export interface Dims { slotH: number; unit: number; matchH: number }
+const dims = (slotH: number, unit: number): Dims => ({ slotH, unit, matchH: slotH * 2 + 1 });
+/** with a mouse */
+export const DEFAULT_DIMS: Dims = dims(30, 40);
+/** on a phone or any touch screen: every team slot is a 40px tap target */
+export const TOUCH_DIMS: Dims = dims(40, 52);
+
+export const SLOT_H = DEFAULT_DIMS.slotH;
+export const MATCH_H = DEFAULT_DIMS.matchH;
 export const COL_W = 236;
 export const GAP_W = 46;
-export const UNIT = 40;
+export const UNIT = DEFAULT_DIMS.unit;
 export const HEAD_H = 28;
 export const CHAMP_H = 118;
 
@@ -45,7 +53,8 @@ export interface Layout {
   finalId: string | null;
 }
 
-export function layoutBracket(bk: Bracket): Layout {
+export function layoutBracket(bk: Bracket, d: Dims = DEFAULT_DIMS): Layout {
+  const { slotH: SLOT_H, unit: UNIT, matchH: MATCH_H } = d;
   const byId = new Map(bk.matches.map((m) => [m.id, m] as const));
   const cy = new Map<string, number>();
   let leaf = 0;

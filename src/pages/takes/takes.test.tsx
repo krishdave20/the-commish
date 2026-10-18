@@ -196,7 +196,7 @@ describe('take actions', () => {
   it('opens the profile, where the player’s takes are listed', async () => {
     const { user } = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
     await waitFor(() => expect(articles()).toHaveLength(5));
-    const link = within(card('Walt Wideout')).getByRole('link', { name: 'Open Walt Wideout’s profile' });
+    const link = within(card('Walt Wideout')).getByRole('link', { name: 'profile: Walt Wideout' });
     expect(link).toHaveAttribute('href', '/players/t1wr');
     await user.click(link);
     expect(await screen.findByRole('heading', { level: 1, name: 'Walt Wideout' })).toBeInTheDocument();
@@ -213,9 +213,9 @@ describe('take actions', () => {
     const { user } = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: build });
     await waitFor(() => expect(articles()).toHaveLength(5));
     const fran = card('Free Agent Fran');
-    await user.click(within(fran).getByRole('button', { name: 'Add Free Agent Fran to watchlist' }));
+    await user.click(within(fran).getByRole('button', { name: 'watch Free Agent Fran' }));
     expect(JSON.parse(window.localStorage.getItem('wr.watchlist.v1')!)).toEqual(['fa1']);
-    const on = within(card('Free Agent Fran')).getByRole('button', { name: 'Remove Free Agent Fran from watchlist' });
+    const on = within(card('Free Agent Fran')).getByRole('button', { name: 'watching Free Agent Fran' });
     expect(on).toHaveAttribute('aria-pressed', 'true');
     await waitFor(() => expect(build.mock.calls.at(-1)![0].watchlist).toEqual(['fa1']));
     await user.click(on);
@@ -225,7 +225,7 @@ describe('take actions', () => {
   it('“try in the lab” adds a free agent (dropping a player) to the what-if and opens the locker room', async () => {
     const { user } = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
     await waitFor(() => expect(articles()).toHaveLength(5));
-    await user.click(within(card('Free Agent Fran')).getByRole('button', { name: 'Try Free Agent Fran in the lab' }));
+    await user.click(within(card('Free Agent Fran')).getByRole('button', { name: 'try in the lab: Free Agent Fran' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'locker room' })).toBeInTheDocument();
     const saved = JSON.parse(window.localStorage.getItem('wr.scenario.L1')!);
     expect(saved.adds).toEqual(['fa1']);
@@ -237,7 +237,7 @@ describe('take actions', () => {
   it('“try in the lab” pins one of my players on good news and benches him on bad news', async () => {
     const { user } = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
     await waitFor(() => expect(articles()).toHaveLength(5));
-    await user.click(within(card('Walt Wideout')).getByRole('button', { name: 'Try Walt Wideout in the lab' }));
+    await user.click(within(card('Walt Wideout')).getByRole('button', { name: 'try in the lab: Walt Wideout' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'locker room' })).toBeInTheDocument();
     expect(JSON.parse(window.localStorage.getItem('wr.scenario.L1')!)).toMatchObject({ pins: ['t1wr'], benches: [], adds: [] });
 
@@ -245,7 +245,7 @@ describe('take actions', () => {
     window.localStorage.clear();
     const second = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
     await waitFor(() => expect(articles()).toHaveLength(5));
-    await second.user.click(within(card('Rex Runner')).getByRole('button', { name: 'Try Rex Runner in the lab' }));
+    await second.user.click(within(card('Rex Runner')).getByRole('button', { name: 'try in the lab: Rex Runner' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'locker room' })).toBeInTheDocument();
     expect(JSON.parse(window.localStorage.getItem('wr.scenario.L1')!)).toMatchObject({ benches: ['t1rb'], pins: [] });
   });
@@ -256,13 +256,13 @@ describe('take actions', () => {
     const quinn = card('Quinn Quarterback');
     expect(within(quinn).queryByRole('button', { name: /in the lab/ })).not.toBeInTheDocument();
     expect(within(quinn).queryByRole('link', { name: /trade block/ })).not.toBeInTheDocument();
-    expect(within(quinn).getByRole('button', { name: /watchlist/ })).toBeInTheDocument();
+    expect(within(quinn).getByRole('button', { name: /^watch / })).toBeInTheDocument();
   });
 
   it('“trade block” opens the trade block with a player of mine ticked on my side', async () => {
     const { user } = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
     await waitFor(() => expect(articles()).toHaveLength(5));
-    const link = within(card('Walt Wideout')).getByRole('link', { name: 'Open Walt Wideout in the trade block' });
+    const link = within(card('Walt Wideout')).getByRole('link', { name: 'trade block: Walt Wideout' });
     expect(link).toHaveAttribute('href', '/trades?player=t1wr');
     await user.click(link);
     expect(await screen.findByRole('heading', { level: 1, name: 'trade block' })).toBeInTheDocument();
@@ -273,7 +273,7 @@ describe('take actions', () => {
   it('“trade block” picks the other manager as the partner for a trade target', async () => {
     const { user } = renderApp({ linked, route: '/takes', nflverse: true, buildTakes: stubBuildTakes() });
     await waitFor(() => expect(articles()).toHaveLength(5));
-    await user.click(within(card('Reed Receiver')).getByRole('link', { name: 'Open Reed Receiver in the trade block' }));
+    await user.click(within(card('Reed Receiver')).getByRole('link', { name: 'trade block: Reed Receiver' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'trade block' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'you get from Reed Between the Lines: Reed Receiver' })).toBeChecked();
     expect(screen.getByLabelText('trade partner')).toHaveValue('2');

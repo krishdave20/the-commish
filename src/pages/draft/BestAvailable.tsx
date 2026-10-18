@@ -1,6 +1,7 @@
 import { PlayerLink } from '../../components/PlayerLink';
 import type { RankedPlayer } from '../../engine';
 import { useWatchlist } from '../../app/useWatchlist';
+import { formatCount, formatNum, formatPoints1 } from '../../app/format';
 
 interface Props {
   rows: readonly RankedPlayer[];
@@ -14,7 +15,7 @@ export function WatchStar({ pid, name }: { pid: string; name: string }) {
   const watch = useWatchlist();
   const on = watch.has(pid);
   return (
-    <button type="button" className="tog star" aria-pressed={on} aria-label={`${on ? 'Remove' : 'Add'} ${name} ${on ? 'from' : 'to'} watchlist`} onClick={() => watch.toggle(pid)}>
+    <button type="button" className="tog star" aria-pressed={on} aria-label={`${on ? 'watching' : 'watch'} ${name}`} onClick={() => watch.toggle(pid)}>
       {on ? '★' : '☆'}
     </button>
   );
@@ -46,9 +47,9 @@ export function BestAvailable({ rows, caption, showFc, onPick }: Props) {
               <td className="nowrap"><PlayerLink pid={r.pid} name={r.name} /> <span className="dim">{r.team ?? 'fa'}</span></td>
               <td className="dim">{r.pos.toLowerCase()}{r.posRank}</td>
               <td><TierBadge tier={r.tier} /></td>
-              <td className="n">{r.vor.toFixed(1)}</td>
-              <td className="n dim">{r.adp == null ? '—' : r.adp.toFixed(1)}</td>
-              {showFc && <td className="n dim">{r.fc ? Math.round(r.fc.value).toLocaleString('en-US') : '—'}</td>}
+              <td className="n">{formatPoints1(r.vor)}</td>
+              <td className="n dim">{r.adp == null ? '—' : formatNum(r.adp)}</td>
+              {showFc && <td className="n dim">{r.fc ? formatCount(r.fc.value) : '—'}</td>}
               <td><WatchStar pid={r.pid} name={r.name} /></td>
               {onPick && <td><button type="button" className="btn solid" aria-label={`Draft ${r.name}`} onClick={() => onPick(r)}>draft</button></td>}
             </tr>

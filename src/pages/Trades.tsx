@@ -215,7 +215,7 @@ function TradeBlock({ engine }: { engine: Engine }) {
               <thead>
                 <tr>
                   <th scope="col" className="n">#</th><th scope="col">you send</th><th scope="col">you get</th><th scope="col">partner</th>
-                  <th scope="col" className="n">your gain</th><th scope="col" className="n">their gain</th>
+                  <th scope="col" className="n">your {FEATURE.lift}</th><th scope="col" className="n">their {FEATURE.lift}</th>
                   <th scope="col" className="n hide-sm">starts for you</th><th scope="col"><span className="sr-only">load</span></th>
                 </tr>
               </thead>

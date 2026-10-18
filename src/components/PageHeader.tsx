@@ -34,7 +34,11 @@ export function PageHeader({ kicker, title, data }: Props) {
         </p>
       )}
       {loading && progress && (
-        <p className="note" role="status">{`pulling ${progress.label} · ${progress.done} of ${progress.total}`}</p>
+        // the live region says "refreshing data" once; the step counter changes too often to announce, so the progress bar carries it
+        <p className="note">
+          <span role="status" className="sr-only">refreshing data</span>
+          {`pulling ${progress.label} · ${progress.done} of ${progress.total}`}
+        </p>
       )}
       {loading && (
         progress ? (

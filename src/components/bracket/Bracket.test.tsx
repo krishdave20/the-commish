@@ -38,7 +38,7 @@ describe('Bracket: click to advance', () => {
     expect(screen.getByRole('group', { name: 'round 1, game 1: Team 101 versus Team 104' })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'round 1, game 2: Team 102 versus Team 103' })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'round 2, game 1: waiting for earlier rounds' })).toBeInTheDocument();
-    const s = slot(/^advance Team 101, seed 1, projected 130\.0 points, \d+% to win round 1/);
+    const s = slot(/^seed 1, Team 101, projected 130\.0 points, \d+% to win round 1/);
     expect(s).toHaveAttribute('aria-pressed', 'false');
     await user.click(s);
     expect(s).toHaveAttribute('aria-pressed', 'true');
@@ -53,10 +53,10 @@ describe('Bracket: click to advance', () => {
   it('clicking through to a champion shows the flourish: the name, the rule and "league champ"', async () => {
     const { user } = setup();
     expect(champ()).toHaveAttribute('data-state', 'open');
-    await user.click(slot(/^advance Team 101,/));
-    await user.click(slot(/^advance Team 103,/));
+    await user.click(slot(/^seed \d+, Team 101,/));
+    await user.click(slot(/^seed \d+, Team 103,/));
     // the final: Team 101 vs Team 103
-    await user.click(screen.getAllByRole('button', { name: /^advance Team 101,.*round 2/ })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^seed \d+, Team 101,.*round 2/ })[0]!);
     expect(champ()).toHaveAttribute('data-state', 'crowned');
     expect(champ()).toHaveTextContent('league champ');
     expect(champ()).toHaveTextContent('Team 101');
@@ -69,25 +69,25 @@ describe('Bracket: click to advance', () => {
   it('changing an earlier pick clears the picks that depended on it, and only those', async () => {
     const { user } = setup({ n: 8 });
     // round 1: 101 and 104 and 103 and 102 win (chalk), round 2: 101 beats 104, 103 beats 102, final: 101
-    for (const r of [101, 104, 103, 102]) await user.click(slot(new RegExp(`^advance Team ${r},.*round 1`)));
-    await user.click(screen.getAllByRole('button', { name: /^advance Team 101,.*round 2/ })[0]!);
-    await user.click(screen.getAllByRole('button', { name: /^advance Team 103,.*round 2/ })[0]!);
-    await user.click(screen.getAllByRole('button', { name: /^advance Team 101,.*round 3/ })[0]!);
+    for (const r of [101, 104, 103, 102]) await user.click(slot(new RegExp(`^seed \\d+, Team ${r},.*round 1`)));
+    await user.click(screen.getAllByRole('button', { name: /^seed \d+, Team 101,.*round 2/ })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^seed \d+, Team 103,.*round 2/ })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^seed \d+, Team 101,.*round 3/ })[0]!);
     expect(champ()).toHaveAttribute('data-state', 'crowned');
     expect(screen.getByText('7 of 7 open games picked')).toBeInTheDocument();
     // flip game 1 to the upset: 108 beats 101. The round-2 and final picks that needed 101 are gone; 103's win stays.
-    await user.click(slot(/^advance Team 108,.*round 1/));
+    await user.click(slot(/^seed \d+, Team 108,.*round 1/));
     expect(champ()).toHaveAttribute('data-state', 'open');
     // 4 round-1 picks and 103's round-2 win remain; the round-2 and final picks that needed 101 are gone
     expect(screen.getByText('5 of 7 open games picked')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^advance Team 103,.*round 2/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /^seed \d+, Team 103,.*round 2/ })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('title odds update live after a pick, exactly, and add to 100%', async () => {
     const { user } = setup({ n: 8 });
     const before = oddsRow('Team 108').textContent;
     expect(oddsRow('Team 101')).toBeInTheDocument();
-    await user.click(slot(/^advance Team 108,.*round 1/));
+    await user.click(slot(/^seed \d+, Team 108,.*round 1/));
     const after = oddsRow('Team 108').textContent;
     expect(after).not.toBe(before);
     // the team that lost drops to zero
@@ -102,7 +102,7 @@ describe('Bracket: click to advance', () => {
 
   it('shows the head-to-head numbers in a tooltip on hover and on focus', async () => {
     const { user } = setup();
-    const s = slot(/^advance Team 101,/);
+    const s = slot(/^seed \d+, Team 101,/);
     await user.hover(s);
     const tip = screen.getByRole('tooltip');
     expect(tip).toHaveTextContent('round 1');
@@ -115,7 +115,7 @@ describe('Bracket: click to advance', () => {
     expect(s).toHaveAttribute('aria-describedby', tip.id);
     await user.unhover(s);
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    act(() => slot(/^advance Team 102,/).focus());
+    act(() => slot(/^seed \d+, Team 102,/).focus());
     expect(screen.getByRole('tooltip')).toHaveTextContent('Team 102');
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
@@ -123,7 +123,7 @@ describe('Bracket: click to advance', () => {
 
   it('works from the keyboard: focus a team, press Enter to advance, Space to undo, arrows to move', async () => {
     const { user } = setup({ n: 8 });
-    const first = slot(/^advance Team 101,.*round 1/);
+    const first = slot(/^seed \d+, Team 101,.*round 1/);
     first.focus();
     await user.keyboard('{Enter}');
     expect(first).toHaveAttribute('aria-pressed', 'true');
@@ -132,9 +132,9 @@ describe('Bracket: click to advance', () => {
     expect(first).toHaveAttribute('aria-pressed', 'false');
     // arrows: down goes to the next slot in the column, right to the next round
     await user.keyboard('{ArrowDown}');
-    expect(document.activeElement).toBe(slot(/^advance Team 108,.*round 1/));
+    expect(document.activeElement).toBe(slot(/^seed \d+, Team 108,.*round 1/));
     await user.keyboard('{Enter}');
-    expect(document.activeElement).toBe(slot(/^advance Team 108,.*round 1/));
+    expect(document.activeElement).toBe(slot(/^seed \d+, Team 108,.*round 1/));
     await user.keyboard('{ArrowRight}');
     expect((document.activeElement as HTMLElement).getAttribute('data-round')).toBe('2');
     await user.keyboard('{ArrowLeft}');
@@ -145,11 +145,11 @@ describe('Bracket: click to advance', () => {
     const { user } = setup();
     const reset = screen.getByRole('button', { name: 'reset' });
     expect(reset).toBeDisabled();
-    await user.click(slot(/^advance Team 101,/));
-    await user.click(slot(/^advance Team 102,/));
+    await user.click(slot(/^seed \d+, Team 101,/));
+    await user.click(slot(/^seed \d+, Team 102,/));
     expect(reset).toBeEnabled();
     await user.click(reset);
-    expect(slot(/^advance Team 101,/)).toHaveAttribute('aria-pressed', 'false');
+    expect(slot(/^seed \d+, Team 101,/)).toHaveAttribute('aria-pressed', 'false');
     expect(champ()).toHaveAttribute('data-state', 'open');
     expect(reset).toBeDisabled();
     expect(screen.getByRole('status')).toHaveTextContent('bracket reset.');
@@ -157,11 +157,11 @@ describe('Bracket: click to advance', () => {
 
   it('locks games that were really played: they cannot be picked, and the odds respect them', async () => {
     const { user } = setup({ real: [{ w: 104, l: 101 }] });
-    const upset = screen.getByRole('button', { name: /^Team 104, seed 4,.*advances \(final result\)/ });
+    const upset = screen.getByRole('button', { name: /^seed 4, Team 104,.*advances \(final result\)/ });
     expect(upset).toHaveAttribute('aria-disabled', 'true');
     expect(upset).not.toHaveAttribute('aria-pressed');
     expect(screen.getByRole('group', { name: 'round 1, game 1: Team 101 versus Team 104, final' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /^Team 101,/ }));
+    await user.click(screen.getByRole('button', { name: /^seed \d+, Team 101,/ }));
     expect(upset.closest('.br-match')).toHaveAttribute('data-locked', 'true');
     expect(oddsRow('Team 101')).toHaveTextContent('0%');
     expect(screen.getByText('0 of 2 open games picked')).toBeInTheDocument();
@@ -204,17 +204,17 @@ describe('Bracket: sim it', () => {
     const a = setup({ n: 8 });
     await a.user.click(screen.getByRole('button', { name: 'sim it' }));
     const first = champ().textContent;
-    const picksA = [...document.querySelectorAll('.br-slot[data-state="adv"]')].map((e) => e.getAttribute('aria-label'));
+    const picksA = [...document.querySelectorAll('.br-slot[data-state="adv"]')].map((e) => e.textContent);
     cleanup();
     const b = setup({ n: 8 });
     await b.user.click(screen.getByRole('button', { name: 'sim it' }));
     expect(champ().textContent).toBe(first);
-    expect([...document.querySelectorAll('.br-slot[data-state="adv"]')].map((e) => e.getAttribute('aria-label'))).toEqual(picksA);
+    expect([...document.querySelectorAll('.br-slot[data-state="adv"]')].map((e) => e.textContent)).toEqual(picksA);
     // reroll up to a handful of times: at least one run differs
     const seen = new Set([picksA.join('|')]);
     for (let i = 0; i < 6; i++) {
       await b.user.click(screen.getByRole('button', { name: 'reroll' }));
-      seen.add([...document.querySelectorAll('.br-slot[data-state="adv"]')].map((e) => e.getAttribute('aria-label')).join('|'));
+      seen.add([...document.querySelectorAll('.br-slot[data-state="adv"]')].map((e) => e.textContent).join('|'));
     }
     expect(seen.size).toBeGreaterThan(1);
   });
@@ -229,7 +229,7 @@ describe('Bracket: the toilet bowl (the loser advances)', () => {
     const user = userEvent.setup();
     render(<Bracket bracket={bracket} ctx={ctxOf(field, worst)} names={names(field)} meRid={111} />);
     expect(screen.getByText(/click the team that gets flushed/)).toBeInTheDocument();
-    const s = screen.getByRole('button', { name: /^flush Team 112, seed 1, projected 80\.0 points, \d+% to lose round 1/ });
+    const s = screen.getByRole('button', { name: /^seed 1, Team 112, projected 80\.0 points, \d+% to lose round 1/ });
     // the weakest team is the likeliest to lose: more than a coin flip
     expect(s.querySelector('.br-p')!.textContent).toMatch(/^[5-9]\d%$/);
     await user.click(s);
@@ -238,8 +238,8 @@ describe('Bracket: the toilet bowl (the loser advances)', () => {
     expect(s.getAttribute('data-state')).toBe('adv');
     expect(screen.getByRole('status')).toHaveTextContent('Team 112 gets flushed and advances to round 2.');
     // the other game: 111 is flushed? pick 110 instead (seed 3)
-    await user.click(screen.getByRole('button', { name: /^flush Team 110,/ }));
-    await user.click(screen.getAllByRole('button', { name: /^flush Team 112,.*round 2/ })[0]!);
+    await user.click(screen.getByRole('button', { name: /^seed \d+, Team 110,/ }));
+    await user.click(screen.getAllByRole('button', { name: /^seed \d+, Team 112,.*round 2/ })[0]!);
     expect(champ()).toHaveAttribute('data-kind', 'toilet');
     expect(champ()).toHaveTextContent('toilet bowl champ');
     expect(champ()).toHaveTextContent('Team 112');
@@ -255,7 +255,7 @@ describe('Bracket: the toilet bowl (the loser advances)', () => {
     const user = userEvent.setup();
     render(<Bracket bracket={bracket} ctx={ctxOf(field, worst)} names={names(field)} meRid={111} />);
     const before = Number(oddsRow('Team 112').children[3]!.textContent!.replace('%', ''));
-    await user.click(screen.getByRole('button', { name: /^flush Team 109,/ })); // the best of the four gets flushed
+    await user.click(screen.getByRole('button', { name: /^seed \d+, Team 109,/ })); // the best of the four gets flushed
     // 112 and 109 are not in the same game; 109 advancing to the final means 112 now meets 109 or 111's side
     const after = Number(oddsRow('Team 112').children[3]!.textContent!.replace('%', ''));
     expect(after).not.toBe(before);
@@ -265,12 +265,12 @@ describe('Bracket: the toilet bowl (the loser advances)', () => {
     const bracket = buildBracket({ kind: 'toilet', seedOrder: field, rules: RULES });
     const user = userEvent.setup();
     render(<Bracket bracket={bracket} ctx={ctxOf(field, worst)} names={names(field)} meRid={111} />);
-    await user.click(screen.getByRole('button', { name: /^flush Team 112,/ }));
-    await user.click(screen.getByRole('button', { name: /^flush Team 110,/ }));
-    await user.click(screen.getAllByRole('button', { name: /^flush Team 112,.*round 2/ })[0]!);
+    await user.click(screen.getByRole('button', { name: /^seed \d+, Team 112,/ }));
+    await user.click(screen.getByRole('button', { name: /^seed \d+, Team 110,/ }));
+    await user.click(screen.getAllByRole('button', { name: /^seed \d+, Team 112,.*round 2/ })[0]!);
     expect(champ()).toHaveAttribute('data-state', 'crowned');
     // flush Team 109 instead of Team 112 in game 1: Team 112 is out of the final, so that pick is gone
-    await user.click(screen.getByRole('button', { name: /^flush Team 109,.*round 1/ }));
+    await user.click(screen.getByRole('button', { name: /^seed \d+, Team 109,.*round 1/ }));
     expect(champ()).toHaveAttribute('data-state', 'open');
     expect(screen.getByText('2 of 3 open games picked')).toBeInTheDocument();
   });
@@ -292,11 +292,11 @@ describe('Bracket: the toilet bowl (the loser advances)', () => {
     const user = userEvent.setup();
     render(<Bracket bracket={bracket} ctx={ctxOf(list, worst)} names={names(list)} meRid={111} />);
     expect(screen.getByText(/winners advance/)).toBeInTheDocument();
-    const s = screen.getByRole('button', { name: /^advance Team 109,.*to win round 1/ });
+    const s = screen.getByRole('button', { name: /^seed \d+, Team 109,.*to win round 1/ });
     await user.click(s);
     expect(s.querySelector('.br-stamp')).toBeNull();
-    await user.click(screen.getByRole('button', { name: /^advance Team 110,/ }));
-    await user.click(screen.getAllByRole('button', { name: /^advance Team 109,.*round 2/ })[0]!);
+    await user.click(screen.getByRole('button', { name: /^seed \d+, Team 110,/ }));
+    await user.click(screen.getAllByRole('button', { name: /^seed \d+, Team 109,.*round 2/ })[0]!);
     expect(champ()).toHaveTextContent('consolation champ');
     expect(champ()).toHaveTextContent('best of the rest');
   });
@@ -304,7 +304,7 @@ describe('Bracket: the toilet bowl (the loser advances)', () => {
   it('real games lock a toilet bowl: the loser of the real game has advanced', () => {
     const bracket = buildBracket({ kind: 'toilet', seedOrder: field, rules: RULES, real: [{ w: 109, l: 112 }] });
     render(<Bracket bracket={bracket} ctx={ctxOf(field, worst)} names={names(field)} meRid={111} />);
-    const s = screen.getByRole('button', { name: /^Team 112, seed 1,.*\(final result\)/ });
+    const s = screen.getByRole('button', { name: /^seed 1, Team 112,.*\(final result\)/ });
     expect(s).toHaveAttribute('data-state', 'adv');
     expect(s.querySelector('.br-stamp')).toHaveTextContent('flushed');
   });

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PlayerLink } from '../../components/PlayerLink';
-import { ordinal, signed } from '../../app/format';
+import { ordinal, signed, formatNum, formatPoints1 } from '../../app/format';
 import { pickValues } from '../../engine';
 import type { Mock, MockGrade, MockState, Rankings } from '../../engine';
 import { lineupVsMedian } from './mockSession';
@@ -40,7 +40,7 @@ export function GradeCard({ grade, state, mock, rankings, teams }: Props) {
         <div className="stack">
           <div className="stat"><span className="micro">lineup rank</span><span className="v">{ordinal(grade.rank)} <span className="dim">of {grade.teams}</span></span></div>
           <div className="stat"><span className="micro">vs the median team</span><span className={`v ${grade.vsMedian >= 0 ? 'pos-c' : 'neg-c'}`}>{signed(grade.vsMedian, 1)} <span className="dim">pts</span></span></div>
-          <div className="stat"><span className="micro">projected lineup</span><span className="v">{grade.total.toFixed(1)} <span className="dim">pts</span></span></div>
+          <div className="stat"><span className="micro">projected lineup</span><span className="v">{formatPoints1(grade.total)} <span className="dim">pts</span></span></div>
         </div>
       </div>
 
@@ -55,8 +55,8 @@ export function GradeCard({ grade, state, mock, rankings, teams }: Props) {
                 {lines.map((l) => (
                   <tr key={l.label}>
                     <td>{l.label.toLowerCase()}</td>
-                    <td className="n">{l.mine.toFixed(1)}</td>
-                    <td className="n dim">{l.median.toFixed(1)}</td>
+                    <td className="n">{formatPoints1(l.mine)}</td>
+                    <td className="n dim">{formatPoints1(l.median)}</td>
                     <td className={`n ${l.mine - l.median >= 0 ? 'pos-c' : 'neg-c'}`}>{signed(l.mine - l.median, 1)}</td>
                   </tr>
                 ))}
@@ -75,7 +75,7 @@ export function GradeCard({ grade, state, mock, rankings, teams }: Props) {
                   <tr key={t.rosterId} className={t.rosterId === grade.rosterId ? 'me' : undefined}>
                     <td className="n dim">{t.rank}</td>
                     <td>{teamLabel(teams, t.rosterId)}{t.rosterId === grade.rosterId && <span className="you">you</span>}</td>
-                    <td className="n">{t.total.toFixed(1)}</td>
+                    <td className="n">{formatPoints1(t.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -102,7 +102,7 @@ function PickList({ title, empty, rows }: { title: string; empty: string; rows: 
             const l = valueLabel(v.value);
             return (
               <li key={v.pickNo} className="pv">
-                <span><PlayerLink pid={v.pid} name={v.name} /> <span className="dim">{v.pos.toLowerCase()} · pick {v.pickNo}, adp {v.adp?.toFixed(1)}</span></span>
+                <span><PlayerLink pid={v.pid} name={v.name} /> <span className="dim">{v.pos.toLowerCase()} · pick {v.pickNo}, adp {v.adp === null || v.adp === undefined ? '—' : formatNum(v.adp)}</span></span>
                 <span className={l.tone}>{l.text}</span>
               </li>
             );

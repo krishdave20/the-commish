@@ -10,7 +10,7 @@
 .rank-table tr.tier-break > td { padding: 10px 8px 2px; border-bottom: 0; border-top: 1px solid var(--rule); background: var(--sheet); }
 .rank-table tr.tier-break:first-child > td { border-top: 0; }
 .tog.star { font-size: 13px; line-height: 1; padding: 2px 6px; }
-.tog.star[aria-pressed='true'] { color: var(--gold-ink); border-color: var(--gold); background: var(--gold-soft); }
+.tog.star[aria-pressed='true'] { color: var(--gold-text); border-color: var(--gold); background: var(--gold-soft); }
 
 /* the board */
 .board-wrap { max-height: 70vh; overflow: auto; border: 1px solid var(--rule); border-radius: var(--r); background: var(--sheet); }
@@ -19,11 +19,11 @@
 .board th.rd { left: 0; z-index: 3; width: 2.4rem; min-width: 2.4rem; text-align: center; }
 .board tbody th.rd { position: sticky; top: auto; left: 0; z-index: 1; background: var(--sheet); border-bottom: 1px solid var(--rule-2); }
 .board th.mine { color: var(--ink); background: var(--gold-soft); box-shadow: inset 0 -2px 0 var(--gold); }
-.board .slot-no { color: var(--ink-3); margin-right: 2px; }
+.board .slot-no { color: var(--ink-2); margin-right: 2px; }
 .board td { padding: 4px 6px; height: 2.9rem; vertical-align: top; border-bottom: 1px solid var(--rule-2); border-right: 1px solid var(--rule-2); overflow: hidden; }
 .board td.cell { display: table-cell; }
 .board .cn { display: block; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.board .cm { display: block; color: var(--ink-3); font-size: 10px; white-space: nowrap; }
+.board .cm { display: block; color: var(--ink-2); font-size: 10px; white-space: nowrap; }
 .board td.empty { background: var(--paper); }
 .board td.pos-qb { background: var(--pos-qb); } .board td.pos-rb { background: var(--pos-rb); } .board td.pos-wr { background: var(--pos-wr); }
 .board td.pos-te { background: var(--pos-te); } .board td.pos-k { background: var(--pos-k); } .board td.pos-def { background: var(--pos-def); }
@@ -52,5 +52,5 @@
 .replay-bar { align-items: center; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .otc-banner { animation: wr-pane 0.4s var(--ease) both; }
+  .otc-banner { animation: wr-pane var(--t-base) var(--ease) both; }
 }

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatOdds, formatPct, formatPoints1, ordinal, signed } from '../../app/format';
+import { formatOdds, formatPct, formatPoints1, ordinal, signed, formatCount } from '../../app/format';
 import { useModel, useScenario } from '../../app/modelContext';
 import { teamResult } from '../../app/results';
 import { Drawer } from '../../components/Drawer';
@@ -61,14 +61,14 @@ export function TeamDrawer({ engine, rid, onClose }: Props) {
       <div className="stat">
         <span className="micro">playoff odds</span>
         <OddsCell value={res.playoff} pending={engine.model.oddsPending} />
-        <span className="note">{engine.model.oddsPending ? 'odds are still simming.' : <>{formatOdds(res.div)} to win the division · {formatPoints1(res.expW)} expected wins ({res.winsP10.toFixed(0)} to {res.winsP90.toFixed(0)})</>}</span>
+        <span className="note">{engine.model.oddsPending ? 'odds are still simming.' : <>{formatOdds(res.div)} to win the division · {formatPoints1(res.expW)} expected wins ({formatCount(res.winsP10)} to {formatCount(res.winsP90)})</>}</span>
       </div>
       <div className="stat">
         <span className="micro">title odds</span>
         <OddsCell value={res.title} pending={engine.model.oddsPending} />
         <span className="note">
           {engine.model.oddsPending ? 'odds are still simming.'
-            : <>{formatOdds(res.finals)} to reach the final · {formatPct(fieldOdds, fieldOdds > 0 && fieldOdds < 0.01 ? 1 : 0)} to be crowned {LOSERS_COPY[mode].champ}</>}
+            : <>{formatOdds(res.finals)} to reach the final · {formatOdds(fieldOdds)} to be crowned {LOSERS_COPY[mode].champ}</>}
         </span>
       </div>
       <div className="stat">
@@ -85,7 +85,7 @@ export function TeamDrawer({ engine, rid, onClose }: Props) {
       <div className="stat">
         <span className="micro">next games</span>
         {detail.games.length === 0 ? <span className="note">no regular-season games left.</span> : (
-          <table>
+          <div className="tw"><table>
             <caption className="sr-only">Remaining games</caption>
             <thead><tr><th scope="col" className="n">wk</th><th scope="col">opponent</th><th scope="col" className="n">proj</th><th scope="col">win chance</th></tr></thead>
             <tbody>
@@ -97,7 +97,7 @@ export function TeamDrawer({ engine, rid, onClose }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
       <div className="stat">

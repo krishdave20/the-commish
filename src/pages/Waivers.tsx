@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
-import { compact, formatPoints1, signed } from '../app/format';
+import { compact, formatPoints1, signed, formatMoney } from '../app/format';
 import { useModel, useScenario } from '../app/modelContext';
 import { useNflverse } from '../app/nflverseData';
 import { usePlayersFile } from '../app/playersData';
@@ -59,14 +59,14 @@ function Board({ engine }: { engine: Engine }) {
 
   const columns: Column<WaiverEntry>[] = [
     {
-      key: 'player', header: 'player', value: (w) => w.player.name, className: 'nowrap',
+      key: 'player', header: 'player', value: (w) => w.player.name, className: 'nowrap sticky-col',
       render: (w) => <><PlayerLink pid={w.player.pid} name={w.player.name} /> <span className="dim">{w.player.nfl ?? ''}</span><PlayerTags p={w.player} /></>,
     },
     { key: 'pos', header: 'pos', value: (w) => w.player.pos, className: 'dim' },
     { key: 'gain', header: FEATURE.lift, numeric: true, value: (w) => w.gain, render: (w) => <span className="pos-c">{signed(w.gain)}</span> },
     { key: 'starts', header: 'starts', numeric: true, value: (w) => w.starts, render: (w) => `${w.starts}/${w.nweeks}`, className: 'hide-sm' },
     { key: 'drop', header: 'drop', value: (w) => w.drop.name, className: 'dim nowrap' },
-    { key: 'bid', header: 'faab bid', numeric: true, value: (w) => w.bid, render: (w) => `$${w.bid.toLocaleString('en-US')}` },
+    { key: 'bid', header: 'faab bid', numeric: true, value: (w) => w.bid, render: (w) => formatMoney(w.bid) },
     { key: 'next', header: `wk ${cur + 1} proj`, numeric: true, value: (w) => w.next, render: (w) => formatPoints1(w.next), className: 'hide-sm' },
     { key: 'ceil', header: 'ceiling', numeric: true, value: (w) => w.ceil, render: (w) => formatPoints1(w.ceil), className: 'hide-sm' },
     {
@@ -77,7 +77,7 @@ function Board({ engine }: { engine: Engine }) {
     {
       key: 'try', header: 'try', sortable: false,
       render: (w) => (
-        <button type="button" className="tog" aria-label={`Try adding ${w.player.name} and dropping ${w.drop.name}`}
+        <button type="button" className="tog" aria-label={`try adding ${w.player.name} and dropping ${w.drop.name}`}
           title="add him in the what-if lab" onClick={() => tryIt(w)}>try</button>
       ),
     },

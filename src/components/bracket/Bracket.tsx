@@ -7,8 +7,9 @@ import {
 } from '../../engine';
 import { OddsCell } from '../OddsCell';
 import { useReducedMotion } from '../motion';
+import { TOUCH_QUERY, useMediaQuery } from '../useMediaQuery';
 import { copyFor, roundLabel, weeksLabel } from './copy';
-import { CHAMP_H, COL_W, GAP_W, HEAD_H, MATCH_H, SLOT_H, layoutBracket } from './layout';
+import { CHAMP_H, COL_W, DEFAULT_DIMS, GAP_W, HEAD_H, TOUCH_DIMS, layoutBracket } from './layout';
 
 interface Props {
   bracket: BracketData;
@@ -20,7 +21,7 @@ interface Props {
   caption?: string;
   /** hide the odds table under the bracket */
   compact?: boolean;
-  /** how long each round shows while "sim it" plays (ms; default 700) */
+  /** how long each round shows while "sim it" plays (ms; default 550) */
   stepMs?: number;
 }
 
@@ -31,10 +32,12 @@ const nameOf = (names: ReadonlyMap<number, string>, rid: number) => names.get(ri
 /** A single-elimination bracket, left to right, that you can play with. Click a team to advance it (in a toilet bowl: click the team
     that gets flushed, because the loser advances); click again to undo. Title (or flush) odds are exact and update with every pick.
     "sim it" plays one seeded random run, round by round. Real results are locked. */
-export function Bracket({ bracket, ctx, names, meRid, caption, compact = false, stepMs = 700 }: Props) {
+export function Bracket({ bracket, ctx, names, meRid, caption, compact = false, stepMs = 550 }: Props) {
   const copy = copyFor(bracket.kind);
   const toilet = bracket.kind === 'toilet';
   const reduced = useReducedMotion();
+  const touch = useMediaQuery(TOUCH_QUERY);
+  const { slotH: SLOT_H, matchH: MATCH_H } = touch ? TOUCH_DIMS : DEFAULT_DIMS;
   const uid = useId();
   const [picks, setPicks] = useState<BracketPicks>({});
   const [run, setRun] = useState<SimRun | null>(null);
@@ -52,7 +55,7 @@ export function Bracket({ bracket, ctx, names, meRid, caption, compact = false, 
   }, [run, picks, roundOf]);
   const effective = useMemo(() => prunePicks(bracket, shown), [bracket, shown]);
   const resolved = useMemo(() => resolveBracket(bracket, effective), [bracket, effective]);
-  const layout = useMemo(() => layoutBracket(bracket), [bracket]);
+  const layout = useMemo(() => layoutBracket(bracket, touch ? TOUCH_DIMS : DEFAULT_DIMS), [bracket, touch]);
   const odds = useMemo(() => oddsFor(bracket, ctx, effective), [bracket, ctx, effective]);
   const sc = useMemo(() => scoringFor(bracket, ctx), [bracket, ctx]);
   const champion = championOf(resolved);
@@ -204,28 +207,29 @@ export function Bracket({ bracket, ctx, names, meRid, caption, compact = false, 
                   const decided = m.advancer !== null;
                   const shownPts = sc.mean(rid, m.round);
                   const state = adv ? 'adv' : decided ? 'out' : undefined;
-                  const aria = [
-                    m.ready && !m.locked ? `${copy.verb} ${who}` : who,
-                    slot.seed !== null ? `seed ${slot.seed}` : null,
-                    `projected ${formatPoints1(shownPts)} points`,
-                    prob !== null ? `${formatOdds(prob)} ${copy.chance} round ${m.round}` : null,
-                    adv ? (m.locked ? `${copy.advanced} (final result)` : toilet ? 'flushed' : 'advances') : null,
-                  ].filter(Boolean).join(', ');
+                  // the accessible name is the visible text plus visually hidden context (no aria-label), so it always
+                  // contains what is printed on the button, in order (WCAG 2.5.3, label in name)
+                  const status = adv ? (m.locked ? `${copy.advanced} (final result)` : toilet ? 'flushed' : 'advances') : null;
                   const canPick = m.ready && !m.locked;
                   return (
                     <button
                       key={side} type="button" className={`br-slot${rid === meRid ? ' me' : ''}`} style={{ height: SLOT_H }}
                       data-state={state} data-round={m.round} data-y={p.cy + (side === 'a' ? -SLOT_H / 2 : SLOT_H / 2)}
                       aria-pressed={canPick ? adv && m.picked : undefined} aria-disabled={canPick ? undefined : true}
-                      aria-label={aria} aria-describedby={tip === m.id ? `${uid}-tip` : undefined}
+                      aria-describedby={tip === m.id ? `${uid}-tip` : undefined}
                       onClick={() => choose(m, rid)}
                       onMouseEnter={() => setTip(m.id)} onFocus={() => setTip(m.id)}
                       onBlur={() => setTip((t) => (t === m.id ? null : t))}
                     >
-                      <span className="br-seed">{slot.seed ?? ''}</span>
-                      <span className="br-name">{who}{bye && <em className="br-bye">bye</em>}</span>
-                      <span className="br-pts">{formatPoints1(shownPts)}</span>
-                      {adv && toilet ? <span className="pill bad br-stamp">flushed</span> : <span className="br-p">{prob === null ? '' : formatOdds(prob)}</span>}
+                      {/* hidden words sit beside the visible spans (absolutely positioned, so the layout is untouched) */}
+                      {slot.seed !== null && <><span className="sr-only">seed</span>{' '}</>}<span className="br-seed">{slot.seed ?? ''}</span>
+                      <span className="sr-only">,</span>{' '}<span className="br-name">{who}{bye && <em className="br-bye">bye</em>}</span>
+                      <span className="sr-only">, projected</span>{' '}<span className="br-pts">{formatPoints1(shownPts)}</span>{' '}<span className="sr-only">points</span>
+                      {adv && toilet
+                        ? <><span className="sr-only">,</span>{' '}<span className="pill bad br-stamp">flushed</span></>
+                        : <>{prob !== null && <><span className="sr-only">,</span>{' '}</>}<span className="br-p">{prob === null ? '' : formatOdds(prob)}</span>{prob !== null && <>{' '}<span className="sr-only">{copy.chance} round {m.round}</span></>}</>}
+                      {status && !(adv && toilet && !m.locked) && <span className="sr-only">, {status}</span>}
+                      {m.ready && !m.locked && <span className="sr-only">, {copy.verb}</span>}
                     </button>
                   );
                 })}

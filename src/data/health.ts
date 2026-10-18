@@ -2,7 +2,7 @@
    says, in plain English, what works and what breaks. Undocumented Sleeper endpoints that fail name the
    features that depend on them. nflverse is not probed directly (no CORS on GitHub releases): its rows read the
    nightly job's manifest instead. Network goes through the shared limiter. */
-import type { HealthContext, HealthResult } from './contract.ts';
+import type { HealthContext, HealthResult, SleeperLeague } from './contract.ts';
 import type { Limiter } from './limiter.ts';
 import type { NflverseClient, NvResult } from './nflverse.ts';
 import type { NflverseManifest, NflverseSource } from './nflverseTypes.ts';
@@ -34,6 +34,8 @@ interface Spec {
   emptyWarn?: string;
   /** body may legitimately be null */
   nullOk?: boolean;
+  /** an empty (or null) answer is normal for now and is healthy, with this text (brackets before the playoffs) */
+  emptyOk?: () => string;
   onBody?: (body: unknown) => void;
 }
 
@@ -61,6 +63,7 @@ export function createHealth(deps: HealthDeps) {
     if (res.status !== 200) {
       return result(s, { ...base, level: 'fail', message: `${s.label} answered HTTP ${res.status}. ${s.impact}` });
     }
+    if ((res.body === null || res.body === undefined) && s.emptyOk) return result(s, { ...base, level: 'ok', message: s.emptyOk() });
     if (res.body === null || res.body === undefined) {
       return s.nullOk
         ? result(s, { ...base, level: 'ok', message: 'Answered (no data for that id).' })
@@ -71,6 +74,7 @@ export function createHealth(deps: HealthDeps) {
     }
     s.onBody?.(res.body);
     const n = size(res.body);
+    if (n === 0 && s.emptyOk) return result(s, { ...base, level: 'ok', message: s.emptyOk() });
     if (n === 0 && s.emptyWarn) return result(s, { ...base, level: 'warn', message: s.emptyWarn });
     // a single object (state, user, league) has no meaningful count; say it answered as expected
     if (!Array.isArray(res.body) && s.noun === 'account') return result(s, { ...base, level: 'ok', message: 'Account found.' });
@@ -186,6 +190,7 @@ export function createHealth(deps: HealthDeps) {
     const prevWeek = Math.max(1, week - 1);
     const L = ctx.leagueId;
     let draftId = ctx.draftId;
+    let playoffStart: number | undefined;
     const sl = { documented: true, source: 'sleeper' as const };
     const un = { documented: false, source: 'sleeper' as const };
     const fc = { documented: true, source: 'fantasycalc' as const };
@@ -207,7 +212,11 @@ export function createHealth(deps: HealthDeps) {
       ? { id: 'sleeper.userLeagues', label: 'User leagues', url: sleeperUrls.userLeagues(ctx.userId, season), ...sl, guard: shapes.leagues, noun: 'leagues', impact: 'The league picker depends on this.' }
       : null, () => skipped({ id: 'sleeper.userLeagues', label: 'User leagues', ...sl }, 'no user id'));
     if (L) {
-      addSpec({ id: 'sleeper.league', label: 'League', url: sleeperUrls.league(L), ...sl, guard: shapes.league, noun: 'fields', impact: 'League settings and scoring depend on this.' });
+      addSpec({
+        id: 'sleeper.league', label: 'League', url: sleeperUrls.league(L), ...sl, guard: shapes.league, noun: 'fields', impact: 'League settings and scoring depend on this.',
+        // the bracket rows below say when the bracket fills in
+        onBody: (b) => { playoffStart = (b as SleeperLeague).settings?.playoff_week_start; },
+      });
       addSpec({ id: 'sleeper.rosters', label: 'Rosters', url: sleeperUrls.rosters(L), ...sl, guard: shapes.rosters, noun: 'rosters', impact: 'Every team page depends on this.' });
       addSpec({ id: 'sleeper.users', label: 'League users', url: sleeperUrls.users(L), ...sl, guard: shapes.leagueUsers, noun: 'managers', impact: 'Manager names and team names depend on this.' });
       addSpec({ id: 'sleeper.matchups', label: `Matchups, week ${week}`, url: sleeperUrls.matchups(L, week), ...sl, guard: shapes.matchups, noun: 'entries', impact: 'Standings, lineups and the season simulation depend on this.', emptyWarn: 'No matchups for this week yet.' });
@@ -220,7 +229,8 @@ export function createHealth(deps: HealthDeps) {
       });
     } else {
       for (const [id, label] of [['sleeper.league', 'League'], ['sleeper.rosters', 'Rosters'], ['sleeper.users', 'League users'], ['sleeper.matchups', 'Matchups'],
-        ['sleeper.transactions', 'Transactions'], ['sleeper.tradedPicks', 'Traded picks'], ['sleeper.drafts', 'League drafts']] as const) addSpec(null, () => needLeague(id, label));
+        ['sleeper.transactions', 'Transactions'], ['sleeper.tradedPicks', 'Traded picks'],
+        ['sleeper.winnersBracket', 'Winners bracket'], ['sleeper.losersBracket', 'Losers bracket'], ['sleeper.drafts', 'League drafts']] as const) addSpec(null, () => needLeague(id, label));
     }
     add('sleeper.players', checkPlayers);
     addSpec({ id: 'sleeper.trendingAdd', label: 'Trending adds', url: sleeperUrls.trending('add', 24, 50), ...sl, guard: shapes.trending, noun: 'players', impact: 'Waiver risers depend on this.' });
@@ -245,6 +255,23 @@ export function createHealth(deps: HealthDeps) {
     const out = new Map<string, HealthResult>();
     await Promise.all(first.map(async (id) => { out.set(id, await jobs.get(id)!()); }));
 
+    /* the playoff brackets: documented endpoints. Before the playoffs Sleeper answers `[]` (or null), which is healthy.
+       Run after the league row, which says when the bracket fills in. */
+    const bracketIds = ['sleeper.winnersBracket', 'sleeper.losersBracket'];
+    const bracketJob = !L ? Promise.resolve([]) : (async () => {
+      const when = playoffStart ? `week ${playoffStart}` : 'the start of the playoffs';
+      const bSpecs: Array<[string, string, (l: string) => string, string]> = [
+        ['sleeper.winnersBracket', 'Winners bracket', sleeperUrls.winnersBracket, 'The road-to-the-’ship bracket and title odds depend on this.'],
+        ['sleeper.losersBracket', 'Losers bracket', sleeperUrls.losersBracket, 'The toilet bowl and consolation bracket depend on this.'],
+      ];
+      return Promise.all(bSpecs.map(async ([id, label, url, impact]) => {
+        out.set(id, await probe({
+          id, label, url: url(L), ...sl, guard: shapes.bracket, noun: 'matchups', impact,
+          emptyOk: () => `no bracket yet (fills in at ${when})`,
+        }));
+      }));
+    })();
+
     const dSpecs: Array<[string, string, (d: string) => string, Guard<unknown>, string, string]> = [
       ['sleeper.draft', 'Draft', sleeperUrls.draft, shapes.draft, 'fields', 'The draft board depends on this.'],
       ['sleeper.draftPicks', 'Draft picks', sleeperUrls.draftPicks, shapes.draftPicks, 'picks', 'The live draft assistant depends on this.'],
@@ -257,9 +284,10 @@ export function createHealth(deps: HealthDeps) {
       }
       out.set(id, await probe({ id, label, url: url(draftId), ...sl, guard, noun, impact }));
     }));
+    await bracketJob;
 
-    // keep a stable, readable order: draft rows sit after league drafts
-    const fullOrder = order.flatMap((id) => (id === 'sleeper.drafts' ? [id, ...draftIds] : [id]));
+    // keep a stable, readable order: league brackets follow traded picks, draft rows sit after league drafts
+    const fullOrder = order.flatMap((id) => (id === 'sleeper.drafts' ? [id, ...draftIds] : id === 'sleeper.tradedPicks' && L ? [id, ...bracketIds] : [id]));
     return fullOrder.map((id) => out.get(id)!).filter(Boolean);
   }
 

@@ -97,14 +97,14 @@ export function PlayoffMachine({ engine, picks, setPicks }: { engine: Engine; pi
                 return (
                   <button type="button" className={cls} aria-pressed={chosen === rid} onClick={() => pick(g.id, rid)}>
                     <span className="nm">{names.get(rid)}</span>
-                    <span className="meta">{`${t.wins}–${t.losses} · proj ${formatPoints1(means[rid]?.[g.week] ?? 0)}`}</span>
+                    <span className="meta">{`${t.wins}–${t.losses} · proj ${formatPoints1(means[rid]?.[g.week] ?? 0)} · ${formatOdds(rid === g.teamA ? p : 1 - p)} to win`}</span>
                   </button>
                 );
               };
               return (
                 <div className="game" key={g.id}>
                   {side(g.teamA, false)}
-                  <div className="vs"><span>vs</span><span className="wp">{formatOdds(Math.max(p, 1 - p))}{p >= 0.5 ? ' ◂' : ' ▸'}</span></div>
+                  <div className="vs" aria-hidden="true"><span>vs</span></div>
                   {side(g.teamB, true)}
                 </div>
               );

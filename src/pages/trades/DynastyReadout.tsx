@@ -1,4 +1,4 @@
-import { signedPct, formatCount } from '../../app/format';
+import { signedPct, formatCount, formatNum } from '../../app/format';
 import { Kpi } from '../../components/Kpi';
 import type { DynastyTradeEval } from '../../engine/dynasty/index.ts';
 import type { LensTeam } from '../../engine/dynasty/index.ts';
@@ -28,7 +28,7 @@ export function DynastyReadout({ ev, me, partner, partnerName }: {
       <p className="take" data-testid="dynasty-verdict">{ev.message}</p>
       {me && partner && (
         <p className="note">
-          you read as {me.label === 'all-in' ? 'an' : 'a'} {me.label} (now {me.nowScore.toFixed(2)}, later {me.futureScore.toFixed(2)}); {partnerName} reads as {partner.label === 'all-in' ? 'an' : 'a'} {partner.label}.
+          you read as {me.label === 'all-in' ? 'an' : 'a'} {me.label} (now {formatNum(me.nowScore, 2)}, later {formatNum(me.futureScore, 2)}); {partnerName} reads as {partner.label === 'all-in' ? 'an' : 'a'} {partner.label}.
         </p>
       )}
     </div>

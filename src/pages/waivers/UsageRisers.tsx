@@ -4,6 +4,7 @@ import { Segmented } from '../../components/Segmented';
 import type { PlayerWeek } from '../../data/nflverseTypes';
 import { MIN_RISER_SNAPS, MIN_RISER_TARGETS, RISER_WINDOW, usageRisers } from './risers';
 import type { RiserMetric } from './risers';
+import { formatNum, formatPct } from '../../app/format';
 
 export interface RiserPlayer { name: string; pos: string }
 
@@ -15,7 +16,7 @@ interface Props {
   loading: boolean;
 }
 
-const pts = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)}`;
+const pts = (x: number) => `${x >= 0 ? '+' : '−'}${formatNum(Math.abs(x * 100))}`;
 
 /** Free agents whose snap or target share rose most over the last two weeks, from the nightly nflverse weekly rows. */
 export function UsageRisers({ weeks, through, freeAgents, loading }: Props) {
@@ -55,8 +56,8 @@ export function UsageRisers({ weeks, through, freeAgents, loading }: Props) {
                       <tr key={r.pid}>
                         <td className="nowrap"><PlayerLink pid={r.pid} name={p?.name ?? r.pid} /> <span className="dim">{r.team}</span></td>
                         <td className="dim">{p?.pos}</td>
-                        <td className="n">{(r.recent * 100).toFixed(1)}%</td>
-                        <td className="n dim">{(r.prior * 100).toFixed(1)}%</td>
+                        <td className="n">{formatPct(r.recent, 1)}</td>
+                        <td className="n dim">{formatPct(r.prior, 1)}</td>
                         <td className="n pos-c">{pts(r.change)} pts</td>
                         <td className="hide-sm dim">
                           {r.recentSnaps} snaps{metric === 'target' ? `, ${r.recentTargets} targets` : ''} in {r.recentWeeks} {r.recentWeeks === 1 ? 'week' : 'weeks'}; {r.priorWeeks} earlier {r.priorWeeks === 1 ? 'week' : 'weeks'}

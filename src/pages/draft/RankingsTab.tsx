@@ -8,6 +8,7 @@ import type { DraftPick } from '../../data';
 import type { RankedPlayer } from '../../engine';
 import { TierBadge, WatchStar } from './BestAvailable';
 import type { DraftRoom } from './model';
+import { formatCount, formatNum, formatPoints1 } from '../../app/format';
 
 const PAGE = 100;
 
@@ -47,15 +48,15 @@ export function RankingsTab({ room, picks }: Props) {
     { key: 'name', header: 'player', value: (r) => r.name, render: (r) => <><PlayerLink pid={r.pid} name={r.name} />{r.rookie && <> <span className="pill mute">rookie</span></>}</>, className: 'nowrap' },
     { key: 'pos', header: 'pos', value: (r) => `${r.pos}${String(r.posRank).padStart(3, '0')}`, render: (r) => <>{r.pos.toLowerCase()}{r.posRank}</>, className: 'dim' },
     { key: 'team', header: 'team', value: (r) => r.team ?? '', render: (r) => r.team ?? 'fa', className: 'dim hide-sm' },
-    { key: 'points', header: 'proj pts', numeric: true, value: (r) => r.points, render: (r) => r.points.toFixed(1) },
-    { key: 'vor', header: 'vor', numeric: true, value: (r) => r.vor, render: (r) => r.vor.toFixed(1) },
+    { key: 'points', header: 'proj pts', numeric: true, value: (r) => r.points, render: (r) => formatPoints1(r.points) },
+    { key: 'vor', header: 'vor', numeric: true, value: (r) => r.vor, render: (r) => formatPoints1(r.vor) },
     { key: 'tier', header: 'tier', value: (r) => r.tier, render: (r) => <TierBadge tier={r.tier} /> },
-    { key: 'adp', header: 'adp', numeric: true, value: (r) => r.adp, render: (r) => (r.adp == null ? '—' : r.adp.toFixed(1)), className: 'dim' },
+    { key: 'adp', header: 'adp', numeric: true, value: (r) => r.adp, render: (r) => (r.adp == null ? '—' : formatNum(r.adp)), className: 'dim' },
     {
       key: 'value', header: 'vs adp', numeric: true, value: (r) => r.valueVsAdp,
-      render: (r) => (r.valueVsAdp == null ? '—' : <span className={r.valueVsAdp > 0 ? 'pos-c' : r.valueVsAdp < 0 ? 'neg-c' : 'dim'}>{r.valueVsAdp > 0 ? '+' : r.valueVsAdp < 0 ? '−' : ''}{Math.abs(r.valueVsAdp).toFixed(1)}</span>),
+      render: (r) => (r.valueVsAdp == null ? '—' : <span className={r.valueVsAdp > 0 ? 'pos-c' : r.valueVsAdp < 0 ? 'neg-c' : 'dim'}>{r.valueVsAdp > 0 ? '+' : r.valueVsAdp < 0 ? '−' : ''}{formatNum(Math.abs(r.valueVsAdp))}</span>),
     },
-    ...(showFc ? [{ key: 'fc', header: 'fc value', numeric: true, value: (r: RankedPlayer) => r.fc?.value ?? null, render: (r: RankedPlayer) => (r.fc ? Math.round(r.fc.value).toLocaleString('en-US') : '—'), className: 'dim' } satisfies Column<RankedPlayer>] : []),
+    ...(showFc ? [{ key: 'fc', header: 'fc value', numeric: true, value: (r: RankedPlayer) => r.fc?.value ?? null, render: (r: RankedPlayer) => (r.fc ? formatCount(r.fc.value) : '—'), className: 'dim' } satisfies Column<RankedPlayer>] : []),
     { key: 'watch', header: 'watch', sortable: false, render: (r) => <WatchStar pid={r.pid} name={r.name} /> },
   ], [showFc]);
 
@@ -80,13 +81,13 @@ export function RankingsTab({ room, picks }: Props) {
     <div className="stack">
       <section className="card" aria-labelledby="rank-title">
         <header>
-          <div className="micro">{rankings.rows.length.toLocaleString('en-US')} players · projections scored with your league’s settings</div>
+          <div className="micro">{formatCount(rankings.rows.length)} players · projections scored with your league’s settings</div>
           <h2 id="rank-title">rankings</h2>
         </header>
 
         <div className="chips" aria-label="Replacement level by position">
           {repl.map((p) => (
-            <span key={p} className="chip" title={`${rankings.starters[p] ?? 0} ${p.toLowerCase()} start across the league`}>replacement: {p.toLowerCase()} {rankings.replacement[p]!.toFixed(1)} pts</span>
+            <span key={p} className="chip" title={`${rankings.starters[p] ?? 0} ${p.toLowerCase()} start across the league`}>replacement: {p.toLowerCase()} {formatPoints1(rankings.replacement[p]!)} pts</span>
           ))}
         </div>
 

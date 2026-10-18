@@ -1,4 +1,5 @@
 import type { UnmatchedPlayer, UnmatchedReason } from '../../data/nflverseTypes';
+import { formatCount } from '../../app/format';
 
 const WHY: Record<UnmatchedReason, string> = {
   no_candidate: 'no sleeper player has this id, or this name on this team',
@@ -24,7 +25,7 @@ export function UnmatchedTable({ players, matched, season, loading }: Props) {
     <div className="stack">
       <p className="note">
         {players.length === 0 ? 'every nflverse player with snaps, targets or carries was matched.'
-          : `${players.length} nflverse ${players.length === 1 ? 'player' : 'players'} with offensive snaps, targets or carries in ${season ?? 'this season'} could not be matched to a sleeper player${matched !== undefined ? `; ${matched.toLocaleString('en-US')} were matched` : ''}.`}
+          : `${players.length} nflverse ${players.length === 1 ? 'player' : 'players'} with offensive snaps, targets or carries in ${season ?? 'this season'} could not be matched to a sleeper player${matched !== undefined ? `; ${formatCount(matched)} were matched` : ''}.`}
       </p>
       {players.length > 0 && (
         <div className="tw">

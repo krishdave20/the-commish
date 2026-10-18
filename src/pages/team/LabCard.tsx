@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { formatOdds, formatPoints1, signedPct } from '../../app/format';
+import { formatOdds, formatPoints1, signedPct, formatNum } from '../../app/format';
 import { FEATURE } from '../../app/names';
 import { useScenario } from '../../app/modelContext';
 import { teamResult } from '../../app/results';
@@ -198,16 +198,17 @@ export function LabCard({ engine }: { engine: Engine }) {
           <div className="sugg" role="group" aria-label="Free agents">
             {freeAgents.length === 0 && <div className="note" style={{ padding: 8 }}>no free agent matches that search.</div>}
             {freeAgents.map(({ p, perWeek }) => (
-              <button key={p.pid} type="button" aria-label={`Add ${p.name}`}
+              <button key={p.pid} type="button"
                 onClick={() => { setScenario((s) => (s.adds.includes(p.pid) ? s : { ...s, adds: [...s.adds, p.pid] })); setQuery(''); }}>
-                <span className="dim">{p.pos}</span><span>{p.name} · {p.nfl ?? 'fa'}</span><span className="dim">{formatPoints1(perWeek)}/wk</span>
+                {/* no aria-label: the name comes from the visible text, so it always contains it (WCAG 2.5.3) */}
+                <span className="sr-only">add</span>{' '}<span className="dim">{p.pos}</span>{' '}<span>{p.name} · {p.nfl ?? 'fa'}</span>{' '}<span className="dim">{formatPoints1(perWeek)}/wk</span>
               </button>
             ))}
           </div>
         </div>
         <div className="stack">
           <label className="ctl">
-            weekly swing: {scenario.volatility.toFixed(2)}×
+            weekly swing: {formatNum(scenario.volatility, 2)}×
             <input
               type="range" min={0.5} max={1.5} step={0.05} value={scenario.volatility}
               onChange={(e) => setScenario((s) => ({ ...s, volatility: Number(e.target.value) }))}

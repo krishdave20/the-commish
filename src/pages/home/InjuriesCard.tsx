@@ -23,7 +23,7 @@ export function InjuriesCard({ engine }: { engine: Engine }) {
       {flagged.length === 0 ? <p className="note">no injury flags on your starters.</p> : (
         <ul className="plain" aria-label="Injury flags">
           {flagged.map((p) => (
-            <li key={p.pid}><PlayerLink pid={p.pid} name={p.name} /> <span className="dim">{p.pos} {p.nfl ?? ''}</span><PlayerTags p={p} />{p.body ? <span className="note"> · {p.body}</span> : null}</li>
+            <li key={p.pid} className="flag-line"><PlayerLink pid={p.pid} name={p.name} /><span className="dim">{p.pos} {p.nfl ?? ''}</span><PlayerTags p={p} />{p.body ? <span className="note">{p.body}</span> : null}</li>
           ))}
         </ul>
       )}

@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useModel, useScenario } from '../../app/modelContext';
 import { FEATURE, LOSERS_COPY } from '../../app/names';
 import { Segmented } from '../../components/Segmented';
+import { BlockSkeleton } from '../../components/Skeleton';
+import { useMediaQuery } from '../../components/useMediaQuery';
 import { Bracket } from '../../components/bracket/Bracket';
 import { bracketsFor, orderFor, SEEDING_LABEL, type SeedingMode } from '../../components/bracket/assemble';
 import { useBracketInputs, useLosersSetting, useSleeperBrackets } from '../../components/bracket/useBracketData';
@@ -15,20 +17,8 @@ const NOTE: Record<SeedingMode, string> = {
 
 type Which = 'ship' | 'field';
 
-/** True when the viewport is wide enough to set the two brackets side by side (jsdom, with no matchMedia, is "narrow"). */
-function useWide(): boolean {
-  const query = '(min-width: 1100px)';
-  const get = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
-  const [wide, setWide] = useState(get);
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return;
-    const mq = window.matchMedia(query);
-    const on = () => setWide(mq.matches);
-    mq.addEventListener?.('change', on);
-    return () => mq.removeEventListener?.('change', on);
-  }, []);
-  return wide;
-}
+/** Wide enough to set the two brackets side by side (jsdom, with no matchMedia, is "narrow"). */
+const WIDE = '(min-width: 1100px)';
 
 /** The championship bracket and the non-playoff bracket, seeded three ways, with live title and flush odds. */
 export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks }) {
@@ -39,7 +29,7 @@ export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks })
   const { losers } = useSleeperBrackets();
   const [seeding, setSeeding] = useState<SeedingMode>('projected');
   const [which, setWhich] = useState<Which>('ship');
-  const wide = useWide();
+  const wide = useMediaQuery(WIDE);
   const lc = LOSERS_COPY[mode];
 
   const order = useMemo(
@@ -52,11 +42,14 @@ export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks })
       <section className="card" aria-labelledby="bracket-title">
         <header><div className="micro">{FEATURE.bracketKicker}</div><h2 id="bracket-title">{FEATURE.bracket}</h2></header>
         <p className="note" role="status">simming the season for the projected seeds…</p>
+        <BlockSkeleton height="22rem" />
       </section>
     );
   }
 
   const showShip = wide || which === 'ship', showField = wide || which === 'field';
+  // two brackets side by side only when both are small: a full eight-team bracket needs the whole row, so a wide screen stacks them
+  const sideBySide = wide && (brackets.title?.rounds ?? 0) <= 2 && (brackets.field?.rounds ?? 0) <= 2;
   return (
     <div className="stack" id="bracket">
       <div className="row">
@@ -70,7 +63,7 @@ export function BracketCard({ engine, picks }: { engine: Engine; picks: Picks })
         )}
       </div>
       <p className="note">{NOTE[seeding]}</p>
-      <div className={`br-pair${wide ? ' wide' : ''}`}>
+      <div className={`br-pair${sideBySide ? ' wide' : ''}`}>
         {showShip && (
           <section className="card" aria-labelledby="bracket-title">
             <header>

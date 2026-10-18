@@ -43,14 +43,15 @@ interface Props {
 
 const clock = (ts: number) => new Date(ts).toLocaleTimeString('en-GB', { hour12: false });
 
-function Status({ feed, source, plan }: Pick<Props, 'feed' | 'source' | 'plan'>) {
+/** `announce` is false while a replay plays by itself: a pick a second would make a screen reader talk over everything. */
+function Status({ feed, source, plan, announce }: Pick<Props, 'feed' | 'source' | 'plan'> & { announce: boolean }) {
   const made = feed.picks.length;
   const total = plan.order.length;
   return (
     <div className="stack">
       <div className="row">
         {source === 'replay' ? <span className="chip gold">replay</span> : <span className="chip up">live</span>}
-        <span className="note" role="status">
+        <span className="note" role={announce ? 'status' : undefined}>
           {feed.complete ? `draft complete · ${made} of ${total} picks`
             : made === 0 ? `waiting for the first pick · ${total} picks in all`
             : `pick ${made} of ${total} made`}
@@ -120,6 +121,8 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
   }
 
   const { turn, needs, runs, gone } = snapshot;
+  // a live draft and a replay you step through yourself are announced; a replay that plays on its own is not
+  const announce = source === 'live' || replay.speed === 0 || replay.paused;
   const recent = Math.min(8, feed.picks.length);
   const activeRuns = runs.filter((r) => r.isRun);
   const feedRows = snapshot.values.slice().reverse();
@@ -133,9 +136,9 @@ export function ClockTab({ room, plan, feed, source, snapshot, replay, canReplay
           <div className="micro">{source === 'replay' ? 'a saved draft, replayed' : 'polling sleeper'}</div>
           <h2 id="clock-title">on the clock</h2>
         </header>
-        <Status feed={feed} source={source} plan={plan} />
+        <Status feed={feed} source={source} plan={plan} announce={announce} />
         {source === 'replay' && <ReplayBar replay={replay} />}
-        <p className="take" aria-live="polite">
+        <p className="take" aria-live={announce ? 'polite' : 'off'}>
           {turn.currentPickNo === null ? 'the draft is over.'
             : turn.picksBetween === null ? `pick ${turn.currentPickNo} is on the clock. you have no picks left.`
             : turn.picksBetween === 0 ? `you’re on the clock at pick ${turn.nextPickNo}.`

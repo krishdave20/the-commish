@@ -33,6 +33,27 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # end-to-end smoke test: builds dist/, serves it with `vite preview` and visits every route from the saved fixture
+      # (no internet needed). Browsers are cached by Playwright version; system libraries are installed every run.
+      - name: Read the Playwright version
+        id: playwright
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - name: Upload the e2e results (screenshots, axe report, traces)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            e2e/results
+            playwright-report
+          if-no-files-found: ignore
+          retention-days: 14
 
   build:
     needs: check

@@ -3,6 +3,7 @@ import { useDraftInputs, useRankings } from '../../app/draftInputs';
 import { FEATURE } from '../../app/names';
 import { PlayerLink } from '../../components/PlayerLink';
 import type { SleeperLeague } from '../../data';
+import { formatNum, formatPoints1 } from '../../app/format';
 
 const TOP = 12;
 
@@ -38,9 +39,9 @@ export function RookieClass({ league, season }: { league: SleeperLeague; season:
                     <td className="nowrap"><PlayerLink pid={r.pid} name={r.name} /></td>
                     <td className="dim">{r.pos}{r.posRank}</td>
                     <td className="dim">{r.team ?? 'fa'}</td>
-                    <td className="n">{r.points.toFixed(1)}</td>
+                    <td className="n">{formatPoints1(r.points)}</td>
                     <td className="n hide-sm">{r.tier}</td>
-                    <td className="n hide-sm dim">{r.adp === null ? '—' : r.adp.toFixed(1)}</td>
+                    <td className="n hide-sm dim">{r.adp === null ? '—' : formatNum(r.adp)}</td>
                   </tr>
                 ))}
               </tbody>

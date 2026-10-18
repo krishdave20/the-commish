@@ -1,4 +1,5 @@
 import { useGrown } from '../motion';
+import { formatNum } from '../../app/format';
 
 export interface AgeRow {
   pos: string;
@@ -23,8 +24,8 @@ export function AgeBars({ rows }: { rows: AgeRow[] }) {
           <li key={r.pos}>
             <span className="micro">{r.pos}</span>
             <div className={old ? 'bar gold' : 'bar'} aria-hidden="true"><i style={{ width: `${grown ? pct * 100 : 0}%` }} /></div>
-            <span className="num">{r.avg.toFixed(1)}</span>
-            <span className="dim">{r.n} {r.n === 1 ? 'player' : 'players'}{r.league !== null ? ` · league ${r.league.toFixed(1)}` : ''}</span>
+            <span className="num">{formatNum(r.avg)}</span>
+            <span className="dim">{r.n} {r.n === 1 ? 'player' : 'players'}{r.league !== null ? ` · league ${formatNum(r.league)}` : ''}</span>
           </li>
         );
       })}

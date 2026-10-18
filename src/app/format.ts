@@ -24,12 +24,17 @@ export function formatMs(n: number): string {
 
 /** Points in tables and sub-lines: 2 decimals. */
 export function formatPoints(n: number): string {
-  return n.toFixed(2);
+  return Number.isFinite(n) ? n.toFixed(2) : '—';
 }
 
 /** Points in big KPI figures and anything beside them: 1 decimal. */
 export function formatPoints1(n: number): string {
-  return n.toFixed(1);
+  return Number.isFinite(n) ? n.toFixed(1) : '—';
+}
+
+/** A plain figure with fixed decimals, for ADP, ages and ratios (points, money and percents have their own formatters). */
+export function formatNum(n: number, digits = 1): string {
+  return Number.isFinite(n) ? n.toFixed(digits) : '—';
 }
 
 /** Whole dollars with thousands separators: "$1,800". */

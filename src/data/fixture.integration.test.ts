@@ -46,6 +46,7 @@ describe('fixture manifest', () => {
       [/\/transactions\/\d+$/, shapes.transactions],
       [/\/league\/[^/]+\/traded_picks$/, shapes.tradedPicks],
       [/\/league\/[^/]+\/drafts$/, shapes.drafts],
+      [/\/league\/[^/]+\/(winners|losers)_bracket$/, shapes.bracket],
       [/\/v1\/draft\/[^/]+$/, shapes.draft],
       [/\/picks$/, shapes.draftPicks],
       [/\/draft\/[^/]+\/traded_picks$/, shapes.tradedPicks],
@@ -107,6 +108,13 @@ describe('DataApi on the fixture transport', () => {
     expect(userIds.has(m.user_id)).toBe(true);
     for (const r of b.rosters) if (r.owner_id) expect(userIds.has(r.owner_id)).toBe(true);
     expect(b.drafts.length).toBe((await raw<unknown[]>(sleeperUrls.drafts(m.league_id))).length);
+  });
+
+  it('holds both playoff brackets (the smoke test and the bracket pages read them)', async () => {
+    expect(m.files[sleeperUrls.winnersBracket(m.league_id)]).toBeTruthy();
+    expect(m.files[sleeperUrls.losersBracket(m.league_id)]).toBeTruthy();
+    expect((await layer.sleeper.winnersBracket(m.league_id)).data.length).toBeGreaterThan(0);
+    expect((await layer.sleeper.losersBracket(m.league_id)).data.length).toBeGreaterThan(0);
   });
 
   it('serves the second read from the cache', async () => {

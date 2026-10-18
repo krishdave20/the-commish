@@ -20,7 +20,16 @@
   --mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
 
+  /* Derived, never new hues: a gold that reads as text on the soft panels (5.1:1 on gold-soft where gold-ink alone is 4.4:1),
+     and a darker green for hover states (paper on green-2 is only 4.3:1). The palette above is untouched. */
+  --gold-text: color-mix(in srgb, var(--gold-ink) 85%, var(--ink));
+  --green-deep: color-mix(in srgb, var(--green) 82%, var(--ink));
+
   --r: 3px;
+  /* motion: one curve, and every duration sits between --t-fast and --t-slow (150 to 550 ms) */
+  --t-fast: 150ms;
+  --t-base: 300ms;
+  --t-slow: 550ms;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --sidebar-w: 15.5rem;
 

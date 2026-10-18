@@ -60,7 +60,7 @@ export function UsageTrendChart({ series, width: fallbackWidth = 560, height = 2
             <g key={s.id} className="trend" data-series={s.id}>
               <path
                 className="trend-line" d={d} fill="none" stroke={s.color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" pathLength={1}
-                style={reduced ? undefined : { strokeDasharray: 1, strokeDashoffset: grown ? 0 : 1, transition: 'stroke-dashoffset 0.9s cubic-bezier(0.2, 0.7, 0.2, 1)' }}
+                style={reduced ? undefined : { strokeDasharray: 1, strokeDashoffset: grown ? 0 : 1, transition: 'stroke-dashoffset var(--t-slow) var(--ease)' }}
               />
               {pts.map((p) => (
                 <circle key={p.week} className="trend-dot" cx={x(p.week)} cy={y(p.value as number)} r={3} fill={s.color}>

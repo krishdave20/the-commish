@@ -49,18 +49,18 @@ export function TakeCard({ take, compact = false }: Props) {
       </div>
       <div className="take-actions row">
         {!compact && (
-          <Link className="btn quiet" to={`/players/${encodeURIComponent(take.pid)}`} aria-label={`Open ${take.player}’s profile`}>profile</Link>
+          <Link className="btn quiet" to={`/players/${encodeURIComponent(take.pid)}`} aria-label={`profile: ${take.player}`}>profile</Link>
         )}
         {has('watchlist') && (
           <button type="button" className="tog" aria-pressed={watching}
-            aria-label={`${watching ? 'Remove' : 'Add'} ${take.player} ${watching ? 'from' : 'to'} watchlist`}
+            aria-label={`${watching ? 'watching' : 'watch'} ${take.player}`}
             onClick={() => watch.toggle(take.pid)}>{watching ? 'watching' : 'watch'}</button>
         )}
         {has('lab') && (
-          <button type="button" className="btn" aria-label={`Try ${take.player} in the lab`} title="see it in the what-if lab" onClick={() => tryIt(take)}>try in the lab</button>
+          <button type="button" className="btn" aria-label={`try in the lab: ${take.player}`} title="see it in the what-if lab" onClick={() => tryIt(take)}>try in the lab</button>
         )}
         {has('trade') && (
-          <Link className="btn quiet" to={`/trades?player=${encodeURIComponent(take.pid)}`} aria-label={`Open ${take.player} in the trade block`}>trade block</Link>
+          <Link className="btn quiet" to={`/trades?player=${encodeURIComponent(take.pid)}`} aria-label={`trade block: ${take.player}`}>trade block</Link>
         )}
       </div>
     </article>

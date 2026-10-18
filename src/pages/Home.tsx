@@ -10,9 +10,11 @@ import { groupSlots, leagueScoring, leagueTypeLabel, statusLabel } from '../app/
 import { FEATURE, PAGES } from '../app/names';
 import { usePageTitle } from '../app/usePageTitle';
 import { currentDraft, phaseLabel, safeDetectPhase } from '../app/phase';
+import { Attribution } from '../components/Attribution';
 import { CountUp } from '../components/CountUp';
 import { Kpi } from '../components/Kpi';
 import { PageHeader } from '../components/PageHeader';
+import { PageSkeleton } from '../components/Skeleton';
 import { AgeProfile } from './home/AgeProfile';
 import { Drafting } from './home/Drafting';
 import { InjuriesCard } from './home/InjuriesCard';
@@ -124,6 +126,7 @@ export default function Home() {
           )}
         </div>
       )}
+      {data && <Attribution sources={['sleeper', 'nflverse', 'fantasycalc']} />}
     </div>
   );
 }
@@ -132,9 +135,12 @@ export default function Home() {
 function InSeasonSections({ engine, loading, error, phase }: { engine: Engine | null; loading: boolean; error: string | undefined; phase: Phase | null }) {
   if (!engine) {
     return (
-      <p className={`note${error && !loading ? ' neg-c' : ''}`} role="status">
-        {loading ? 'building the model for your odds, matchup and waiver adds…' : error ? `could not build the model. ${error}` : 'no model yet.'}
-      </p>
+      <>
+        <p className={`note${error && !loading ? ' neg-c' : ''}`} role="status">
+          {loading ? 'building the model for your odds, matchup and waiver adds…' : error ? `could not build the model. ${error}` : 'no model yet.'}
+        </p>
+        {loading && <PageSkeleton cards={2} />}
+      </>
     );
   }
   return (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AccountList } from '../components/AccountList';
+import { SkipLink } from '../components/SkipLink';
 import { useAccountStore, useAccounts, useActive, useApi } from '../app/hooks';
 import { PAGES } from '../app/names';
 import { usePageTitle } from '../app/usePageTitle';
@@ -96,76 +97,79 @@ export default function SignIn() {
   const busy = phase.kind === 'busy';
 
   return (
-    <div className="signin-wrap">
-      <div className="signin page-fade">
-        <header className="page-head">
-          <div className="micro">the commish · {PAGES.signin.kicker}</div>
-          <h1>{PAGES.signin.name}</h1>
-          <p className="note">
-            Enter a Sleeper username to follow your leagues. There is no password: Sleeper does not offer one to
-            third-party apps, and this app only reads public league data.
-          </p>
-        </header>
+    <>
+      <SkipLink />
+      <main className="signin-wrap" id="main" tabIndex={-1}>
+        <div className="signin page-fade">
+          <header className="page-head">
+            <div className="micro">the commish · {PAGES.signin.kicker}</div>
+            <h1>{PAGES.signin.name}</h1>
+            <p className="note">
+              Enter a Sleeper username to follow your leagues. There is no password: Sleeper does not offer one to
+              third-party apps, and this app only reads public league data.
+            </p>
+          </header>
 
-        <form className="stack" onSubmit={(e) => { void find(e); }}>
-          <div className="form-row">
-            <label className="ctl">
-              Sleeper username
-              <input
-                type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                autoComplete="off" autoCapitalize="off" spellCheck={false} required
-              />
-            </label>
-            <button type="submit" className="btn solid" disabled={busy || !username.trim()}>Find my leagues</button>
-            {active && <Link to="/" className="btn quiet">Back to the commish</Link>}
-          </div>
-          {phase.kind === 'busy' && <p className="msg note" role="status">{phase.text}</p>}
-          {phase.kind === 'error' && <p className="msg err" role="alert">{phase.text}</p>}
-        </form>
-
-        {phase.kind === 'pick' && (
-          <section className="stack" aria-labelledby="pick-title">
-            <div>
-              <div className="micro">Found {phase.user.display_name} on Sleeper</div>
-              <h2 id="pick-title">Choose leagues to follow</h2>
+          <form className="stack" onSubmit={(e) => { void find(e); }}>
+            <div className="form-row">
+              <label className="ctl">
+                Sleeper username
+                <input
+                  type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="off" autoCapitalize="off" spellCheck={false} required
+                />
+              </label>
+              <button type="submit" className="btn solid" disabled={busy || !username.trim()}>Find my leagues</button>
+              {active && <Link to="/" className="btn quiet">Back to the commish</Link>}
             </div>
-            {phase.leagues.length === 0 && (
-              <p className="note">No NFL leagues found for this account in the current or previous season.</p>
-            )}
-            <div className="stack">
-              {phase.leagues.map((lg) => (
-                <label key={lg.league_id} className="pick">
-                  <input type="checkbox" checked={picked.has(lg.league_id)} onChange={() => toggle(lg.league_id)} />
-                  <span>
-                    <span className="pick-name">{lg.name}</span>
-                    <span className="pick-meta">
-                      <span>{lg.season}</span>
-                      <span>{statusLabel(lg.status)}</span>
-                      <span>{lg.total_rosters} teams</span>
-                      <span className="pill ok">{leagueScoring(lg)}</span>
-                      <span className="pill mute">{leagueTypeLabel(lg.settings.type)}</span>
+            {phase.kind === 'busy' && <p className="msg note" role="status">{phase.text}</p>}
+            {phase.kind === 'error' && <p className="msg err" role="alert">{phase.text}</p>}
+          </form>
+
+          {phase.kind === 'pick' && (
+            <section className="stack" aria-labelledby="pick-title">
+              <div>
+                <div className="micro">Found {phase.user.display_name} on Sleeper</div>
+                <h2 id="pick-title">Choose leagues to follow</h2>
+              </div>
+              {phase.leagues.length === 0 && (
+                <p className="note">No NFL leagues found for this account in the current or previous season.</p>
+              )}
+              <div className="stack">
+                {phase.leagues.map((lg) => (
+                  <label key={lg.league_id} className="pick">
+                    <input type="checkbox" checked={picked.has(lg.league_id)} onChange={() => toggle(lg.league_id)} />
+                    <span>
+                      <span className="pick-name">{lg.name}</span>
+                      <span className="pick-meta">
+                        <span>{lg.season}</span>
+                        <span>{statusLabel(lg.status)}</span>
+                        <span>{lg.total_rosters} teams</span>
+                        <span className="pill ok">{leagueScoring(lg)}</span>
+                        <span className="pill mute">{leagueTypeLabel(lg.settings.type)}</span>
+                      </span>
                     </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <div className="row">
-              <button type="button" className="btn solid" disabled={picked.size === 0} onClick={save}>Save and continue</button>
-              <span className="note">{picked.size} selected</span>
-            </div>
-          </section>
-        )}
+                  </label>
+                ))}
+              </div>
+              <div className="row">
+                <button type="button" className="btn solid" disabled={picked.size === 0} onClick={save}>Save and continue</button>
+                <span className="note">{picked.size} selected</span>
+              </div>
+            </section>
+          )}
 
-        <section className="stack" aria-labelledby="linked-title">
-          <h2 id="linked-title">Linked accounts</h2>
-          <AccountList
-            accounts={linked}
-            activeId={active?.account.userId ?? null}
-            onSwitch={(id) => { store.setActive(id); navigate('/'); }}
-            onRemove={(id) => store.remove(id)}
-          />
-        </section>
-      </div>
-    </div>
+          <section className="stack" aria-labelledby="linked-title">
+            <h2 id="linked-title">Linked accounts</h2>
+            <AccountList
+              accounts={linked}
+              activeId={active?.account.userId ?? null}
+              onSwitch={(id) => { store.setActive(id); navigate('/'); }}
+              onRemove={(id) => store.remove(id)}
+            />
+          </section>
+        </div>
+      </main>
+    </>
   );
 }

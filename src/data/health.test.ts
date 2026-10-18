@@ -41,6 +41,8 @@ function healthy(): FakeTransport {
     [sleeperUrls.matchups('L1', 6), ok([{ roster_id: 1, matchup_id: 1, points: 10 }])],
     [sleeperUrls.transactions('L1', 5), ok([])],
     [sleeperUrls.tradedPicks('L1'), ok([])],
+    [sleeperUrls.winnersBracket('L1'), ok([{ r: 1, m: 1, t1: 1, t2: 2, w: null, l: null }, { r: 1, m: 2, t1: 3, t2: 4, w: null, l: null }, { r: 2, m: 3, t1: null, t2: null, w: null, l: null, t1_from: { w: 1 }, t2_from: { w: 2 } }])],
+    [sleeperUrls.losersBracket('L1'), ok([{ r: 1, m: 1, t1: 5, t2: 6, w: null, l: null }])],
     [sleeperUrls.drafts('L1'), ok([draft()])],
     [sleeperUrls.draft('D1'), ok(draft())],
     [sleeperUrls.draftPicks('D1'), ok([{ round: 1, pick_no: 1, player_id: '1', roster_id: 1 }])],
@@ -63,7 +65,7 @@ beforeEach(() => { clock = NOW; t = healthy(); });
 describe('health checks', () => {
   it('everything works: ok across Sleeper, FantasyCalc and nflverse; 2025 participation is a warn', async () => {
     const rs = byId(await mk().api.healthChecks(ctx));
-    expect(Object.keys(rs)).toHaveLength(30);
+    expect(Object.keys(rs)).toHaveLength(32);
     for (const r of Object.values(rs)) {
       if (r.id === 'nflverse.participation') continue;
       expect(r.level, `${r.id}: ${r.message}`).toBe('ok');
@@ -199,6 +201,51 @@ describe('health checks', () => {
     expect(rs['fantasycalc.redraft'].level).toBe('ok');
   });
 
+  describe('playoff brackets', () => {
+    it('counts the games of each bracket; both are documented endpoints', async () => {
+      const rs = byId(await mk().api.healthChecks(ctx));
+      expect(rs['sleeper.winnersBracket']).toMatchObject({ level: 'ok', message: '3 matchups.', documented: true, source: 'sleeper', url: sleeperUrls.winnersBracket('L1') });
+      expect(rs['sleeper.losersBracket']).toMatchObject({ level: 'ok', message: '1 matchups.', url: sleeperUrls.losersBracket('L1') });
+    });
+
+    it('rows sit after traded picks, before the drafts', async () => {
+      const ids = (await mk().api.healthChecks(ctx)).map((r) => r.id);
+      const i = ids.indexOf('sleeper.tradedPicks');
+      expect(ids.slice(i, i + 4)).toEqual(['sleeper.tradedPicks', 'sleeper.winnersBracket', 'sleeper.losersBracket', 'sleeper.drafts']);
+    });
+
+    it('an empty answer before the playoffs is healthy and says when it fills in (the league\'s playoff week)', async () => {
+      t.set(sleeperUrls.winnersBracket('L1'), ok([]));
+      t.set(sleeperUrls.losersBracket('L1'), ok(null));
+      const rs = byId(await mk().api.healthChecks(ctx));
+      expect(rs['sleeper.winnersBracket']).toMatchObject({ level: 'ok', message: 'no bracket yet (fills in at week 15)' });
+      expect(rs['sleeper.losersBracket']).toMatchObject({ level: 'ok', message: 'no bracket yet (fills in at week 15)' });
+    });
+
+    it('uses the league\'s own playoff_week_start', async () => {
+      t.set(sleeperUrls.league('L1'), ok(league({ settings: { playoff_week_start: 14 } })));
+      t.set(sleeperUrls.winnersBracket('L1'), ok([]));
+      expect(byId(await mk().api.healthChecks(ctx))['sleeper.winnersBracket'].message).toBe('no bracket yet (fills in at week 14)');
+    });
+
+    it('a bracket in the wrong shape is a fail that names what depends on it', async () => {
+      t.set(sleeperUrls.winnersBracket('L1'), ok([{ round: 1 }]));
+      t.set(sleeperUrls.losersBracket('L1'), status(404));
+      const rs = byId(await mk().api.healthChecks(ctx));
+      expect(rs['sleeper.winnersBracket'].level).toBe('fail');
+      expect(rs['sleeper.winnersBracket'].message).toMatch(/different shape.*title odds/i);
+      expect(rs['sleeper.losersBracket']).toMatchObject({ level: 'fail', httpStatus: 404 });
+      expect(rs['sleeper.losersBracket'].message).toMatch(/toilet bowl/i);
+      expect(rs['sleeper.league'].level).toBe('ok');
+    });
+
+    it('without a league the brackets are skipped warns', async () => {
+      const rs = byId(await mk().api.healthChecks({ season: '2026', week: 6 }));
+      expect(rs['sleeper.winnersBracket']).toMatchObject({ level: 'warn' });
+      expect(rs['sleeper.losersBracket'].message).toMatch(/skipped/i);
+    });
+  });
+
   it('missing context skips those rows with a warn instead of failing', async () => {
     const rs = byId(await mk().api.healthChecks({ season: '2026', week: 6 }));
     expect(rs['sleeper.rosters']).toMatchObject({ level: 'warn' });
@@ -220,8 +267,8 @@ describe('health checks', () => {
     const layer = mk();
     const spy = vi.spyOn(layer.limiter, 'run');
     await layer.api.healthChecks(ctx);
-    // 21 direct Sleeper/FantasyCalc probes + the players file + the nflverse manifest
-    expect(spy).toHaveBeenCalledTimes(23);
+    // 23 direct Sleeper/FantasyCalc probes (two of them the brackets) + the players file + the nflverse manifest
+    expect(spy).toHaveBeenCalledTimes(25);
   });
 
   describe('the 14 MB players file', () => {

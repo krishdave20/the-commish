@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { formatOdds, formatPoints1 } from '../../app/format';
+import { formatOdds, formatPoints1, formatCount } from '../../app/format';
 import { useModel, useScenario } from '../../app/modelContext';
 import { FEATURE, PAGES } from '../../app/names';
 import { teamResult } from '../../app/results';
@@ -31,7 +31,7 @@ export function OddsCard({ engine }: { engine: Engine }) {
       </div>
       <OddsCell value={res.playoff} pending={pending} />
       <p className="note">
-        {pending ? 'simming the season…' : `${formatOdds(res.div)} to win the division · ${formatPoints1(res.expW)} expected wins (${res.winsP10.toFixed(0)} to ${res.winsP90.toFixed(0)})`}
+        {pending ? 'simming the season…' : `${formatOdds(res.div)} to win the division · ${formatPoints1(res.expW)} expected wins (${formatCount(res.winsP10)} to ${formatCount(res.winsP90)})`}
       </p>
       <p className="take">{magicLine(engine)}</p>
       <p><Link to={PAGES.race.path}>open the {PAGES.race.name} →</Link></p>

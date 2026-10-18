@@ -1,5 +1,5 @@
-import { interpolateRgb, range, sum } from 'd3';
-import { ordinal } from '../../app/format';
+import { interpolateRgb, range, rgb, sum } from 'd3';
+import { formatOdds, ordinal } from '../../app/format';
 
 export interface SeedRow {
   id: string | number;
@@ -29,6 +29,21 @@ const CELL_H = 24;
 const GAP = 2;
 const HEAD_H = 20;
 
+const PAPER = '#faf8f3';
+const INK = '#1f1d19';
+
+/** Numbers on a cell are drawn in whichever of paper and ink reads better on its fill. */
+function textOn(fill: string): string {
+  const lum = (c: string) => {
+    const { r, g, b } = rgb(c);
+    const f = (v: number) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  };
+  const l = lum(fill);
+  const contrast = (o: string) => { const m = lum(o); return (Math.max(l, m) + 0.05) / (Math.min(l, m) + 0.05); };
+  return contrast(PAPER) >= contrast(INK) ? PAPER : INK;
+}
+
 function cellText(v: number): string {
   if (v < 0.01) return '';
   return v >= 0.995 ? '99' : String(Math.round(v * 100));
@@ -43,8 +58,12 @@ export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = tr
   const height = HEAD_H + ordered.length * (CELL_H + GAP);
   const colX = (i: number) => NAME_W + i * (CELL_W + GAP);
 
+  const likeliest = ordered.length ? [...ordered].sort((a, b) => (b.seeds[0] ?? 0) - (a.seeds[0] ?? 0))[0] : null;
+  const summary = `Seed odds by team.${likeliest && likeliest.seeds[0] !== undefined ? ` Likeliest 1st seed: ${likeliest.team}, ${formatOdds(likeliest.seeds[0])}.` : ''}`;
+
   return (
-    <div className="tw heat-wrap">
+    <div className="heat-wrap">
+      <div className="tw">
       <svg
         className="heat" viewBox={`0 0 ${width} ${height}`} width={width} height={height}
         role="img" aria-label={`Seed odds for ${ordered.length} teams`}
@@ -84,7 +103,7 @@ export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = tr
                     </rect>
                     <text
                       x={colX(i) + CELL_W / 2} y={y + CELL_H / 2 + 4} textAnchor="middle" className="heat-val"
-                      fill={k > 0.55 ? '#faf8f3' : '#1f1d19'} pointerEvents="none"
+                      fill={textOn(fill)} pointerEvents="none"
                     >
                       {cellText(v)}
                     </text>
@@ -95,6 +114,31 @@ export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = tr
           );
         })}
       </svg>
+      </div>
+      <div className="sr-only">
+      <table>
+        <caption>{summary}</caption>
+        <thead>
+          <tr>
+            <th scope="col">team</th>
+            {range(nSeeds).map((i) => <th key={i} scope="col">{ordinal(i + 1)} seed</th>)}
+            {showOut && <th scope="col">misses the playoffs</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {ordered.map((r) => {
+            const out = Math.max(0, 1 - sum(r.seeds));
+            return (
+              <tr key={r.id}>
+                <th scope="row">{r.team}</th>
+                {range(nSeeds).map((i) => <td key={i}>{formatOdds(r.seeds[i] ?? 0)}</td>)}
+                {showOut && <td>{formatOdds(out)}</td>}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      </div>
       <div className="legend heat-legend">
         <span><span className="swatch" style={{ background: '#2d5a27' }} />division winner seeds</span>
         <span><span className="swatch" style={{ background: '#c4922a' }} />wild cards</span>

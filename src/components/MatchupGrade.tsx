@@ -1,4 +1,5 @@
 import { gradeOf } from '../app/metrics';
+import { formatNum } from '../app/format';
 
 interface Props {
   /** opponent abbreviation; empty, null or "BYE" means a bye week */
@@ -13,7 +14,7 @@ interface Props {
 export function MatchupGrade({ opponent, dvp, showLabel = true }: Props) {
   if (!opponent || opponent.toUpperCase() === 'BYE') return <span className="pill mute">bye</span>;
   const g = gradeOf(dvp);
-  const title = g.text + (dvp !== null && dvp !== undefined ? ` (${dvp.toFixed(2)}×)` : '');
+  const title = g.text + (dvp !== null && dvp !== undefined ? ` (${formatNum(dvp, 2)}×)` : '');
   return (
     <span className="matchup" title={title}>
       <span className={`grade ${g.kind}`} data-grade={g.kind} role="img" aria-label={title} />

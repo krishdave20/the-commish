@@ -38,7 +38,7 @@ describe('a cancelled simulation (null result)', () => {
   it('keeps the lab usable', async () => {
     const { user } = renderApp({ linked: [sampleAccount()], route: '/team' });
     const lab = (await screen.findByRole('heading', { level: 2, name: 'the lab' })).closest('section')!;
-    await user.click(within(lab).getByRole('button', { name: 'Add Free Agent Fran' }));
+    await user.click(within(lab).getByRole('button', { name: /^add \w+ Free Agent Fran/ }));
     expect(within(lab).getByRole('button', { name: 'Remove Free Agent Fran' })).toBeInTheDocument();
     expect(screen.getByText(/looking at a what-if/)).toBeInTheDocument();
   });

@@ -12,6 +12,8 @@
     "test:watch": "vitest",
     "dist": "tsc -b && vite build",
     "fixture:capture": "tsx scripts/capture-fixture.ts",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium",
     "data:nflverse": "tsx scripts/nflverse/run.ts"
   },
   "dependencies": {
@@ -24,6 +26,8 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",

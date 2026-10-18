@@ -184,7 +184,7 @@ describe('huddle: in season (live phase)', () => {
   it('“try” on a waiver add updates the what-if and opens the locker room', async () => {
     const { user } = renderApp({ linked, buildTakes: stubBuildTakes() });
     const wire = (await screen.findByRole('heading', { level: 2, name: 'top waiver adds' })).closest('section')!;
-    await user.click(await within(wire).findByRole('button', { name: /Try adding Free Agent Fran/ }));
+    await user.click(await within(wire).findByRole('button', { name: /try adding Free Agent Fran/ }));
     expect(await screen.findByRole('heading', { level: 1, name: 'locker room' })).toBeInTheDocument();
     expect(JSON.parse(window.localStorage.getItem('wr.scenario.L1')!).adds).toEqual(['fa1']);
   });

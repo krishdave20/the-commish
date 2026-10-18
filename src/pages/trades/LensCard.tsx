@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatCount, formatOdds, ordinal } from '../../app/format';
+import { formatCount, formatOdds, ordinal, formatNum } from '../../app/format';
 import { FEATURE } from '../../app/names';
 import { SortableTable } from '../../components/SortableTable';
 import type { Column } from '../../components/useSort';
@@ -60,8 +60,8 @@ export function LensCard({ engine, dyn, redraft, explore, setExplore }: Props) {
       key: 'youth', header: '26 & under', numeric: true, value: (r) => r.youthShare, className: 'hide-sm',
       render: (r) => (r.youthShare === null ? <span className="dim">—</span> : <>{Math.round(r.youthShare * 100)}% <span className="dim">{ordinal(r.youthRank!)}</span></>),
     },
-    { key: 'now', header: 'now', numeric: true, value: (r) => r.nowScore, render: (r) => r.nowScore.toFixed(2), className: 'hide-sm dim' },
-    { key: 'future', header: 'later', numeric: true, value: (r) => r.futureScore, render: (r) => r.futureScore.toFixed(2), className: 'hide-sm dim' },
+    { key: 'now', header: 'now', numeric: true, value: (r) => r.nowScore, render: (r) => formatNum(r.nowScore, 2), className: 'hide-sm dim' },
+    { key: 'future', header: 'later', numeric: true, value: (r) => r.futureScore, render: (r) => formatNum(r.futureScore, 2), className: 'hide-sm dim' },
   ];
 
   return (

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { signed } from '../../app/format';
+import { signed, formatMoney } from '../../app/format';
 import { useScenario } from '../../app/modelContext';
 import { FEATURE, PAGES } from '../../app/names';
 import { useTryWaiver } from '../../app/tryWaiver';
@@ -30,11 +30,11 @@ export function WaiversCard({ engine }: { engine: Engine }) {
               <li key={w.pid} className="row between">
                 <span>
                   <PlayerLink pid={w.player.pid} name={w.player.name} /> <span className="dim">{w.player.pos} {w.player.nfl ?? ''}</span><PlayerTags p={w.player} />
-                  <br /><span className="note">drop {w.drop.name} · bid ${w.bid.toLocaleString('en-US')}</span>
+                  <br /><span className="note">drop {w.drop.name} · bid {formatMoney(w.bid)}</span>
                 </span>
                 <span className="row">
                   <span className="pos-c">{signed(w.gain)}</span>
-                  <button type="button" className="tog" aria-label={`Try adding ${w.player.name} and dropping ${w.drop.name}`} onClick={() => tryIt(w)}>try</button>
+                  <button type="button" className="tog" aria-label={`try adding ${w.player.name} and dropping ${w.drop.name}`} onClick={() => tryIt(w)}>try</button>
                 </span>
               </li>
             ))}

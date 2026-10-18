@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { formatPoints1 } from '../../app/format';
 import { useScenario } from '../../app/modelContext';
+import { PAGES } from '../../app/names';
 import { PlayerLink } from '../../components/PlayerLink';
 import { MatchupGrade } from '../../components/MatchupGrade';
 import { SortableTable } from '../../components/SortableTable';
@@ -34,7 +35,7 @@ export function RosterCard({ engine }: { engine: Engine }) {
 
   const columns: Column<Row>[] = [
     {
-      key: 'player', header: 'player', value: (r) => r.p.name,
+      key: 'player', header: 'player', value: (r) => r.p.name, className: 'sticky-col',
       render: (r) => <><PlayerLink pid={r.p.pid} name={r.p.name} /><PlayerTags p={r.p} added={r.added} /></>,
     },
     { key: 'pos', header: 'pos', value: (r) => r.p.pos },
@@ -63,8 +64,7 @@ export function RosterCard({ engine }: { engine: Engine }) {
       </header>
       <SortableTable caption="Roster" columns={columns} rows={rows} rowKey={(r) => r.p.pid} initialSort={{ key: 'ros', dir: 'desc' }} />
       <p className="note">
-        snap and target share arrive with nflverse data in milestone 3; owner value arrives with fantasycalc in milestone 5.
-        projections are sleeper’s, scored with your league’s settings.
+        open a name on the {PAGES.players.name} for usage, trade value and takes. projections are sleeper’s, scored with your league’s settings.
       </p>
     </section>
   );

@@ -36,7 +36,7 @@ export function SortableTable<T>({ columns, rows, rowKey, caption, initialSort =
               const sortable = c.sortable !== false && !!c.value;
               return (
                 <th
-                  key={c.key} scope="col" className={c.numeric ? 'n' : undefined}
+                  key={c.key} scope="col" className={[c.numeric ? 'n' : '', ...(c.className?.split(' ').filter((k) => k === 'hide-sm' || k === 'sticky-col') ?? [])].filter(Boolean).join(' ') || undefined}
                   aria-sort={sortable ? ariaSort(c.key) : undefined}
                 >
                   {sortable ? (

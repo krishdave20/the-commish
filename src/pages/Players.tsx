@@ -10,6 +10,7 @@ import { useWatchlist } from '../app/useWatchlist';
 import { PageHeader } from '../components/PageHeader';
 import { PlayerLink } from '../components/PlayerLink';
 import { Segmented } from '../components/Segmented';
+import { formatCount } from '../app/format';
 
 type Scope = 'all' | 'mine' | 'rostered' | 'free' | 'watch';
 const SCOPES: Array<{ value: Scope; label: string }> = [
@@ -69,7 +70,7 @@ export default function Players() {
       <PageHeader kicker={PAGES.players.kicker} title={PAGES.players.name} data={players} />
       <section className="card" aria-labelledby="find-title">
         <header>
-          <div className="micro">{players.index.length ? `${players.index.length.toLocaleString('en-US')} players on file` : 'loading sleeper’s players file'}</div>
+          <div className="micro">{players.index.length ? `${formatCount(players.index.length)} players on file` : 'loading sleeper’s players file'}</div>
           <h2 id="find-title">find a player</h2>
         </header>
         <div className="form-row">
@@ -119,7 +120,7 @@ export default function Players() {
                       </td>
                       <td>
                         <button type="button" className="tog" aria-pressed={watching}
-                          aria-label={`${watching ? 'Remove' : 'Add'} ${e.name} ${watching ? 'from' : 'to'} watchlist`}
+                          aria-label={`${watching ? 'watching' : 'watch'} ${e.name}`}
                           onClick={() => watch.toggle(e.pid)}>{watching ? 'watching' : 'watch'}</button>
                       </td>
                     </tr>

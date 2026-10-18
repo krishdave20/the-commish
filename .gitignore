@@ -35,3 +35,7 @@ public/data/nflverse/
 # notebooks
 .ipynb_checkpoints/
 .claude/
+# playwright smoke test output (screenshots, axe report, traces, html report)
+e2e/results/
+playwright-report/
+test-results/

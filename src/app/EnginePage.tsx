@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { PageHeader } from '../components/PageHeader';
+import { PageSkeleton } from '../components/Skeleton';
 import type { Engine } from '../engine';
 import { PAGES } from './names';
 import type { PageKey } from './names';
@@ -26,11 +27,14 @@ export function EnginePage({ page, suffix, alsoRefresh, children }: Props) {
     <div className="page page-fade">
       <PageHeader kicker={kicker} title={p.name} data={alsoRefresh ? { ...m, refresh: async () => { await Promise.all([m.refresh(), alsoRefresh()]); } } : m} />
       {m.engine ? children(m.engine) : (
-        <p className={`note${m.error && !m.loading ? ' neg-c' : ''}`} role="status">
-          {m.loading
-            ? 'pulling your league and building the model. this takes a few seconds the first time.'
-            : m.error ? `could not build the model. ${m.error}` : 'no league is selected yet.'}
-        </p>
+        <>
+          <p className={`note${m.error && !m.loading ? ' neg-c' : ''}`} role="status">
+            {m.loading
+              ? 'pulling your league and building the model. this takes a few seconds the first time.'
+              : m.error ? `could not build the model. ${m.error}` : 'no league is selected yet.'}
+          </p>
+          {m.loading && <PageSkeleton />}
+        </>
       )}
     </div>
   );

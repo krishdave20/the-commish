@@ -112,9 +112,9 @@ describe('draft room: rankings', () => {
     const { user } = mount();
     await screen.findByRole('table', { name: 'Draft rankings' });
     const name = synthetic().rows[0]!.name;
-    const star = screen.getByRole('button', { name: `Add ${name} to watchlist` });
+    const star = screen.getByRole('button', { name: `watch ${name}` });
     await user.click(star);
-    expect(screen.getByRole('button', { name: `Remove ${name} from watchlist` })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: `watching ${name}` })).toHaveAttribute('aria-pressed', 'true');
   });
 });
 

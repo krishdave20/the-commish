@@ -85,9 +85,9 @@ export function LineupCard({ engine }: { engine: Engine }) {
                     {played ? <span className="dim">played</span> : (
                       <>
                         <button type="button" className="tog pin" aria-pressed={scenario.pins.includes(p.pid)}
-                          aria-label={`Always start ${p.name}`} onClick={() => setScenario((s) => pinned(s, p.pid))}>pin</button>{' '}
+                          aria-label={`pin ${p.name}: always start`} onClick={() => setScenario((s) => pinned(s, p.pid))}>pin</button>{' '}
                         <button type="button" className="tog bench" aria-pressed={scenario.benches.includes(p.pid)}
-                          aria-label={`Never start ${p.name}`} onClick={() => setScenario((s) => benched(s, p.pid))}>bench</button>
+                          aria-label={`bench ${p.name}: never start`} onClick={() => setScenario((s) => benched(s, p.pid))}>bench</button>
                       </>
                     )}
                   </td>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useRaceRows } from './useRaceRows';
 import type { RaceRow } from './useRaceRows';
-import { formatOdds, formatPoints, formatPoints1, signed } from '../../app/format';
+import { formatOdds, formatPoints, formatPoints1, signed, formatCount } from '../../app/format';
 import { ClinchMark, MarkLegend } from '../../components/ClinchMark';
 import { OddsCell } from '../../components/OddsCell';
 import { Segmented } from '../../components/Segmented';
@@ -30,9 +30,9 @@ export function StandingsCard({ engine, onOpen }: Props) {
   const out = rows.filter((r) => r.elim).length;
 
   const columns: Column<RaceRow>[] = [
-    { key: 'rank', header: '#', numeric: true, value: (r) => r.rank, className: 'dim' },
+    { key: 'rank', header: '#', numeric: true, value: (r) => r.rank, className: 'dim hide-sm' },
     {
-      key: 'team', header: 'team', value: (r) => r.team, className: 'nowrap',
+      key: 'team', header: 'team', value: (r) => r.team, className: 'nowrap sticky-col',
       render: (r) => <><ClinchMark mark={r.mark} /><span className="pname">{r.team}</span>{r.isMe && <span className="you">you</span>}</>,
     },
     ...(divisions > 0 ? [{ key: 'division', header: 'division', value: (r: RaceRow) => r.division, className: 'hide-sm dim' }] : []),
@@ -56,7 +56,7 @@ export function StandingsCard({ engine, onOpen }: Props) {
     },
     {
       key: 'expw', header: 'exp wins', numeric: true, value: (r) => r.expW,
-      render: (r) => (pending ? <span className="dim">…</span> : <span title={`10th to 90th percentile: ${r.p10.toFixed(0)} to ${r.p90.toFixed(0)} wins`}>{formatPoints1(r.expW)} <span className="dim">{r.p10.toFixed(0)}–{r.p90.toFixed(0)}</span></span>),
+      render: (r) => (pending ? <span className="dim">…</span> : <span title={`10th to 90th percentile: ${formatCount(r.p10)} to ${formatCount(r.p90)} wins`}>{formatPoints1(r.expW)} <span className="dim">{formatCount(r.p10)}–{formatCount(r.p90)}</span></span>),
     },
     {
       key: 'status', header: 'status', sortable: false,

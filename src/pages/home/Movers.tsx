@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { signed } from '../../app/format';
+import { signed, formatCount } from '../../app/format';
 import { FEATURE } from '../../app/names';
 import { useFantasyCalc } from '../../app/playersData';
 import { PlayerLink } from '../../components/PlayerLink';
@@ -23,7 +23,7 @@ function Table({ caption, rows, mine }: { caption: string; rows: FcEntry[]; mine
                 <tr key={e.sleeperId} className={mine.has(e.sleeperId) ? 'me' : undefined}>
                   <td className="nowrap"><PlayerLink pid={e.sleeperId} name={e.name} />{mine.has(e.sleeperId) && <span className="you">you</span>}</td>
                   <td className="dim">{e.position}</td>
-                  <td className="n">{Math.round(e.value).toLocaleString('en-US')}</td>
+                  <td className="n">{formatCount(e.value)}</td>
                   <td className={`n ${(e.trend30Day ?? 0) > 0 ? 'pos-c' : 'neg-c'}`}>{signed(e.trend30Day ?? 0, 0)}</td>
                 </tr>
               ))}
