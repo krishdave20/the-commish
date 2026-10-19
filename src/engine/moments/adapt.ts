@@ -19,10 +19,12 @@ export interface AdaptOpts {
 
 /** The top of the waiver board in the form the rules use. Slow: run it off the main render. */
 export function waiverInfo(engine: Engine, faab: boolean): MomentModel['waiver'] {
-  const first = engine.waivers(emptyScenario(), 'reg').list[0];
-  if (!first) return { top: null, faab };
-  const top: WaiverTop = { pid: first.pid, name: first.player.name, pos: first.player.pos, gain: first.gain, bid: first.bid, dropName: first.drop.name };
-  return { top, faab };
+  const list = engine.waivers(emptyScenario(), 'reg').list;
+  const first = list[0];
+  if (!first) return { top: null, faab, adds: [] };
+  const add = (e: (typeof list)[number]): WaiverTop => ({ pid: e.pid, name: e.player.name, pos: e.player.pos, gain: e.gain, bid: e.bid, dropName: e.drop.name });
+  // the live activity shows the best two
+  return { top: add(first), faab, adds: list.slice(0, 2).map(add) };
 }
 
 const flagged = (p: ModelPlayer) => FLAGGED.test(p.injury) && !p.playedThisWeek;
@@ -87,7 +89,7 @@ export function momentModel(engine: Engine, o: AdaptOpts = {}): MomentModel {
   return {
     week: cur, lastRegularWeek: model.meta.lastRegularWeek, teamName: me.team,
     record: { w: me.wins, l: me.losses, t: me.ties }, matchup, starters, lineup, injuries,
-    waiver: o.waiver ?? null, playoffPct: odds, magic, titlePct: model.oddsPending ? null : me.titlePct ?? null, losers, lastResult,
+    waiver: o.waiver ?? null, faabLeft: Number.isFinite(me.faabLeft) ? me.faabLeft : null, playoffPct: odds, magic, titlePct: model.oddsPending ? null : me.titlePct ?? null, losers, lastResult,
     trade: idea ? { give: idea.give, get: idea.get, partner: idea.partner, myGain: idea.myGain, theirGain: idea.theirGain } : null,
   };
 }

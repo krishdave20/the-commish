@@ -7,7 +7,7 @@ export type MomentKind =
   | 'draft-countdown' | 'draft-mock' | 'draft-tiers' | 'draft-queue' | 'draft-clock' | 'draft-grade'
   | 'waivers-tonight' | 'waivers-cleared'
   | 'game-day' | 'lineup-swap' | 'lineup-ok' | 'injury-risk' | 'final-check'
-  | 'live-matchup' | 'monday-night' | 'week-recap'
+  | 'live-matchup' | 'monday-night' | 'final-whistle' | 'week-recap'
   | 'trade-deadline' | 'clinch' | 'clinched' | 'toilet-bowl' | 'playoffs'
   | 'dynasty-movers' | 'rookie-prep' | 'take';
 
@@ -43,6 +43,8 @@ export interface Moment {
   precise?: boolean;
   /** live activity text for a live moment: "icemen 95.0 · 58.8 · 80%", with the win share for a tiny bar */
   pill?: { text: string; bar?: number };
+  /** the live activity may show this moment while it is current, though it is neither live nor a countdown (the final whistle's recap) */
+  glance?: boolean;
   /** the pages whose banner may show this moment */
   pages: MomentPage[];
 }
@@ -89,6 +91,9 @@ export interface InjuryRisk {
 
 export interface WaiverTop { pid: string; name: string; pos: string; gain: number; bid: number; dropName: string }
 
+/** The waiver board as the moments read it: the top add, the top two for the live activity, and whether bids are FAAB. */
+export interface WaiverInfo { top: WaiverTop | null; faab: boolean; adds?: WaiverTop[] }
+
 export interface LastResult { week: number; mine: number; theirs: number; oppName: string }
 
 export interface TradeIdeaInfo { give: string; get: string; partner: string; myGain: number; theirGain: number }
@@ -106,7 +111,9 @@ export interface MomentModel {
   lineup: { best: number; swaps: Swap[] } | null;
   injuries: InjuryRisk[];
   /** null when the board has not been computed; `top: null` when nobody on the wire beats the bench */
-  waiver: { top: WaiverTop | null; faab: boolean } | null;
+  waiver: WaiverInfo | null;
+  /** my FAAB budget left, in dollars (leagues that bid; the number is there either way) */
+  faabLeft?: number | null;
   playoffPct: number | null;
   magic: { spot: number | null; open: number; winOut: boolean; clinched: boolean; eliminated: boolean } | null;
   titlePct: number | null;
@@ -117,7 +124,13 @@ export interface MomentModel {
   trade: TradeIdeaInfo | null;
 }
 
-export interface LiveSide { name: string; pts: number; left: Array<{ name: string; pos: string }> }
+export interface LiveSide {
+  name: string;
+  pts: number;
+  left: Array<{ name: string; pos: string }>;
+  /** the starter who scored the most so far */
+  top?: { name: string; pts: number } | null;
+}
 
 /** My matchup as the live layer sees it. */
 export interface LiveMatch {
@@ -128,6 +141,10 @@ export interface LiveMatch {
   /** the matchup has points on the board */
   started: boolean;
   final: boolean;
+  /** when the matchup's last game ended, as far as kickoff times tell (epoch ms; an estimate: kickoff + a game's length) */
+  finalAt?: number | null;
+  /** the NFL week of the matchup */
+  week?: number;
 }
 
 export interface DraftCtx {

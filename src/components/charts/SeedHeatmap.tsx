@@ -3,6 +3,7 @@ import { interpolateRgb, range, rgb, sum } from 'd3';
 import { formatOdds, ordinal } from '../../app/format';
 import { readToken } from '../../app/theme';
 import { useTheme } from '../../app/useTheme';
+import { usePhone } from '../useMediaQuery';
 
 export interface SeedRow {
   id: string | number;
@@ -37,11 +38,9 @@ function palette() {
 }
 type Palette = ReturnType<typeof palette>;
 
-const NAME_W = 150;
-const CELL_W = 44;
-const CELL_H = 24;
-const GAP = 2;
-const HEAD_H = 20;
+/** a phone draws a narrower grid (shorter names, slimmer cells) that scales down to the screen instead of scrolling */
+const WIDE = { nameW: 150, cellW: 44, cellH: 24, gap: 2, head: 20, chars: 20 };
+const NARROW = { nameW: 92, cellW: 30, cellH: 28, gap: 2, head: 22, chars: 12 };
 
 /** Numbers on a cell are drawn in whichever of paper and ink (read off the tokens) reads better on its fill. */
 function textOn(fill: string, paper: string, ink: string): string {
@@ -63,6 +62,8 @@ function cellText(v: number): string {
 /** Teams by seeds: darker means likelier. Green cells are division-winner seeds, gold wild cards, red a miss. */
 export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = true }: Props) {
   const { resolved } = useTheme();
+  const phone = usePhone();
+  const { nameW: NAME_W, cellW: CELL_W, cellH: CELL_H, gap: GAP, head: HEAD_H, chars } = phone ? NARROW : WIDE;
   const pal: Palette = useMemo(() => (resolved ? palette() : palette()), [resolved]);
   const nSeeds = rows.reduce((m, r) => Math.max(m, r.seeds.length), 0);
   const cols = nSeeds + (showOut ? 1 : 0);
@@ -99,7 +100,7 @@ export function SeedHeatmap({ rows, divisionSeeds, showOut = true, sortRows = tr
           return (
             <g key={r.id} data-team={r.team}>
               <text x={0} y={y + CELL_H / 2 + 4} className="heat-name" fontWeight={r.isMe ? 500 : 400}>
-                {r.team.length > 20 ? `${r.team.slice(0, 19)}…` : r.team}
+                {r.team.length > chars ? `${r.team.slice(0, chars - 1)}…` : r.team}
                 <title>{r.team}</title>
               </text>
               {values.map((v, i) => {

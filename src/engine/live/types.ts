@@ -1,6 +1,7 @@
 /* Types for game day: one poll of the league's matchups plus the NFL games, and what is derived from it.
    Everything is plain data, so a snapshot can be diffed, replayed and kept in memory for the session. */
 import type { Slot } from '../types.ts';
+import type { GameSituation, LineScore } from './situation.ts';
 
 export type GameState = 'pre' | 'live' | 'final';
 
@@ -20,6 +21,10 @@ export interface NflGame {
   awayScore: number | null;
   /** share of regulation played, 0 to 1: 0 before kickoff, 1 when final, null when a live game's clock is unknown */
   elapsed: number | null;
+  /** the ball, the down and the timeouts of a game in progress (the scores feed; absent before kickoff, after the game, and in replays) */
+  situation?: GameSituation;
+  /** points by quarter, when the feed has them and they add up to the score */
+  line?: LineScore | null;
 }
 
 /** One team's row of Sleeper's matchups endpoint, as the game day code reads it. */

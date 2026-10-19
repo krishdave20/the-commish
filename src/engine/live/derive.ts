@@ -83,7 +83,7 @@ export interface BenchRow {
   /** best - started, never negative */
   left: number;
   /** the benched player who would have helped most */
-  top: { name: string; points: number } | null;
+  top: { name: string; points: number; pid?: string; pos?: string; nfl?: string | null } | null;
 }
 
 export interface LiveView {
@@ -173,7 +173,7 @@ function benchRow(ctx: LiveCtx, row: LiveRow): BenchRow {
   return {
     rid: row.rid, team: team?.name ?? `roster ${row.rid}`, isMe: row.rid === ctx.meRid,
     started: r2(startedTotal), best: r2(best.total), left: Math.max(0, r2(best.total - startedTotal)),
-    top: swaps[0] ? { name: swaps[0].name, points: pts(swaps[0].pid) } : null,
+    top: swaps[0] ? { name: swaps[0].name, points: pts(swaps[0].pid), pid: swaps[0].pid, pos: swaps[0].pos, nfl: metaOf(ctx, swaps[0].pid).nfl ?? null } : null,
   };
 }
 

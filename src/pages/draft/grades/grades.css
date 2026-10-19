@@ -1,0 +1,28 @@
+/* Draft grades: letter chips, highlight cards, the team drawer's pick list. Tokens only. */
+.gl { font-size: var(--fs-sm); font-weight: 600; min-width: 2.4em; text-align: center; padding-block: 2px; }
+.stat .v .gl { font-size: var(--fs-base); }
+.dg-sm { font-family: var(--sans); font-size: var(--fs-sm); }
+
+.hl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--s-4) var(--s-5); align-items: start; }
+.hl-card { display: grid; gap: var(--s-2); align-content: start; min-width: 0; }
+.hl-card h3 { margin: 0; }
+.hl-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); min-height: var(--touch); min-width: 0; }
+.hl-row .avatar-name { min-width: 0; }
+.hl-row .n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hl-sub { display: block; font-size: var(--fs-xs); }
+.hl-away { display: grid; gap: var(--s-1); min-height: var(--touch); padding-block: var(--s-1); }
+
+.dg-grades { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); }
+.dg-notes { gap: var(--s-1); font-size: var(--fs-sm); }
+.dg-notes .micro { margin-right: var(--s-1); }
+.dg-picks { list-style: none; margin: 0; padding: 0; display: grid; }
+.dg-pick {
+  display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; grid-template-areas: 'no who over' '. det det';
+  gap: 0 var(--s-2); align-items: center; min-height: var(--touch); padding: var(--s-1) 0; border-bottom: 1px solid var(--rule-2); min-width: 0;
+}
+.dg-no { grid-area: no; font-variant-numeric: tabular-nums; font-size: var(--fs-sm); display: grid; line-height: 1.2; }
+.dg-ov { font-size: var(--fs-xs); color: var(--ink-3); }
+.dg-pick > .avatar-name { grid-area: who; min-width: 0; }
+.dg-pick > .n { grid-area: over; font-variant-numeric: tabular-nums; }
+.dg-det { grid-area: det; font-size: var(--fs-xs); }
+.dg-pick[data-status='traded'] .dg-det, .dg-pick[data-status='dropped'] .dg-det { color: var(--gold-text); }

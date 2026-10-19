@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
-import type { ReactNode } from 'react';
+import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { usePhone } from './useMediaQuery';
 
 interface Props {
   open: boolean;
@@ -12,11 +13,19 @@ interface Props {
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/** A modal side drawer for team details. Esc and the backdrop close it, Tab stays inside, focus returns afterwards. */
+/** How far (px) a downward drag must go to close the sheet, or how far with a quick flick. */
+export const SHEET_CLOSE_DISTANCE = 96;
+const SHEET_FLICK_DISTANCE = 32;
+const SHEET_FLICK_SPEED = 0.6; // px per ms
+
+/** A modal layer for details. Wide screens: a drawer from the right. Phones: a bottom sheet with a drag handle (swipe it down, or the
+    handle and the title bar, to close; the page behind stays put). Esc and the backdrop close either, Tab stays inside, focus returns afterwards. */
 export function Drawer({ open, onClose, title, kicker, children }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   const titleId = useId();
+  const sheet = usePhone();
+  const drag = useRef<{ y0: number; t0: number; dy: number } | null>(null);
 
   useEffect(() => { closeRef.current = onClose; });
 
@@ -53,12 +62,48 @@ export function Drawer({ open, onClose, title, kicker, children }: Props) {
     };
   }, [open]);
 
+  // ---- swipe down to close (phones). The handle and the title bar are the grip; the panel follows the finger, then either leaves or springs back.
+  function setOffset(dy: number | null) {
+    const el = panelRef.current;
+    if (!el) return;
+    // let go short of the line: spring back
+    if (dy === null) { el.style.transition = 'transform var(--t-base) var(--ease)'; el.style.transform = 'none'; return; }
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${dy}px)`;
+  }
+  function onGripDown(e: ReactPointerEvent<HTMLElement>) {
+    if (!sheet || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    // a tap on the close button is a tap, not the start of a drag
+    if ((e.target as HTMLElement).closest('button')) return;
+    drag.current = { y0: e.clientY, t0: e.timeStamp, dy: 0 };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }
+  function onGripMove(e: ReactPointerEvent<HTMLElement>) {
+    const d = drag.current;
+    if (!d) return;
+    d.dy = Math.max(0, e.clientY - d.y0);
+    setOffset(d.dy);
+  }
+  function onGripEnd(e: ReactPointerEvent<HTMLElement>) {
+    const d = drag.current;
+    drag.current = null;
+    if (!d) return;
+    const dt = Math.max(1, e.timeStamp - d.t0);
+    const quick = d.dy >= SHEET_FLICK_DISTANCE && d.dy / dt >= SHEET_FLICK_SPEED;
+    if (e.type !== 'pointercancel' && (d.dy >= SHEET_CLOSE_DISTANCE || quick)) onClose();
+    else setOffset(null);
+  }
+
   if (!open) return null;
+  const grip = sheet
+    ? { onPointerDown: onGripDown, onPointerMove: onGripMove, onPointerUp: onGripEnd, onPointerCancel: onGripEnd }
+    : {};
   return createPortal(
-    <div className="drawer-root">
+    <div className="drawer-root" data-sheet={sheet ? 'true' : undefined}>
       <div className="drawer-backdrop" onClick={() => onClose()} aria-hidden="true" />
       <div className="drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={panelRef}>
-        <header className="drawer-head">
+        {sheet && <div className="sheet-handle" data-testid="sheet-handle" {...grip}><span aria-hidden="true" /></div>}
+        <header className="drawer-head" {...grip}>
           <div>
             {kicker && <div className="micro">{kicker}</div>}
             <h2 id={titleId}>{title}</h2>

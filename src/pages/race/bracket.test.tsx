@@ -131,9 +131,13 @@ describe('the bracket on the playoff picture', () => {
   });
 
   it('the toilet bowl: click the team that gets flushed; it advances; the last one standing is crowned', async () => {
-    const { user } = await raceReady();
-    // the projected seeds can still move while the first simulation runs, and a re-seed would clear a pick made too early
-    await waitFor(() => expect(screen.queryAllByText(/simming/)).toHaveLength(0));
+    /* The projected seeds come from the first simulation. A model built by hand says "odds are ready" (oddsPending false) while the
+       simulation still runs, so the bracket first shows fallback seeds and then re-seeds when the run lands, which clears a pick
+       made in between. That was the flake: it needs a slow simulation, i.e. a loaded machine. The app loads a real model with
+       oddsPending true, and the bracket card holds a skeleton until the simulation has landed. Load it the same way here, and the
+       bracket (the group raceReady waits for) only exists once the seeds are final. */
+    const pending = sampleLoadModel(() => { const m = bigModel(); m.oddsPending = true; return m; });
+    const { user } = await raceReady({ loadModel: pending });
     await user.click(toggle('the toilet bowl'));
     const b = bowl();
     // the four teams that miss the playoffs, worst first: seed 1 is the worst

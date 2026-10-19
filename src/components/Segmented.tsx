@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 
 export interface SegmentedOption<T extends string | number> {
@@ -17,7 +17,16 @@ interface Props<T extends string | number> {
 /** The `.seg` control: one choice from a few. Arrow keys move and select; Home and End jump. */
 export function Segmented<T extends string | number>({ options, value, onChange, label }: Props<T>) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  const strip = useRef<HTMLDivElement>(null);
   const current = options.findIndex((o) => o.value === value);
+
+  // a strip that scrolls sideways (a phone) keeps the chosen option in view. Only the strip moves, never the page.
+  useEffect(() => {
+    const box = strip.current;
+    const btn = refs.current[current];
+    if (!box || !btn || box.scrollWidth <= box.clientWidth) return;
+    box.scrollLeft = btn.offsetLeft - (box.clientWidth - btn.offsetWidth) / 2;
+  }, [current]);
 
   function move(to: number) {
     const n = options.length;
@@ -38,7 +47,7 @@ export function Segmented<T extends string | number>({ options, value, onChange,
   }
 
   return (
-    <div className="seg" role="radiogroup" aria-label={label} onKeyDown={onKeyDown}>
+    <div className="seg" role="radiogroup" aria-label={label} onKeyDown={onKeyDown} ref={strip}>
       {options.map((o, i) => {
         const on = i === current;
         return (

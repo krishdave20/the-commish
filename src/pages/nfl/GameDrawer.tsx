@@ -1,7 +1,9 @@
 import { formatKickoff } from '../../app/live/format';
 import { useModel } from '../../app/modelContext';
 import { NFL_COPY } from '../../app/names';
+import { Avatar } from '../../components/Avatar';
 import { Drawer } from '../../components/Drawer';
+import { FieldSituation } from '../../components/field';
 import { PageTabs } from '../../components/PageTabs';
 import { PlayerLink } from '../../components/PlayerLink';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -64,9 +66,12 @@ function Rows({ players, state, empty, id }: { players: DetailPlayer[]; state: N
       {players.map((p) => (
         <li key={p.pid} className="nf-player" data-me={p.owner?.isMe ? 'true' : undefined}>
           <span className="nf-pwho">
-            {p.pos === 'DEF' ? <span className="pname">{p.name}</span> : <PlayerLink pid={p.pid} name={p.name} />}
-            {p.injury && <> <span className="chip down">{p.injury.toLowerCase()}</span></>}
-            <span className="nf-meta">{p.pos} · {p.team}</span>
+            <Avatar pid={p.pid} name={p.name} pos={p.pos} team={p.team} size={28} />
+            <span className="nf-pwho-text">
+              {p.pos === 'DEF' ? <span className="pname">{p.name}</span> : <PlayerLink pid={p.pid} name={p.name} />}
+              {p.injury && <> <span className="chip down">{p.injury.toLowerCase()}</span></>}
+              <span className="nf-meta">{p.pos} · {p.team}</span>
+            </span>
           </span>
           <span className="nf-powner"><Owner p={p} /></span>
           <span className="nf-ppts" aria-label={p.points === null ? 'no points yet' : `${p.points.toFixed(1)} points`}>{p.points === null ? '–' : p.points.toFixed(1)}</span>
@@ -136,11 +141,20 @@ function FantasyMix({ g, week, currentWeek, stats }: { g: NfGame; week: number; 
   );
 }
 
-function LeaderLine({ label, l }: { label: string; l: GameLeader | null }) {
+function LeaderLine({ label, l, team }: { label: string; l: GameLeader | null; team: string }) {
   return (
     <div className="nf-ldr">
       <dt>{label}</dt>
-      <dd>{l ? <><PlayerLink pid={l.pid} name={l.name} /> <span className="nf-meta">{l.pos}</span><span className="nf-ldr-line">{l.line}</span></> : <span className="dim">—</span>}</dd>
+      <dd>
+        {l
+          ? (
+            <>
+              <Avatar pid={l.pid} name={l.name} pos={l.pos} team={team} size={28} />
+              <span className="nf-ldr-who"><PlayerLink pid={l.pid} name={l.name} /> <span className="nf-meta">{l.pos}</span><span className="nf-ldr-line">{l.line}</span></span>
+            </>
+          )
+          : <span className="dim">—</span>}
+      </dd>
     </div>
   );
 }
@@ -163,9 +177,9 @@ function BoxLeaders({ g, stats, loading }: { g: NfGame; stats: WeekStats | null;
             <div key={t.team} className="nf-ldr-team">
               <h4 className="nf-sub-h">{cityOf(t.team)}</h4>
               <dl className="nf-ldr-list">
-                <LeaderLine label="passing" l={t.passing} />
-                <LeaderLine label="rushing" l={t.rushing} />
-                <LeaderLine label="receiving" l={t.receiving} />
+                <LeaderLine label="passing" l={t.passing} team={t.team} />
+                <LeaderLine label="rushing" l={t.rushing} team={t.team} />
+                <LeaderLine label="receiving" l={t.receiving} team={t.team} />
               </dl>
             </div>
           ))}
@@ -199,6 +213,7 @@ export function GameDrawer({ game: g, week, currentWeek, season, fantasy, onClos
           {[g.channel, g.stadiumCity].filter(Boolean).map((x) => <span key={x} className="nf-meta"> · {x}</span>)}
         </p>
         {scoreLine && <span className="sr-only">{scoreLine}</span>}
+        {g.state === 'live' && g.situation && <div className="nf-field"><FieldSituation game={g} variant="drawer" /></div>}
       </div>
       <Linescore g={g} />
       <BoxLeaders g={g} stats={stats} loading={loading} />

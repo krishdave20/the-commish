@@ -1,0 +1,22 @@
+/* Team ratings: the power bar, the position chips, the drawer's group list. Tokens only. */
+.pw { display: grid; grid-template-columns: 3.2em minmax(3rem, 1fr); gap: var(--s-2); align-items: center; min-width: 7rem; }
+.pw-n { font-variant-numeric: tabular-nums; text-align: right; }
+.pw .bar { height: 4px; }
+.rv { font-size: var(--fs-xs); display: block; text-align: right; }
+/* on a phone the row keeps the number; "roster 1st · record 2nd" opens with the row's details */
+.tw[data-compact] tr:not(.xrow) .rv { display: none; }
+.xrow .rv { text-align: left; }
+
+.tc-row { display: inline-flex; flex-wrap: wrap; gap: var(--s-1); }
+.tc { padding-inline: var(--s-2); }
+.tc-t { font-size: var(--fs-micro); } /* no opacity: faded text drops the tier pills below AA */
+
+.rd-stats { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); }
+.rd-sm { font-family: var(--sans); font-size: var(--fs-sm); }
+.rd-groups { gap: 0; }
+.rd-group { display: grid; gap: var(--s-1); padding: var(--s-2) 0; border-bottom: 1px solid var(--rule-2); min-height: var(--touch); }
+.rd-g-head { display: flex; align-items: center; gap: var(--s-2); }
+.rd-g-det { font-size: var(--fs-xs); }
+.rd-needs { gap: var(--s-2); font-size: var(--fs-sm); }
+.rd-needs .micro { margin-right: var(--s-1); }
+.rd-link { display: inline-flex; align-items: center; min-height: var(--touch); }

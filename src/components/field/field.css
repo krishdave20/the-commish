@@ -1,0 +1,120 @@
+/* The live field: a mini turf field, the situation line that goes with it, and the drive chart's full-width turf. Tokens only. */
+
+/* ---------- the mini field (about 120 x 28) ---------- */
+.mf { width: 120px; max-width: 100%; flex: none; }
+.mf .mf-turf { height: 28px; }
+.mf .art-turf-nums { display: none; }
+.mf .art-turf-ez { font-size: 8px; letter-spacing: 0; }
+.mf .art-turf-ez > span { max-height: calc(100% - 2px); }
+.mf-rz { position: absolute; top: 0; bottom: 0; background: var(--turf-ez-red); opacity: 0.4; pointer-events: none; }
+.mf-ball { top: 50%; width: 14px; height: 10px; }
+.mf-line { top: 0; bottom: 0; border-left-width: 2px; }
+.mf .mf-turf > svg.mf-arrow { position: absolute; inset: auto; top: 50%; width: 14px; height: 7px; margin-top: -3.5px; pointer-events: none; overflow: visible; }
+.mf-arrow path { stroke: var(--turf-num); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mf .mf-turf > svg.mf-arrow[data-dir='right'] { margin-left: 8px; }
+.mf .mf-turf > svg.mf-arrow[data-dir='left'] { margin-left: -22px; transform: scaleX(-1); }
+@media (prefers-reduced-motion: no-preference) {
+  .mf .mf-turf > svg.mf-arrow[data-dir='right'] { animation: mf-push-r 1.2s var(--ease) infinite alternate; }
+  .mf .mf-turf > svg.mf-arrow[data-dir='left'] { animation: mf-push-l 1.2s var(--ease) infinite alternate; }
+}
+@keyframes mf-push-r { from { transform: translateX(0); } to { transform: translateX(3px); } }
+@keyframes mf-push-l { from { transform: scaleX(-1) translateX(0); } to { transform: scaleX(-1) translateX(3px); } }
+
+/* ---------- the situation line ---------- */
+.fs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); min-width: 0; font-size: var(--fs-xs); color: var(--ink-2); }
+.fs-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); min-width: 0; }
+.fs-role { font-weight: 500; color: var(--ink-3); }
+.fs-role[data-on='true'] { color: var(--green); }
+.fs-text { color: var(--ink); font-variant-numeric: tabular-nums; }
+.fs-rz { color: var(--red); font-weight: 500; }
+.fs-clock, .fs-cue { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.fs-field { display: inline-flex; flex: none; }
+.fs-tos { display: inline-flex; gap: var(--s-2); color: var(--ink-3); }
+.fs-to { display: inline-flex; align-items: center; gap: var(--s-1); }
+.fs-dots { display: inline-flex; gap: 2px; }
+.fs-dots > i { width: 6px; height: 6px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--ink-3); }
+.fs-dots > i[data-on='true'] { background: var(--ink-2); box-shadow: none; }
+.fs-q { display: inline-flex; flex-direction: column; gap: var(--s-1); }
+.fs-q-btn { font: inherit; font-size: var(--fs-xs); color: var(--ink-2); background: none; border: 0; padding: 0 var(--s-1); min-height: 24px; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.fs-q-btn:hover { color: var(--ink); }
+.fs-q-body { flex-basis: 100%; }
+.fs-line { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.fs-line th, .fs-line td { padding: 1px var(--s-2); text-align: right; font-weight: 400; }
+.fs-line thead th { color: var(--ink-3); }
+.fs-line tbody th { text-align: left; color: var(--ink); }
+.fs-line td:last-child { font-weight: 500; color: var(--ink); }
+.fs-note { margin: 0; color: var(--ink-3); }
+@media (max-width: 760px), (pointer: coarse) {
+  .fs-q-btn { min-height: var(--touch); padding: 0 var(--s-2); }
+}
+
+/* the drawer variant is roomier: a bigger field above the situation */
+.fs[data-variant='drawer'] { flex-direction: column; align-items: flex-start; font-size: var(--fs-sm); gap: var(--s-2); }
+.fs[data-variant='drawer'] .mf { width: min(100%, 360px); }
+.fs[data-variant='drawer'] .mf .mf-turf { height: 56px; }
+.fs[data-variant='drawer'] .mf .art-turf-ez { font-size: var(--fs-micro); }
+.fs[data-variant='drawer'] .mf-ball { width: 22px; height: 15px; }
+.fs[data-variant='drawer'] .art-turf-nums { display: none; }
+/* on a scoreboard card the field sits under the status line, full card width up to a limit */
+.fs[data-variant='card'] { flex-direction: column; align-items: flex-start; }
+.fs[data-variant='card'] .fs-field, .fs[data-variant='drawer'] .fs-field { display: block; width: 100%; }
+.fs[data-variant='card'] .mf { width: 100%; max-width: 180px; }
+
+/* ---------- the drive chart on turf ---------- */
+.dt { margin: 0; display: grid; gap: var(--s-2); }
+.dt-field { position: relative; }
+.dt .dt-turf { height: 112px; }
+.dt-turf { box-shadow: 0 0 0 1px var(--turf-edge); }
+.dt-line { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.dt-line * { vector-effect: non-scaling-stroke; }
+.dt-mid { stroke: var(--turf-line); stroke-width: 1; stroke-dasharray: 2 4; fill: none; opacity: 0.6; }
+.dt-margin { fill: none; stroke: var(--gold-on-inverse); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.dt-mark {
+  position: absolute; transform: translate(-50%, -50%); padding: 0; margin: 0; border: 0; background: none; color: var(--turf-num); cursor: pointer; z-index: 1;
+  font: inherit; line-height: 0;
+}
+.dt-mark::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 24px); height: max(100%, 24px); transform: translate(-50%, -50%); }
+.dt-mark:focus-visible { outline: 2px solid var(--gold-on-inverse); outline-offset: 2px; border-radius: var(--r-xs); }
+.dt-ball { width: 100%; height: 100%; color: var(--turf-num); }
+.dt-mark[data-side='me'] .art-body { fill: var(--green-on-inverse); }
+.dt-mark[data-side='opp'] .art-body { fill: var(--red-on-inverse); }
+.dt-mark[data-side='other'] .art-body { fill: var(--turf-line); }
+.dt-mark[data-side='other'] .dt-ball { opacity: 0.6; }
+.dt-mark[data-side='other'] .art-gold, .dt-mark[data-side='other'] path:not(.art-body) { display: none; }
+.dt-mark[data-neg='true'] .art-body { fill: none; }
+.dt-mark[data-neg='true'][data-side='me'] .dt-ball { color: var(--green-on-inverse); }
+.dt-mark[data-neg='true'][data-side='opp'] .dt-ball { color: var(--red-on-inverse); }
+.dt-mark[data-active='true'], .dt-mark[data-latest='true'] { z-index: 2; }
+.dt-mark[data-latest='true'] .dt-ball { filter: drop-shadow(0 0 3px var(--turf-num)); }
+.dt-pts {
+  position: absolute; left: 50%; bottom: calc(100% + 2px); transform: translateX(-50%); font-size: var(--fs-micro); line-height: 1; color: var(--turf-on);
+  font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none;
+}
+.dt-mark[data-side='opp'] .dt-pts { bottom: auto; top: calc(100% + 2px); }
+.dt-turf > svg.dt-drive { position: absolute; inset: auto; width: 28px; height: 8px; transform: translateY(-50%); pointer-events: none; overflow: visible; }
+.dt-drive path { stroke: var(--turf-on); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.dt-tip {
+  position: absolute; transform: translate(-50%, calc(-100% - 14px)); padding: var(--s-1) var(--s-2); border-radius: var(--r-sm); z-index: 3; pointer-events: none;
+  background: var(--surface-inverse); color: var(--on-inverse); font-size: var(--fs-xs); line-height: 1.3; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: var(--shadow-pop);
+  display: inline-flex; align-items: center; gap: var(--s-2);
+}
+.dt-tip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dt-tip[data-below='true'] { transform: translate(-50%, 14px); }
+.dt-key { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); font-size: var(--fs-xs); color: var(--ink-2); }
+.dt-key > span[data-key]::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: var(--s-1); background: var(--turf-line); }
+.dt-key > span[data-key='me']::before { background: var(--green); }
+.dt-key > span[data-key='opp']::before { background: var(--red); }
+.dt-ahead { color: var(--ink-3); }
+.dt-dir { margin-left: auto; color: var(--ink-3); }
+@media (prefers-reduced-motion: no-preference) {
+  .dt-turf > svg.dt-drive { animation: dt-push 900ms var(--ease) infinite alternate; }
+  .dt-mark { animation: dt-pop var(--t-base) var(--ease) both; }
+}
+@keyframes dt-push { from { transform: translate(0, -50%); } to { transform: translate(5px, -50%); } }
+@keyframes dt-pop { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 560px) {
+  .dt .dt-turf { height: 80px; }
+  .dt-dir { margin-left: 0; flex-basis: 100%; }
+  .dt-mark::after { width: max(100%, var(--touch)); height: max(100%, var(--touch)); }
+}

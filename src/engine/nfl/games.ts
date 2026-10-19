@@ -6,14 +6,13 @@
    `home_record` / `away_record` ("4-2-0"), `stadium_details.city`. `quarter` also reads "HALF" at the half. */
 import type { ScoreGame } from '../../data/types.ts';
 import { parseScores } from '../live/scores.ts';
+import { lineScore } from '../live/situation.ts';
+import type { LineScore } from '../live/situation.ts';
 import type { NflGame } from '../live/types.ts';
 
-export interface LineScore {
-  /** "1", "2", "3", "4" and "ot" for each period played so far */
-  labels: string[];
-  home: number[];
-  away: number[];
-}
+/* the line score now lives with the rest of a game's field situation (live/situation.ts); the nfl page keeps importing it from here */
+export { lineScore };
+export type { LineScore };
 
 export interface NfGame extends NflGame {
   week: number;
@@ -26,7 +25,6 @@ export interface NfGame extends NflGame {
   line: LineScore | null;
 }
 
-const num = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null);
 const str = (x: unknown): string | null => (typeof x === 'string' && x.trim() !== '' ? x.trim() : null);
 
 /** "4-2-0" to "4-2" (a tie shows only when there is one: "3-2-1"). */
@@ -35,38 +33,6 @@ export function trimRecord(r: string | null): string | null {
   const m = /^(\d+)-(\d+)(?:-(\d+))?$/.exec(r);
   if (!m) return r;
   return m[3] && m[3] !== '0' ? `${m[1]}-${m[2]}-${m[3]}` : `${m[1]}-${m[2]}`;
-}
-
-/** Periods played: a final game has all four (and overtime when there was one); a live game has the quarters up to the current one. */
-function periodsPlayed(g: NflGame, meta: Record<string, unknown>): number {
-  const ot = meta.is_overtime === true || g.quarter.toUpperCase() === 'F/OT' || g.quarter.toUpperCase() === 'OT';
-  if (g.state === 'final') return ot ? 5 : 4;
-  const q = g.quarter.toUpperCase();
-  if (q === 'H' || q === 'HALF' || q === 'HALFTIME') return 2;
-  if (q === 'OT') return 5;
-  const n = Number(q);
-  return Number.isInteger(n) && n >= 1 && n <= 4 ? n : 0;
-}
-
-/** The quarter-by-quarter score, or null when it is not there or does not add up to the score on the board
-    (a feed that is mid-update must not show numbers that disagree). */
-export function lineScore(g: NflGame, meta: Record<string, unknown> | null | undefined): LineScore | null {
-  if (!meta || g.state === 'pre' || g.homeScore === null || g.awayScore === null) return null;
-  const n = periodsPlayed(g, meta);
-  if (n === 0) return null;
-  const home: number[] = [], away: number[] = [], labels: string[] = [];
-  for (let q = 1; q <= Math.min(n, 4); q++) {
-    const h = num(meta[`home_score_quarter${q}`]), a = num(meta[`away_score_quarter${q}`]);
-    if (h === null || a === null) return null;
-    home.push(h); away.push(a); labels.push(String(q));
-  }
-  if (n === 5) {
-    const h = num(meta.home_score_overtime), a = num(meta.away_score_overtime);
-    if (h === null || a === null) return null;
-    home.push(h); away.push(a); labels.push('ot');
-  }
-  const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
-  return sum(home) === g.homeScore && sum(away) === g.awayScore ? { labels, home, away } : null;
 }
 
 /** Sleeper's scores rows for one week as NfGame rows, soonest kickoff first. */
@@ -98,7 +64,7 @@ export function overlayLive(base: readonly NfGame[], live: readonly NflGame[]): 
       const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
       if (sum(g.line.home) !== l.homeScore || sum(g.line.away) !== l.awayScore) return g;
     }
-    return { ...g, state: l.state, quarter: l.quarter, clock: l.clock, homeScore: l.homeScore, awayScore: l.awayScore, elapsed: l.elapsed, kickoff: l.kickoff ?? g.kickoff, line: l.state === 'pre' ? null : g.line };
+    return { ...g, state: l.state, quarter: l.quarter, clock: l.clock, homeScore: l.homeScore, awayScore: l.awayScore, elapsed: l.elapsed, kickoff: l.kickoff ?? g.kickoff, line: l.state === 'pre' ? null : g.line, situation: l.situation };
   });
 }
 

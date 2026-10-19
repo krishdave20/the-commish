@@ -6,6 +6,7 @@
    - GET /schedule/nfl/regular/{season} (documented-ish): only `status`, `date`, `home`, `away`, `week`. No kickoff time, no clock.
    The scores feed is the one game day uses; the schedule is the fallback when it is down. */
 import type { ScheduleGame, ScoreGame } from '../../data/types.ts';
+import { lineScore, parseSituation } from './situation.ts';
 import type { GameState, NflGame } from './types.ts';
 
 const QUARTER_MIN = 15;
@@ -47,12 +48,18 @@ export function parseScores(rows: readonly ScoreGame[]): NflGame[] {
     const iso = typeof m.date_time === 'string' ? Date.parse(m.date_time) : NaN;
     const kickoff = num(g.start_time) ?? (Number.isFinite(iso) ? iso : null);
     const quarter = state === 'pre' ? '' : String(m.quarter ?? '');
-    out.push({
+    const game: NflGame = {
       id: g.game_id, home: m.home_team, away: m.away_team, kickoff, state, quarter,
       clock: state === 'live' ? String(m.time_remaining ?? '') : '',
       homeScore: state === 'pre' ? null : num(m.home_score), awayScore: state === 'pre' ? null : num(m.away_score),
       elapsed: state === 'pre' ? 0 : state === 'final' ? 1 : elapsedFraction(quarter, m.time_remaining),
-    });
+    };
+    // the ball is only worth showing while the game is on; the quarters from the first snap on
+    const situation = state === 'live' ? parseSituation(m as Record<string, unknown>) : null;
+    if (situation) game.situation = situation;
+    const line = lineScore(game, m as Record<string, unknown>);
+    if (line) game.line = line;
+    out.push(game);
   }
   return out.sort((a, b) => (a.kickoff ?? 0) - (b.kickoff ?? 0) || a.id.localeCompare(b.id));
 }

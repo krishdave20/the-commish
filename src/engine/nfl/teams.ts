@@ -1,4 +1,4 @@
-/* The 32 NFL teams: facts only (Sleeper's abbreviation, city, nickname, conference and division). Text, no logos, no team colours:
+/* The 32 NFL teams: facts only (Sleeper's abbreviation, city, nickname, conference and division). Text, no logos (the colours are in teamColors.ts):
    SPEC section 1 keeps NFL and team marks out of the app. Sleeper writes the Rams as LAR and Washington as WAS, which is why those two are here. */
 
 export type Conference = 'AFC' | 'NFC';

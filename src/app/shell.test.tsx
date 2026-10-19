@@ -55,28 +55,6 @@ describe('landmarks and the skip link', () => {
   });
 });
 
-describe('the phone menu', () => {
-  it('opens and closes from its button, names the current page and closes on Escape', async () => {
-    const { user } = renderApp({ linked: [sampleAccount()], route: '/takes' });
-    const button = await screen.findByRole('button', { name: 'menu, you are on hot takes' });
-    expect(button).toHaveAttribute('aria-expanded', 'false');
-    await user.click(button);
-    const open = screen.getByRole('button', { name: 'close menu' });
-    expect(open).toHaveAttribute('aria-expanded', 'true');
-    expect(open).toHaveAttribute('aria-controls', document.querySelector('.menu')!.id);
-    await user.keyboard('{Escape}');
-    expect(screen.getByRole('button', { name: 'menu, you are on hot takes' })).toHaveAttribute('aria-expanded', 'false');
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: /^menu/ }));
-  });
-
-  it('closes when you pick a page', async () => {
-    const { user } = renderApp({ linked: [sampleAccount()] });
-    await user.click(await screen.findByRole('button', { name: /^menu/ }));
-    await user.click(within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('link', { name: 'locker room' }));
-    expect(await screen.findByRole('button', { name: 'menu, you are on locker room' })).toHaveAttribute('aria-expanded', 'false');
-  });
-});
-
 describe('document titles', () => {
   it('a player page keeps its own title instead of the shell overwriting it', async () => {
     renderApp({ linked: [sampleAccount()], route: '/players/p-nobody' });

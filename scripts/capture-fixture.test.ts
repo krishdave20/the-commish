@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { SleeperLeague } from '../src/data/contract.ts';
-import { scoresAsOf, bracketRequests, fantasyCalcRequests, outDirOf, parseArgs, parseOnly, srcDirOf } from './capture-fixture.ts';
+import { scoreWeeks, scoresAsOf, bracketRequests, fantasyCalcRequests, outDirOf, parseArgs, parseOnly, srcDirOf } from './capture-fixture.ts';
 
 describe('capture-fixture args', () => {
   it('reads user and league from the command line, defaulting the output dir', () => {
@@ -83,5 +83,13 @@ describe('scoresAsOf (the fixture week\'s scores at the fixture moment)', () => 
   it('leaves a game that had already kicked off as received', () => {
     const before = game('b', NOW - 3_600_000, 'complete');
     expect(scoresAsOf([before], NOW)[0]).toBe(before);
+  });
+});
+
+describe('scoreWeeks', () => {
+  it('is every week from 1 to the one after the fixture week, never past 18', () => {
+    expect(scoreWeeks(6)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(scoreWeeks(18)).toHaveLength(18);
+    expect(scoreWeeks(1)).toEqual([1, 2]);
   });
 });

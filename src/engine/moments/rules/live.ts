@@ -1,5 +1,5 @@
 /* While games are on: the live score, and Monday night when the whole week comes down to it. */
-import { weekdayOf } from '../time.ts';
+import { weekdayOf, HOUR } from '../time.ts';
 import type { Moment } from '../types.ts';
 import { gamesOnDay, nameList, pts1 } from '../scope.ts';
 import type { Scope } from '../scope.ts';
@@ -47,6 +47,41 @@ export function mondayNight(s: Scope): Moment[] {
     title: 'it comes down to monday night', detail,
     action: { label: 'open game day', to: '/gameday' },
     pill: { text: `${m.mine.name} ${pts1(m.mine.pts)} · ${pts1(m.theirs.pts)} · ${Math.round(m.winP * 100)}%`, bar: m.winP },
+    pages: ['gameday', 'home', 'team'],
+  }];
+}
+
+/** How long the recap stays in the live activity after the matchup ends. */
+export const RECAP_WINDOW = 12 * HOUR;
+/** An NFL game lasts about three and a half hours: the last kickoff plus this is when the week's games are over. */
+const GAME_LENGTH = 3.5 * HOUR;
+
+/** After your matchup is settled: "final: you won 112.3–98.0", for 12 hours (Monday night into Tuesday's recap). Read from the live matchup (every starter on both sides is done), else
+    from the model's result once every game of the week is over. */
+export function finalWhistle(s: Scope): Moment[] {
+  // Tuesday's week recap takes over from here (it says the same thing with the odds), so the two never stand side by side
+  if (!s.inSeason || s.dow === 2) return [];
+  const m = s.ctx.live;
+  let mine: number, theirs: number, opp: string, week: number | null, top: { name: string; pts: number } | null, endsAt: number | undefined;
+  if (m && m.started && m.final) {
+    mine = m.mine.pts; theirs = m.theirs.pts; opp = m.theirs.name; week = m.week ?? s.week; top = m.mine.top ?? null;
+    endsAt = m.finalAt != null ? m.finalAt + RECAP_WINDOW : undefined;
+  } else {
+    const r = s.model?.lastResult;
+    if (!s.weekOver || !r || r.week !== s.week || !s.lastKick) return [];
+    mine = r.mine; theirs = r.theirs; opp = r.oppName; week = r.week; top = null;
+    endsAt = s.lastKick.kickoff + GAME_LENGTH + RECAP_WINDOW;
+  }
+  const tie = Math.abs(mine - theirs) < 0.005;
+  const verb = tie ? 'tied' : mine > theirs ? 'won' : 'lost';
+  const score = `${pts1(mine)}–${pts1(theirs)}`;
+  return [{
+    id: 'final-whistle', kind: 'final-whistle', priority: 91, glance: true,
+    title: `final: you ${verb} ${score}`,
+    detail: `against ${opp}${top ? ` · your top scorer: ${top.name} (${pts1(top.pts)})` : ''}`,
+    action: { label: 'see the week', to: week !== null ? `/gameday?week=${week}` : '/gameday' },
+    pill: { text: `${tie ? 'T' : verb === 'won' ? 'W' : 'L'} ${score}` },
+    ...(endsAt !== undefined ? { endsAt } : {}),
     pages: ['gameday', 'home', 'team'],
   }];
 }

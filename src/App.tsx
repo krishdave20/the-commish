@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import type { AccountStore, DataApi, NflverseClient, SleeperClient } from './data';
 import { AppShell } from './app/AppShell';
@@ -5,20 +6,23 @@ import { DataProvider } from './app/DataProvider';
 import { ModelProvider } from './app/ModelProvider';
 import { ScenarioProvider } from './app/ScenarioProvider';
 import type { LoadModel } from './app/loadModel';
-import Method from './pages/Method';
-import Draft from './pages/Draft';
-import GameDay from './pages/GameDay';
+const Method = lazy(() => import('./pages/Method'));
+const Draft = lazy(() => import('./pages/Draft'));
+const GameDay = lazy(() => import('./pages/GameDay'));
 import Home from './pages/Home';
-import LeagueRace from './pages/LeagueRace';
-import MyTeam from './pages/MyTeam';
-import Nfl from './pages/Nfl';
-import PlayerProfile from './pages/PlayerProfile';
-import Players from './pages/Players';
-import Settings from './pages/Settings';
+const LeagueRace = lazy(() => import('./pages/LeagueRace'));
+const MyTeam = lazy(() => import('./pages/MyTeam'));
+const Nfl = lazy(() => import('./pages/Nfl'));
+const PlayerProfile = lazy(() => import('./pages/PlayerProfile'));
+const Players = lazy(() => import('./pages/Players'));
+const Settings = lazy(() => import('./pages/Settings'));
 import SignIn from './pages/SignIn';
-import Takes from './pages/Takes';
-import Trades from './pages/Trades';
-import Waivers from './pages/Waivers';
+const Takes = lazy(() => import('./pages/Takes'));
+const Trades = lazy(() => import('./pages/Trades'));
+const Waivers = lazy(() => import('./pages/Waivers'));
+
+/* Every page but the huddle (the first screen) and check in is its own chunk, fetched when its route opens, so a phone on a slow
+   connection downloads and parses only what it shows. The shell holds the loading state (AppShell.tsx). */
 
 /** Every route, without a router, so tests can mount it in a MemoryRouter. */
 export function AppRoutes() {

@@ -8,7 +8,7 @@
   --sheet: #faf8f3;
   --ink: #1f1d19;
   --ink-2: #5d5850;
-  --ink-3: #8a8478;
+  --ink-3: #6f6a60; /* AA on paper (4.8:1) and sheet (5.1:1); was #8a8478 at 3.3:1 */
   --rule: #dcd5c6;
   --rule-2: #e9e4d8;
 

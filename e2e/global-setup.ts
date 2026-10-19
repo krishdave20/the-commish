@@ -9,5 +9,5 @@ export default function globalSetup() {
     mkdirSync(resolve(results, sub), { recursive: true });
   }
   rmSync(resolve(results, 'axe-report.json'), { force: true });
-  for (const p of ['desktop', 'phone']) rmSync(resolve(results, `overflow-${p}.json`), { force: true });
+  for (const p of ['desktop', 'phone', 'phone320', 'phone430']) rmSync(resolve(results, `overflow-${p}.json`), { force: true });
 }

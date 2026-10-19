@@ -1,25 +1,31 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { PageSkeleton } from '../components/Skeleton';
 import { SkipLink } from '../components/SkipLink';
 import { LiveActivity } from '../components/live-activity';
+import { usePhone } from '../components/useMediaQuery';
 import { Ticker } from '../components/ticker/Ticker';
 import { useTickerMode } from '../components/ticker/useTickerMode';
 import { useActive } from './hooks';
 import { LiveProvider } from './live/LiveProvider';
 import { MomentsProvider } from './moments/MomentsProvider';
-import { Sidebar, SiteFooter } from './Sidebar';
+import { TabBar } from './PhoneChrome';
+import { PhoneTop, Sidebar, SiteFooter } from './Sidebar';
 import { SIGN_IN_PATH } from './routes';
 import { useScrollRegions } from './useScrollRegions';
 import { usePageTitle } from './usePageTitle';
 
-/** The frame inside the live provider: skip link, the score ticker across the top, then the sidebar and the page.
-    `data-ticker` tells the CSS how tall the ticker is, so the sticky sidebar sits just under it. */
+/** The frame inside the live provider: skip link, the score ticker, the site header and the page.
+    Wide screens: the ticker band across the top, then the header with its row of section tabs.
+    Phones: a sticky top bar with the ticker under it, the large team title, the page, and a bottom tab bar.
+    `data-ticker` tells the CSS how tall the ticker is, so the sticky parts sit just under it. */
 function Frame() {
   const location = useLocation();
   const main = useRef<HTMLElement>(null);
   const first = useRef(true);
   const ticker = useTickerMode();
+  const phone = usePhone();
   usePageTitle(location.pathname);
   useScrollRegions();
   useEffect(() => {
@@ -29,16 +35,17 @@ function Frame() {
   return (
     <>
       <SkipLink />
-      <div className="shell" data-ticker={ticker}>
-        <Ticker />
+      <div className="shell" data-ticker={ticker} data-phone={phone ? 'true' : undefined}>
+        {!phone && <Ticker />}
         <LiveActivity />
         <div className="app">
-          <Sidebar />
+          {phone ? <PhoneTop ticker={<Ticker />} /> : <Sidebar />}
           <main className="main" id="main" tabIndex={-1} ref={main} key={location.pathname}>
-            <ErrorBoundary key={location.pathname}><Outlet /></ErrorBoundary>
+            <ErrorBoundary key={location.pathname}><Suspense fallback={<PageSkeleton />}><Outlet /></Suspense></ErrorBoundary>
           </main>
           <SiteFooter />
         </div>
+        {phone && <TabBar />}
       </div>
     </>
   );

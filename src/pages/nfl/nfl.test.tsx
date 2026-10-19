@@ -6,7 +6,7 @@ import {
 import type { PlayersMap, ScoreGame, WeekStats } from '../../data';
 import { renderApp } from '../../app/testUtils';
 import { formatKickoff } from '../../app/live/format';
-import { timeSlot } from '../../engine/nfl';
+import { TEAM_COLORS, timeSlot } from '../../engine/nfl';
 
 afterEach(() => {
   cleanup();
@@ -18,6 +18,11 @@ const linked = [sampleAccount()];
 const D = 86_400_000;
 const SUN = Date.parse('2026-09-13T17:00:00Z');
 
+/** N1 (the home team) has the ball on the N2 44: 2nd and 7. */
+const withBall = (g: ScoreGame): ScoreGame => ({
+  ...g, metadata: { ...g.metadata, possession: 'N1', yard_line: 44, yard_line_territory: 'N2', down: 2, down_and_distance: '2nd & 7', red_zone: '', away_used_timeouts: 1, home_used_timeouts: 3 },
+});
+
 /** Weeks 1 to 4 are over (real team codes, so the standings have something to count); week 5 is on: one live game and one final between the
     sample league's pretend NFL teams (N1 to N4: every player of fantasy team k plays for N{k}), and a real kickoff three days away. */
 function scoresFor(week: number, o: { homeLive: number; kickoff: number }): ScoreGame[] {
@@ -27,7 +32,7 @@ function scoresFor(week: number, o: { homeLive: number; kickoff: number }): Scor
     case 3: return [nflScoreGame({ id: 'w3', away: 'BUF', home: 'KC', kickoff: SUN + 14 * D, q: [[0, 3, 7, 0], [7, 10, 6, 7]] })];
     case 4: return [nflScoreGame({ id: 'w4', away: 'CHI', home: 'DET', kickoff: SUN + 21 * D, q: [[7, 7, 7, 0], [7, 0, 7, 0]] })];
     case 5: return [
-      nflScoreGame({ id: 'g1', away: 'N2', home: 'N1', state: 'live', kickoff: o.kickoff, score: [10, o.homeLive], q: [[3, 7], [7, o.homeLive - 7]], channel: 'CBS' }),
+      withBall(nflScoreGame({ id: 'g1', away: 'N2', home: 'N1', state: 'live', kickoff: o.kickoff, score: [10, o.homeLive], q: [[3, 7], [7, o.homeLive - 7]], channel: 'CBS' })),
       nflScoreGame({ id: 'g2', away: 'N4', home: 'N3', state: 'final', kickoff: o.kickoff + 60_000, q: [[0, 7, 7, 0], [7, 7, 0, 3]] }),
       nflScoreGame({ id: 'g3', away: 'KC', home: 'LAC', state: 'pre', kickoff: Date.now() + 3 * D }),
     ];
@@ -109,6 +114,25 @@ describe('the nfl page: scoreboard', () => {
     expect(screen.getByRole('heading', { level: 3, name: timeSlot(kickoff).label })).toBeInTheDocument();
   });
 
+  it('shows where the ball is on a live card: the down, the spot, a mini field and the timeouts, and nothing on the others', async () => {
+    setup();
+    const live = await card('N2', 'N1');
+    expect(live).toHaveTextContent('2nd & 7 · at n2 44');
+    // the field is decorative inside the button; its sentence is part of the card's name, and the timeouts are read out
+    expect(live.querySelector('.mf')).toHaveAttribute('aria-hidden', 'true');
+    expect(live).toHaveTextContent('n1 on offense, 2nd and 7 at the n2 44');
+    expect(live).toHaveTextContent('n2 2 timeouts left');
+    expect(live).toHaveTextContent('n1 0 timeouts left');
+    // N1 is at home, so it goes left, and the ball is 44 yards from the visitor's goal line
+    expect(live.querySelector('.mf')).toHaveAttribute('data-dir', 'left');
+    expect(live.querySelector('.mf-ball')).toHaveStyle({ left: `${(54 / 120) * 100}%` });
+    expect(live.querySelectorAll('.art-turf-ez')).toHaveLength(2);
+    // the card is still one button: nothing inside it can be pressed
+    expect(live.querySelectorAll('button')).toHaveLength(0);
+    expect((await card('N4', 'N3')).querySelector('.mf')).toBeNull();
+    expect((await card('KC', 'LAC')).querySelector('.mf')).toBeNull();
+  });
+
   it('answers first: games live now, your players playing now, and the next kickoff', async () => {
     setup();
     const strip = await screen.findByRole('group', { name: 'week 5 at a glance' });
@@ -169,6 +193,18 @@ describe('the game drawer', () => {
     // the fantasy sections sit after a divider
     expect(dlg.querySelector('hr.nf-divider')).not.toBeNull();
     expect(within(dlg).getByText('fantasy · your league')).toBeInTheDocument();
+  });
+
+  it('shows the live field in the drawer of a live game, and not in a finished one', async () => {
+    const { user } = setup();
+    await user.click(await card('N2', 'N1'));
+    const dlg = await screen.findByRole('dialog', { name: /N2 at N1/i });
+    expect(within(dlg).getByRole('img', { name: 'n1 on offense, 2nd and 7 at the n2 44' })).toBeInTheDocument();
+    expect(within(dlg).getByText('2nd & 7 · at n2 44')).toBeInTheDocument();
+    await user.click(within(dlg).getByRole('button', { name: /close/i }));
+    await user.click(await card('N4', 'N3'));
+    const done = await screen.findByRole('dialog', { name: /N4 at N3/i });
+    expect(within(done).queryByRole('img', { name: /on offense/ })).toBeNull();
   });
 
   it('lists your players with points and projection, the rest of the league with their owners, top scores and the waiver wire', async () => {
@@ -339,3 +375,59 @@ async function userMore() {
   await userEvent.setup().click(screen.getByRole('button', { name: /more columns/ }));
   expect(screen.queryByRole('columnheader', { name: 'your players' })).not.toBeInTheDocument();
 }
+
+describe('headshots on the nfl page', () => {
+  const decorative = (root: ParentNode) => {
+    for (const a of root.querySelectorAll('.avatar')) expect(a).toHaveAttribute('aria-hidden', 'true');
+    for (const img of root.querySelectorAll('img.avatar-img')) expect(img).toHaveAttribute('alt', '');
+  };
+  const bg = (el: Element | null) => (el as HTMLElement).style.getPropertyValue('--av-bg');
+
+  it('puts each stats leader on his team’s colour, the name staying the link’s name', async () => {
+    setup({ route: '/nfl?tab=stats' });
+    const table = await screen.findByRole('table', { name: /passing leaders by yds/ });
+    const pat = within(table).getByRole('link', { name: 'Pat Bishop' }).closest('tr')!;
+    const quinn = within(table).getByRole('link', { name: 'Quinn Aaron' }).closest('tr')!;
+    expect(pat.querySelector('.avatar')).toHaveAttribute('data-size', '28');
+    expect(bg(pat.querySelector('.avatar'))).toBe(TEAM_COLORS.LAC!.primary);
+    expect(bg(quinn.querySelector('.avatar'))).toBe(TEAM_COLORS.KC!.primary);
+    decorative(table);
+  });
+
+  it('puts each team leader of the box score on his team’s colour, 28 px', async () => {
+    const { user } = setup();
+    await user.click(await card('N2', 'N1'));
+    const dlg = await screen.findByRole('dialog', { name: /N2 at N1/i });
+    const box = (await within(dlg).findByRole('heading', { name: 'team leaders' })).closest('section')!;
+    await within(box).findByText('Bo Leader');
+    const bo = within(box).getByRole('link', { name: 'Bo Leader' }).closest('dd')!;
+    expect(bo.querySelector('.avatar')).toHaveAttribute('data-size', '28');
+    // N1 is not a real team, so the colour stays neutral instead of guessing
+    expect(bo.querySelector('.avatar')).not.toHaveAttribute('data-team');
+    // one headshot for each leader line that has a player
+    expect(box.querySelectorAll('.nf-ldr dd > .avatar')).toHaveLength(box.querySelectorAll('.nf-ldr dd a').length);
+    decorative(box);
+  });
+
+  it('puts a headshot on every row of your players, your league and the waiver watch', async () => {
+    const { user } = setup();
+    await user.click(await card('N2', 'N1'));
+    const dlg = await screen.findByRole('dialog');
+    const mine = await within(dlg).findByRole('list', { name: 'your players in this game' });
+    const alex = within(mine).getByText('Alex Arm').closest('li')!;
+    expect(alex.querySelector('.avatar')).toHaveAttribute('data-size', '28');
+    expect(mine.querySelectorAll('li')).toHaveLength(mine.querySelectorAll('li .avatar').length);
+    decorative(mine);
+    await user.click(within(dlg).getByRole('radio', { name: /your league/ }));
+    const league = await within(dlg).findByRole('list', { name: 'your league in this game' });
+    expect(league.querySelectorAll('li').length).toBeGreaterThan(0);
+    expect(league.querySelectorAll('li')).toHaveLength(league.querySelectorAll('li .avatar').length);
+    expect(within(league).getByText('Quinn Quarterback').closest('li')).toHaveTextContent('Reed Between the Lines');
+    await user.click(within(dlg).getByRole('radio', { name: 'waiver watch' }));
+    const wire = await within(dlg).findByRole('list', { name: 'waiver watch' });
+    const fran = within(wire).getByRole('link', { name: 'Free Agent Fran' }).closest('li')!;
+    expect(fran.querySelector('.avatar')).toBeInTheDocument();
+    expect(wire.querySelectorAll('li')).toHaveLength(wire.querySelectorAll('li .avatar').length);
+    decorative(wire);
+  });
+});

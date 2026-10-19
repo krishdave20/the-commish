@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { useData } from '../app/dataContext';
 import { useActive, useLeagueBundle } from '../app/hooks';
 import type { Freshness } from '../app/hooks';
@@ -10,14 +10,12 @@ import { useWantsReducedMotion } from '../components/motion';
 import { Attribution } from '../components/Attribution';
 import { PageHeader } from '../components/PageHeader';
 import { MomentBanner } from '../components/MomentBanner';
-import { PageSkeleton } from '../components/Skeleton';
+import { BlockSkeleton, PageSkeleton } from '../components/Skeleton';
 import { PageTabs } from '../components/PageTabs';
 import { inferDraftMode, liveSnapshot } from '../engine';
 import type { DraftMode } from '../engine';
 import { ClockBanner } from './draft/ClockBanner';
-import { ClockTab } from './draft/ClockTab';
 import type { ReplayControls } from './draft/ClockTab';
-import { MockTab } from './draft/MockTab';
 import { ModeBar } from './draft/ModeBar';
 import { RankingsTab } from './draft/RankingsTab';
 import { DRAFT_TEXT, draftModeOf, myRosterOf, planOrder, teamDirectory } from './draft/model';
@@ -27,10 +25,18 @@ import type { PickSource, ReplaySource } from './draft/pickFeed';
 import { usePickFeed } from './draft/usePickFeed';
 import './draft/draft.css';
 
-const TABS: Array<{ value: TabKey; label: string }> = [
+// the mock draft and the on-the-clock tabs (the board, the pick feed) load when they open
+const ClockTab = lazy(() => import('./draft/ClockTab').then((m) => ({ default: m.ClockTab })));
+const MockTab = lazy(() => import('./draft/MockTab').then((m) => ({ default: m.MockTab })));
+const GradesTab = lazy(() => import('./draft/grades/GradesTab').then((m) => ({ default: m.GradesTab })));
+const RatingsTab = lazy(() => import('./draft/ratings/RatingsTab').then((m) => ({ default: m.RatingsTab })));
+
+const TABS: Array<{ value: TabKey | 'grades' | 'ratings'; label: string }> = [
   { value: 'rankings', label: DRAFT_TEXT.rankings },
   { value: 'mock', label: FEATURE.mock },
   { value: 'clock', label: FEATURE.onTheClock },
+  { value: 'grades', label: 'draft grades' },
+  { value: 'ratings', label: 'team ratings' },
 ];
 const WATCH_MS = 30_000;
 
@@ -165,16 +171,18 @@ function DraftPage() {
           <ModeBar league={room.league} draftMode={draftMode} shown={room.mode} wanted={wanted} rankings={room.rankings} inputs={room.inputs} onChange={setMode} />
           <PageTabs label="Draft room section" tabs={TABS} defaultTab={live ? 'clock' : 'rankings'} aliases={{ live: 'clock' }}>
             {(tab) => (
-              <>
+              <Suspense fallback={<BlockSkeleton height="18rem" />}>
                 {tab === 'rankings' && <RankingsTab room={room} picks={hidePicks} />}
                 {tab === 'mock' && <MockTab key={`${room.mode}:${inputs.asOf}`} room={room} plan={mockPlan} />}
+                {tab === 'grades' && <GradesTab room={room} />}
+                {tab === 'ratings' && <RatingsTab room={room} />}
                 {tab === 'clock' && livePlan && (
                   <ClockTab
                     room={room} plan={livePlan} feed={feed.state} source={source?.kind ?? null} snapshot={snapshot} replay={replay}
                     canReplay={draft?.status === 'complete' && (savedPicks?.length ?? 0) > 0} draftPicks={savedPicks?.length ?? 0}
                   />
                 )}
-              </>
+              </Suspense>
             )}
           </PageTabs>
           <Attribution sources={room.fcUsed ? ['sleeper', 'fantasycalc'] : ['sleeper']} />

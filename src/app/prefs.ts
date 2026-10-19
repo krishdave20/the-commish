@@ -10,12 +10,14 @@ export interface Prefs {
   /** how the non-playoff teams' bracket works: follow the league's own Sleeper bracket ('match'), the toilet bowl (losers advance)
       or a plain consolation bracket (winners advance). Default: the toilet bowl. A device-wide choice, like the other prefs. */
   losers: LosersPref;
+  /** put the sections that matter right now (waivers on Tuesday night, game day on Sunday) up front in the navigation. On by default. */
+  smartNav: boolean;
 }
 
 export type LosersPref = 'match' | 'toilet' | 'consolation';
 export const LOSERS_PREFS: readonly LosersPref[] = ['match', 'toilet', 'consolation'];
 
-export const DEFAULT_PREFS: Prefs = { autoRefresh: true, updateUrl: '', losers: 'toilet' };
+export const DEFAULT_PREFS: Prefs = { autoRefresh: true, updateUrl: '', losers: 'toilet', smartNav: true };
 
 /** Fired on `window` whenever savePrefs runs, so open pages can follow a change made elsewhere in the app. */
 export const PREFS_EVENT = 'wr-prefs';
@@ -32,6 +34,7 @@ export function loadPrefs(): Prefs {
       autoRefresh: typeof parsed?.autoRefresh === 'boolean' ? parsed.autoRefresh : DEFAULT_PREFS.autoRefresh,
       updateUrl: typeof parsed?.updateUrl === 'string' ? parsed.updateUrl : DEFAULT_PREFS.updateUrl,
       losers: LOSERS_PREFS.includes(parsed?.losers as LosersPref) ? (parsed!.losers as LosersPref) : DEFAULT_PREFS.losers,
+      smartNav: typeof parsed?.smartNav === 'boolean' ? parsed.smartNav : DEFAULT_PREFS.smartNav,
     };
   } catch {
     return { ...(memory ?? DEFAULT_PREFS) };

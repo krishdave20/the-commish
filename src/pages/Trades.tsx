@@ -167,10 +167,10 @@ function HandshakeDeals({ engine, own, onLoad }: { engine: Engine; own: boolean;
   const pos = useMemo(() => new Map(model.players.map((p) => [p.pid, p.pos as string])), [model]);
   const columns: Column<TradeIdea>[] = [
     { key: 'idea', header: '#', more: true, numeric: true, value: (x) => x.idea, className: 'dim' },
-    { key: 'give', header: 'you send', value: (x) => x.give, render: (x) => <AvatarName pid={x.givePid} name={x.give} pos={pos.get(x.givePid)} size={28}><PlayerLink pid={x.givePid} name={x.give} /></AvatarName> },
-    { key: 'get', header: 'you get', value: (x) => x.get, render: (x) => <AvatarName pid={x.getPid} name={x.get} pos={pos.get(x.getPid)} size={28}><PlayerLink pid={x.getPid} name={x.get} /></AvatarName> },
+    { key: 'give', header: 'you send', essential: true, value: (x) => x.give, render: (x) => <AvatarName pid={x.givePid} name={x.give} pos={pos.get(x.givePid)} size={28}><PlayerLink pid={x.givePid} name={x.give} /></AvatarName> },
+    { key: 'get', header: 'you get', essential: true, value: (x) => x.get, render: (x) => <AvatarName pid={x.getPid} name={x.get} pos={pos.get(x.getPid)} size={28}><PlayerLink pid={x.getPid} name={x.get} /></AvatarName> },
     { key: 'partner', header: 'partner', value: (x) => x.partner, className: 'dim' },
-    { key: 'mine', header: `your ${FEATURE.lift}`, numeric: true, value: (x) => x.myGain, render: (x) => <span className="pos-c">{signed(x.myGain)}</span> },
+    { key: 'mine', header: `your ${FEATURE.lift}`, essential: true, numeric: true, value: (x) => x.myGain, render: (x) => <span className="pos-c">{signed(x.myGain)}</span> },
     { key: 'theirs', header: `their ${FEATURE.lift}`, more: true, numeric: true, value: (x) => x.theirGain, render: (x) => <span className="pos-c">{signed(x.theirGain)}</span> },
     { key: 'starts', header: 'starts for you', more: true, numeric: true, value: (x) => x.startsForMe },
     { key: 'load', header: 'load', sortable: false, render: (x) => <button type="button" className="btn" aria-label={`Load ${x.give} for ${x.get}`} onClick={() => onLoad(x)}>load</button> },

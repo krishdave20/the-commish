@@ -38,9 +38,9 @@ describe('league labels', () => {
 
 describe('prefs', () => {
   it('defaults, saves and survives bad JSON', () => {
-    expect(loadPrefs()).toEqual({ autoRefresh: true, updateUrl: '', losers: 'toilet' });
+    expect(loadPrefs()).toEqual({ autoRefresh: true, updateUrl: '', losers: 'toilet', smartNav: true });
     savePrefs({ updateUrl: 'x' });
-    expect(loadPrefs()).toEqual({ autoRefresh: true, updateUrl: 'x', losers: 'toilet' });
+    expect(loadPrefs()).toEqual({ autoRefresh: true, updateUrl: 'x', losers: 'toilet', smartNav: true });
     window.localStorage.setItem(PREFS_KEY, '{nope');
     expect(loadPrefs().autoRefresh).toBe(true);
   });

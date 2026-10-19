@@ -8,6 +8,7 @@ import { HeadlineStrip } from '../../../components/HeadlineStrip';
 import { MoreColumns } from '../../../components/MoreColumns';
 import { SectionHeader } from '../../../components/SectionHeader';
 import { Segmented } from '../../../components/Segmented';
+import { usePhone } from '../../../components/useMediaQuery';
 import { useMoreColumns } from '../../../components/useMoreColumns';
 import type { Engine, ModelPlayer } from '../../../engine';
 import { streamers } from '../../../engine/streaming';
@@ -29,6 +30,7 @@ export function Streamers({ engine }: { engine: Engine }) {
   const settled = useDebounced(scenario, 250);
   const [pick, setPick] = useState<Pick>('next');
   const more = useMoreColumns('streamers');
+  const phone = usePhone();
   const tryIt = useTryStreamer();
   const { model } = engine;
   const cur = model.meta.currentWeek;
@@ -81,7 +83,7 @@ export function Streamers({ engine }: { engine: Engine }) {
             label="Streaming week" value={pick} onChange={setPick}
             options={[{ value: 'next', label: 'next week' }, ...(weeks.length > 1 ? [{ value: 'after' as const, label: 'week after' }] : [])]}
           />
-          {!nothing && <MoreColumns on={more.on} onToggle={more.toggle} label="streamers" />}
+          {!nothing && !phone && <MoreColumns on={more.on} onToggle={more.toggle} label="streamers" />}
         </div>
         {calm && !nothing && (
           <div className="art-empty stream-empty">

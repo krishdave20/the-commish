@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
 import { MomentBanner } from '../components/MomentBanner';
@@ -5,11 +6,14 @@ import { Disclosure } from '../components/Disclosure';
 import { PageTabs } from '../components/PageTabs';
 import { Hinges } from './gameday/matchup';
 import { AlertsCard } from './team/AlertsCard';
-import { LabCard } from './team/LabCard';
 import { LineupCard } from './team/LineupCard';
 import { ProjectionCard } from './team/ProjectionCard';
 import { RosterCard } from './team/RosterCard';
 import { TeamStrip } from './team/TeamStrip';
+import { BlockSkeleton } from '../components/Skeleton';
+
+// the what-if lab is the heaviest tab: fetched when it opens
+const LabCard = lazy(() => import('./team/LabCard').then((m) => ({ default: m.LabCard })));
 
 export default function MyTeam() {
   return (
@@ -33,7 +37,7 @@ export default function MyTeam() {
                 </Disclosure>
               </>
             ) : tab === 'roster' ? <RosterCard engine={engine} />
-            : <LabCard engine={engine} />}
+            : <Suspense fallback={<BlockSkeleton height="24rem" />}><LabCard engine={engine} /></Suspense>}
           </PageTabs>
         </>
       )}

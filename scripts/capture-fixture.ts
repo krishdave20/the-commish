@@ -7,8 +7,9 @@
           npm run fixture:capture -- --only brackets [--out <dir>]
    Adds the league's winners_bracket and losers_bracket to an existing fixture, nothing else.
           npm run fixture:capture -- --only scores [--out <dir>]
-   Adds Sleeper's undocumented NFL scores for the fixture week and the week before it (game day and the ticker read them).
-   The fixture week is rewritten to the fixture's own moment (see scoresAsOf); the previous week is saved as received.
+   Adds Sleeper's undocumented NFL scores for weeks 1 to (fixture week + 1): the nfl page, game day's week picker and the live
+   poller read them. Played weeks are saved as received; the fixture week and the next one are rewritten to the fixture's own
+   moment (see scoresAsOf).
           npm run fixture:capture -- --only nflverse [--out <dir>] [--src <dir>]
    Copies a snapshot of the nightly nflverse pipeline output (public/data/nflverse by default; generated first if it
    is missing) into <out>/nflverse/, so the Playwright smoke test is offline and deterministic.
@@ -125,22 +126,30 @@ export function scoresAsOf<T extends { status?: string; start_time?: number; met
   });
 }
 
-/** Fetch the scores for the fixture week (rewritten to the fixture moment) and the week before it (as received). */
+/** Weeks whose scores the app reads: every played week (the nfl page and game day's week picker), the fixture week, and the next
+    week (the live poller rests until its first kickoff). */
+export function scoreWeeks(week: number, lastWeek = 18): number[] {
+  return Array.from({ length: Math.min(lastWeek, week + 1) }, (_, i) => i + 1);
+}
+
+/** Fetch scores for weeks 1 to (fixture week + 1). Weeks before the fixture week are saved as received. The fixture week and
+    the week after are rewritten to the fixture moment (scoresAsOf), so a capture made later cannot show them as played. */
 async function captureScores(out: string) {
   const manifestPath = resolve(out, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as { season: string; week: number; captured_at: number | string; files: Record<string, string> };
   const capturedAt = typeof manifest.captured_at === 'number' ? manifest.captured_at : Date.parse(manifest.captured_at);
   const limiter = createLimiter();
-  for (const week of [manifest.week, manifest.week - 1].filter((w) => w >= 1)) {
+  for (const week of scoreWeeks(manifest.week)) {
     const url = sleeperUrls.scores(manifest.season, week);
     const res = await limiter.run(() => browserTransport(url));
-    if (res.status !== 200 || !Array.isArray(res.body)) throw new Error(`Sleeper answered HTTP ${res.status} (or a non-list) for ${url}`);
-    const rows = week === manifest.week ? scoresAsOf(res.body, capturedAt) : res.body;
+    if (res.status !== 200 || !Array.isArray(res.body)) { console.warn(`  skipped week ${week}: HTTP ${res.status} (or a non-list) for ${url}`); continue; }
+    const rewrite = week >= manifest.week;
+    const rows = rewrite ? scoresAsOf(res.body, capturedAt) : res.body;
     const name = `scores_w${String(week).padStart(2, '0')}`;
     await writeFile(resolve(out, `${name}.json.gz`), gzipSync(JSON.stringify(rows)));
     manifest.files[url] = `${name}.json.gz`;
     const pre = rows.filter((g: { status?: string }) => g.status === 'pre_game').length;
-    console.log(`  ${name}: ${rows.length} games, ${pre} pre-game${week === manifest.week ? ` (rewritten to ${new Date(capturedAt).toISOString()})` : ' (as received)'} (${url})`);
+    console.log(`  ${name}: ${rows.length} games, ${pre} pre-game${rewrite ? ` (rewritten to ${new Date(capturedAt).toISOString()})` : ' (as received)'}`);
   }
   manifest.files = Object.fromEntries(Object.entries(manifest.files).sort(([a], [b]) => a.localeCompare(b)));
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
@@ -234,8 +243,8 @@ async function main() {
     grab('users', sleeperUrls.users(leagueId)),
     grab('traded_picks', sleeperUrls.tradedPicks(leagueId)),
     ...bracketRequests(leagueId).map(({ name, url }) => grab(name, url)),
-    // game day and the ticker: NFL scores for this week and last (captured at the fixture moment, so no rewrite is needed)
-    ...[state.week, state.week - 1].filter((w) => w >= 1).map((w) => grab(`scores_w${wk(w)}`, sleeperUrls.scores(season, w))),
+    // game day, the ticker and the nfl page: NFL scores for every played week, this week and next (captured at the fixture moment)
+    ...scoreWeeks(state.week).map((w) => grab(`scores_w${wk(w)}`, sleeperUrls.scores(season, w))),
     grab('schedule', sleeperUrls.schedule(season)),
     grab('trending_add_72h', sleeperUrls.trending('add', 72, 50)),
     grab('trending_add_24h', sleeperUrls.trending('add', 24, 50)),

@@ -9,7 +9,10 @@
 .h2h-team[data-mirror='true'], .h2h-side[data-mirror='true'] { text-align: right; }
 .h2h-row { padding: var(--s-2) 0 0; border-bottom: 1px solid var(--rule-2); row-gap: var(--s-2); }
 .h2h-slot { text-align: center; }
-.h2h-side { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-width: 0; }
+.h2h-side { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); min-width: 0; }
+.h2h-sit { flex: 1 1 100%; min-width: 0; order: 3; }
+.h2h-side[data-mirror='true'] .h2h-sit .fs { justify-content: flex-end; }
+.h2h-side[data-mirror='true'] .h2h-sit .fs-main { justify-content: flex-end; }
 .h2h-side[data-mirror='true'] { flex-direction: row-reverse; }
 .h2h-side[data-mirror='true'] .avatar-name { flex-direction: row-reverse; text-align: right; }
 .h2h-side .avatar-name { flex: 1 1 auto; min-width: 0; }

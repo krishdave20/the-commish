@@ -1,8 +1,11 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useId, useMemo, useState } from 'react';
 import { PlayerLink } from '../../components/PlayerLink';
 import { SectionHeader } from '../../components/SectionHeader';
 import { MoreColumns } from '../../components/MoreColumns';
 import { Segmented } from '../../components/Segmented';
+import { DetailRow, ExpandCell } from '../../components/RowExpand';
+import { onOwnControl, useExpanded } from '../../components/expandState';
+import { usePhone } from '../../components/useMediaQuery';
 import { useMoreColumns } from '../../components/useMoreColumns';
 import { useSort } from '../../components/useSort';
 import type { Column } from '../../components/useSort';
@@ -14,6 +17,8 @@ import type { DraftRoom } from './model';
 import { formatCount, formatNum, formatPoints1 } from '../../app/format';
 
 const PAGE = 25;
+/** a phone keeps these in the row; the rest open under it */
+const PHONE_KEEPS: ReadonlySet<string> = new Set(['rank', 'name', 'points', 'value', 'watch']);
 
 interface Props {
   room: DraftRoom;
@@ -30,6 +35,9 @@ export function RankingsTab({ room, picks }: Props) {
   const [hideDrafted, setHideDrafted] = useState(false);
   const [shown, setShown] = useState(PAGE);
   const more = useMoreColumns('rankings');
+  const phone = usePhone();
+  const open = useExpanded();
+  const base = useId();
 
   const positions = useMemo(() => {
     const have = new Set(rankings.rows.map((r) => r.pos));
@@ -78,8 +86,9 @@ export function RankingsTab({ room, picks }: Props) {
     const label = byRank && first && (pos !== 'all' || r.tier > 1) ? `${r.pos.toLowerCase()} tier ${r.tier}` : null;
     return { r, label };
   });
-  const shownCols = more.on ? columns : columns.filter((c) => !c.more);
-  const colSpan = shownCols.length;
+  const shownCols = phone ? columns.filter((c) => PHONE_KEEPS.has(c.key)) : more.on ? columns : columns.filter((c) => !c.more);
+  const tucked = phone ? columns.filter((c) => !PHONE_KEEPS.has(c.key)) : [];
+  const colSpan = shownCols.length + (phone ? 1 : 0);
   const repl = POS_ORDER.filter((p) => rankings.replacement[p] != null);
 
   return (
@@ -107,11 +116,11 @@ export function RankingsTab({ room, picks }: Props) {
         </div>
         <div className="row between">
           <Segmented label="Position filter" value={pos} onChange={(p) => { setPos(p); setShown(PAGE); }} options={[{ value: 'all', label: 'all' }, ...positions.map((p) => ({ value: p, label: p.toLowerCase() }))]} />
-          <MoreColumns on={more.on} onToggle={more.toggle} label="rankings" />
+          {!phone && <MoreColumns on={more.on} onToggle={more.toggle} label="rankings" />}
         </div>
 
         {rows.length === 0 ? <p className="note" role="status">{rankings.rows.length === 0 ? 'no projections yet: sleeper has not published this season’s numbers.' : 'nobody matches those filters.'}</p> : (
-          <div className="tw">
+          <div className="tw" data-compact={phone ? 'true' : undefined}>
             <table className="rank-table">
               <caption className="sr-only">Draft rankings</caption>
               <thead>
@@ -128,6 +137,7 @@ export function RankingsTab({ room, picks }: Props) {
                       </th>
                     );
                   })}
+                  {phone && <th scope="col" className="xc"><span className="sr-only">details</span></th>}
                 </tr>
               </thead>
               <tbody>
@@ -137,12 +147,21 @@ export function RankingsTab({ room, picks }: Props) {
                       <td colSpan={colSpan}><span className="micro">{label}</span></td>
                     </tr>
                   ),
-                  <tr key={r.pid} data-pid={r.pid}>
-                    {shownCols.map((c) => {
-                      const cls = [c.numeric ? 'n' : '', c.className ?? ''].filter(Boolean).join(' ') || undefined;
-                      return <td key={c.key} className={cls}>{c.render ? c.render(r) : (c.value?.(r) ?? '')}</td>;
-                    })}
-                  </tr>,
+                  <Fragment key={r.pid}>
+                    <tr
+                      data-pid={r.pid} className={phone ? (open.isOpen(r.pid) ? 'click xopen' : 'click') : undefined}
+                      onClick={phone ? (e) => { if (!onOwnControl(e)) open.toggle(r.pid); } : undefined}
+                    >
+                      {shownCols.map((c) => {
+                        const cls = [c.numeric ? 'n' : '', c.className ?? ''].filter(Boolean).join(' ') || undefined;
+                        return <td key={c.key} className={cls}>{c.render ? c.render(r) : (c.value?.(r) ?? '')}</td>;
+                      })}
+                      {phone && <ExpandCell open={open.isOpen(r.pid)} controls={`${base}-${r.pid}`} label={`${open.isOpen(r.pid) ? 'hide' : 'show'} details for ${r.name}`} onToggle={() => open.toggle(r.pid)} />}
+                    </tr>
+                    {phone && open.isOpen(r.pid) && (
+                      <DetailRow id={`${base}-${r.pid}`} colSpan={colSpan} items={tucked.map((c) => ({ label: c.header, value: c.render ? c.render(r) : (c.value?.(r) ?? '') }))} />
+                    )}
+                  </Fragment>,
                 ])}
               </tbody>
             </table>

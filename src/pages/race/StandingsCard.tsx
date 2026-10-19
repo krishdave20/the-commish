@@ -36,12 +36,12 @@ export function StandingsCard({ engine, onOpen }: Props) {
   const columns: Column<RaceRow>[] = [
     { key: 'rank', header: '#', numeric: true, value: (r) => r.rank, className: 'dim hide-sm' },
     {
-      key: 'team', header: 'team', value: (r) => r.team, className: 'nowrap sticky-col',
+      key: 'team', header: 'team', essential: true, value: (r) => r.team, className: 'nowrap sticky-col',
       render: (r) => <><ClinchMark mark={r.mark} /><span className="pname">{r.team}</span>{r.isMe && <span className="you">you</span>}</>,
     },
-    { key: 'record', header: 'record', numeric: true, value: (r) => r.wins + r.ties / 2, render: (r) => `${r.wins}–${r.losses}${r.ties ? `–${r.ties}` : ''}` },
+    { key: 'record', header: 'record', essential: true, numeric: true, value: (r) => r.wins + r.ties / 2, render: (r) => `${r.wins}–${r.losses}${r.ties ? `–${r.ties}` : ''}` },
     { key: 'pf', header: 'pf', numeric: true, value: (r) => r.pf, render: (r) => formatPoints(r.pf), className: 'hide-sm' },
-    { key: 'odds', header: 'playoffs', value: (r) => r.playoff, render: (r) => <OddsCell value={r.playoff} pending={pending} /> },
+    { key: 'odds', header: 'playoffs', essential: true, value: (r) => r.playoff, render: (r) => <OddsCell value={r.playoff} pending={pending} /> },
     {
       key: 'title', header: 'title', value: (r) => r.title, className: 'hide-sm',
       render: (r) => (pending ? <span className="dim">…</span> : <OddsCell value={r.title} tone="scale" max={maxTitle} />),

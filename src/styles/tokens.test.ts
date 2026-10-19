@@ -60,11 +60,14 @@ describe('design tokens', () => {
     expect(tokens).toMatch(/--ease: cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/);
   });
 
-  it('gives the phone bar a translucent, blurred background with a solid fallback', () => {
+  it('gives the phone top bar and tab bar a translucent, blurred background with a solid fallback', () => {
     const topnav = readFileSync(`${dir}topnav.css`, 'utf8');
+    const phone = readFileSync(`${dir}phone.css`, 'utf8');
     expect(topnav).toMatch(/\.sidebar \{[^}]*position: sticky/);
-    expect(topnav).toMatch(/@supports \(\(-webkit-backdrop-filter: blur\(1px\)\) or \(backdrop-filter: blur\(1px\)\)\)/);
-    expect(topnav).toMatch(/backdrop-filter: saturate\(180%\) blur\(16px\)/);
+    expect(phone).toMatch(/\.tabbar \{[^}]*background: var\(--sheet\)/);
+    expect(phone).toMatch(/@supports \(\(-webkit-backdrop-filter: blur\(1px\)\) or \(backdrop-filter: blur\(1px\)\)\)/);
+    expect(phone).toMatch(/\.tabbar \{ background: var\(--bar-glass\); -webkit-backdrop-filter: saturate\(180%\) blur\(16px\); backdrop-filter: saturate\(180%\) blur\(16px\); \}/);
+    expect(phone).toMatch(/\.sidebar\[data-collapsed='true'\] \.pt-bar \{ background: var\(--bar-glass\); -webkit-backdrop-filter: saturate\(180%\) blur\(16px\); backdrop-filter: saturate\(180%\) blur\(16px\); \}/);
     expect(tokens).toMatch(/--bar-glass: rgba\(/);
   });
 });

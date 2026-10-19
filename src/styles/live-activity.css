@@ -1,0 +1,185 @@
+/* The live activity: a Dynamic Island–style pill. Tokens only. The surface is the inverse ink (stays dark on the light page, lifts in dark mode), with a faint inner
+   edge (--edge-inverse). Compact: the pill. Expanded: a card with a leading region (the header), a centre, and a bottom (pager and the one action). With several
+   activities the best one is the pill and the others are minimal circles beside it.
+   Placement is the shell's: --activity-top (desktop: under the ticker) and --activity-bottom (phone: above the tab bar), both set in the layout CSS with the fallbacks below.
+   Corners: a pill has no token, so a local --r (22 px pill, 20 px card, 24 px sheet on a phone). Scores are Instrument Serif; labels are the system font. */
+.la-wrap {
+  position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); display: flex; align-items: flex-start; gap: var(--s-2);
+  top: var(--activity-top, calc(var(--ticker-h, 0px) + var(--s-2)));
+  max-width: calc(100vw - var(--s-3) * 2); pointer-events: none;
+}
+.la-wrap > * { pointer-events: auto; }
+.la { --r: 22px; --la-spring: cubic-bezier(0.34, 1.4, 0.64, 1); order: 0; min-width: 0; }
+.la-card {
+  position: relative; background: var(--surface-inverse); color: var(--on-inverse); border-radius: var(--r); box-shadow: 0 0 0 1px var(--edge-inverse), var(--shadow-pop);
+  overflow: hidden; max-width: 100%;
+}
+.la .avatar { --av-bg: var(--fill-inverse); --av-fg: var(--on-inverse); --av-ring: var(--rule-inverse); }
+.la .avatar-stack { --av-cut-bg: var(--surface-inverse); }
+
+/* ---------- compact ---------- */
+.la-head {
+  position: relative; display: flex; align-items: center; gap: var(--s-2); width: 100%; min-height: 40px; padding: 0 var(--s-3); font: inherit; font-size: var(--fs-sm);
+  color: inherit; background: none; border: 0; border-radius: var(--r); cursor: pointer; text-align: left; white-space: nowrap;
+  -webkit-touch-callout: none; user-select: none; -webkit-user-select: none;
+}
+.la-head:focus-visible { outline-color: var(--on-inverse); outline-offset: -3px; }
+.la-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; font-weight: 500; }
+.la-ico { position: relative; flex: none; display: inline-grid; place-items: center; color: var(--on-inverse-2); }
+.la-icon { display: block; }
+.la[data-live='true'] .la-ico { color: var(--green-on-inverse); }
+.la[data-urgency='soon'] .la-ico { color: var(--gold-on-inverse); }
+.la[data-urgency='urgent'] .la-ico, .la[data-urgency='urgent'] .la-text { color: var(--red-on-inverse); }
+.la[data-live='true'] .la-ico::after {
+  content: ''; position: absolute; top: -1px; right: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--green-on-inverse);
+  box-shadow: 0 0 0 0 var(--green-on-inverse); animation: la-pulse 1600ms var(--ease) infinite;
+}
+.la-bar { flex: none; width: 36px; height: 4px; border-radius: 2px; background: var(--fill-inverse); overflow: hidden; }
+.la-bar i { display: block; height: 100%; background: var(--green-on-inverse); border-radius: 2px; transition: width var(--t-base) var(--ease); }
+.la-tag { flex: none; font-size: var(--fs-micro); letter-spacing: var(--ls-micro); color: var(--gold-on-inverse); }
+
+/* the live matchup's pill: my monogram and score on the left, theirs and my win chance on the right, starter-minutes played as a hairline along the bottom */
+.la-scores { display: inline-flex; align-items: baseline; }
+.la-n { font-family: var(--serif); font-weight: 400; font-size: 21px; line-height: 1; letter-spacing: -0.005em; }
+.la-n-opp { color: var(--on-inverse-2); }
+.la-sep { color: var(--on-inverse-2); padding-inline: 3px; }
+.la-pct { font-weight: 600; }
+.la-pct[data-side='ahead'] { color: var(--green-on-inverse); }
+.la-pct[data-side='behind'] { color: var(--red-on-inverse); }
+.la-prog { position: absolute; left: var(--s-3); right: var(--s-3); bottom: 3px; height: 2px; border-radius: 1px; background: var(--fill-inverse); overflow: hidden; }
+.la-prog i { display: block; height: 100%; background: var(--on-inverse-2); border-radius: 1px; transition: width var(--t-base) var(--ease); }
+
+/* a big moment: the pill widens for a few seconds to show "+6.4 · chase" */
+.la-flash {
+  flex: none; overflow: hidden; white-space: nowrap; max-width: 15rem; padding-left: var(--s-2); border-left: 1px solid var(--rule-inverse);
+  color: var(--gold-on-inverse); font-weight: 600; font-variant-numeric: tabular-nums; animation: la-widen var(--t-base) var(--la-spring) both;
+}
+
+/* ---------- expanded ---------- */
+.la[data-open='true'] .la-card { --r: 20px; width: min(24rem, calc(100vw - var(--s-3) * 2)); touch-action: none; animation: la-open var(--t-base) var(--la-spring) both; }
+.la[data-open='true'] .la-head { min-height: 44px; padding-right: 52px; gap: var(--s-2); }
+.la-title { font-size: var(--fs-sm); font-weight: 600; color: var(--on-inverse-2); }
+.la-panel { padding: 0 var(--s-3) var(--s-3); white-space: normal; }
+.la-body { display: grid; gap: var(--s-2); }
+.la-title-line { font-weight: 500; }
+.la-detail, .la-dim { color: var(--on-inverse-2); }
+.la-detail { font-size: var(--fs-sm); }
+.la-line { font-size: var(--fs-sm); min-width: 0; }
+.la-row { display: flex; align-items: center; gap: var(--s-2); }
+.la-big { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--s-2); }
+.la-clock { font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -0.005em; }
+.la-clock[data-verdict='W'] { color: var(--green-on-inverse); }
+.la-clock[data-verdict='L'] { color: var(--red-on-inverse); }
+.la-cap { font-size: var(--fs-sm); color: var(--on-inverse-2); }
+.la[data-urgency='urgent'] .la-clock { color: var(--red-on-inverse); }
+
+/* the live matchup: both teams with their two best starters, big serif scores, projected finals, a thin win meter, who is on the field, the last scoring play */
+.la-sides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-3); }
+.la-side { min-width: 0; }
+.la-side:last-child { text-align: right; }
+.la-sidehead { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.la-side:last-child .la-sidehead { flex-direction: row-reverse; }
+.la-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--on-inverse-2); }
+.la-score { margin-top: var(--s-1); font-family: var(--serif); font-size: 46px; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.la-side:last-child .la-score { color: var(--on-inverse-2); }
+.la-proj { font-size: var(--fs-xs); color: var(--on-inverse-2); font-variant-numeric: tabular-nums; }
+.la-meter { position: relative; height: 6px; border-radius: 3px; background: var(--fill-inverse); overflow: hidden; }
+.la-meter i { display: block; height: 100%; background: var(--green-on-inverse); border-radius: 3px; transition: width var(--t-base) var(--ease); }
+.la-meter::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--on-inverse-2); opacity: 0.6; }
+.la-sub { font-size: var(--fs-xs); color: var(--on-inverse-2); font-variant-numeric: tabular-nums; }
+.la-now { list-style: none; display: grid; gap: var(--s-1); padding: 0; margin: 0; }
+.la-now li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; column-gap: var(--s-2); font-size: var(--fs-sm); }
+.la-nowdot { width: 6px; height: 6px; border-radius: 50%; background: var(--rule-inverse); }
+.la-now li[data-on='true'] .la-nowdot { background: var(--green-on-inverse); }
+.la-nowline { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.la-nowclock { white-space: nowrap; color: var(--on-inverse-2); font-variant-numeric: tabular-nums; margin-left: calc(var(--s-2) * -1); }
+.la-pts { font-variant-numeric: tabular-nums; font-weight: 600; }
+.la-last { font-size: var(--fs-sm); color: var(--on-inverse-2); font-variant-numeric: tabular-nums; }
+.la-last b { color: var(--green-on-inverse); font-weight: 600; }
+
+/* waivers and the draft: player lines (avatar, name, the number that matters) */
+.la-adds { list-style: none; display: grid; gap: var(--s-1); padding: 0; margin: 0; }
+.la-adds li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-2); }
+.la-addname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); font-weight: 500; }
+.la-addnum { font-size: var(--fs-xs); color: var(--on-inverse-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.la-flags { list-style: none; display: grid; gap: 2px; padding: 0; margin: 0; font-size: var(--fs-sm); color: var(--gold-on-inverse); }
+.la-flags b { font-weight: 600; }
+
+/* the bottom: the pager (arrows and page dots) and the one action */
+.la-bottom { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); margin-top: var(--s-1); }
+.la-pager { display: flex; align-items: center; gap: var(--s-1); }
+.la-step {
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; font: inherit; font-size: 18px; line-height: 1; color: var(--on-inverse);
+  background: var(--fill-inverse);
+}
+.la-step:hover { background: var(--rule-inverse); }
+.la-step:focus-visible { outline-color: var(--on-inverse); }
+.la-dots { display: inline-flex; align-items: center; gap: 6px; padding-inline: var(--s-1); }
+.la-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--rule-inverse); transition: background var(--t-fast) var(--ease); }
+.la-dots i[data-on='true'] { background: var(--on-inverse); }
+.la-go {
+  margin-left: auto; padding: 6px var(--s-3); border-radius: var(--r-sm); font-size: var(--fs-sm); font-weight: 500; white-space: nowrap;
+  color: var(--surface-inverse); background: var(--on-inverse); text-decoration: none;
+}
+.la-go:hover { color: var(--surface-inverse); background: var(--on-inverse-2); }
+.la-go:focus-visible, .la-x:focus-visible { outline-color: var(--ink); }
+
+/* ---------- minimal: the other activities, a circle each ---------- */
+.la-mins { order: 2; display: flex; align-items: center; gap: 6px; }
+.la-min {
+  position: relative; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  color: var(--on-inverse-2); background: var(--surface-inverse); box-shadow: 0 0 0 1px var(--edge-inverse), var(--shadow-pop);
+}
+.la-min[data-live='true'] { color: var(--green-on-inverse); }
+.la-min[data-urgency='soon'] { color: var(--gold-on-inverse); }
+.la-min[data-urgency='urgent'] { color: var(--red-on-inverse); }
+.la-min[data-flash='true'] { box-shadow: 0 0 0 2px var(--gold-on-inverse), var(--shadow-pop); }
+.la-min:hover { color: var(--on-inverse); }
+.la-min:focus-visible { outline-color: var(--ink); outline-offset: 2px; }
+.la-more { font-size: var(--fs-xs); color: var(--ink-2); }
+
+.la-x {
+  order: 1; flex: none; width: 28px; height: 28px; margin-top: 6px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; font: inherit; line-height: 1;
+  color: var(--on-inverse-2); background: var(--surface-inverse); box-shadow: 0 0 0 1px var(--edge-inverse), var(--shadow-pop);
+}
+.la-x:hover { color: var(--on-inverse); }
+/* open, the × sits in the card's top corner */
+.la-wrap[data-open='true'] .la-x { position: absolute; top: 6px; right: 6px; margin: 0; width: 32px; height: 32px; background: none; box-shadow: none; z-index: 1; }
+
+/* room for the pill so it does not sit on the first lines of a page */
+@media (min-width: 761px) { body[data-la] .shell > .app { padding-top: var(--s-5); } }
+
+/* ---------- phones: above the tab bar, and an open card is a sheet from the bottom, inside the safe areas ---------- */
+@media (max-width: 760px) {
+  .la-wrap { top: auto; z-index: 44; bottom: var(--activity-bottom, calc(var(--tabbar-h, 0px) + env(safe-area-inset-bottom, 0px) + var(--s-2))); align-items: flex-end; }
+  .la-head { min-height: var(--touch); }
+  .la-x { width: var(--touch); height: var(--touch); margin-top: 0; }
+  .la-min { width: var(--touch); height: var(--touch); }
+  .la-wrap[data-open='true'] {
+    left: max(var(--s-3), env(safe-area-inset-left, 0px)); right: max(var(--s-3), env(safe-area-inset-right, 0px)); transform: none; max-width: none;
+  }
+  .la-wrap[data-open='true'] .la { flex: 1; }
+  .la[data-open='true'] .la-card { --r: 24px; width: 100%; animation: la-sheet var(--t-base) var(--la-spring) both; }
+  .la[data-open='true'] .la-head { min-height: var(--touch); }
+  .la-wrap[data-open='true'] .la-x { top: 0; right: 0; width: var(--touch); height: var(--touch); }
+  .la-step { width: var(--touch); height: var(--touch); }
+  .la-go { min-height: var(--touch); display: inline-flex; align-items: center; }
+  .la-score { font-size: 42px; }
+}
+/* a short screen (a phone on its side, or with the keyboard up) has no room for a pill: its state stays on the game day tab's pulse */
+@media (max-width: 760px) and (max-height: 520px) {
+  .la-wrap { display: none; }
+  body[data-la] .app { padding-bottom: calc(var(--tabbar-h, 0px) + env(safe-area-inset-bottom, 0px)); }
+}
+
+@keyframes la-open { from { transform: scale(0.9); opacity: 0.6; } to { transform: none; opacity: 1; } }
+@keyframes la-sheet { from { transform: translateY(24px) scale(0.98); opacity: 0.6; } to { transform: none; opacity: 1; } }
+@keyframes la-widen { from { max-width: 0; padding-left: 0; opacity: 0; } to { max-width: 15rem; padding-left: var(--s-2); opacity: 1; } }
+@keyframes la-pulse { 0% { box-shadow: 0 0 0 0 var(--green-on-inverse); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+/* reduced motion: nothing animates, and the flash is just the text */
+.la[data-motion='reduced'] .la-card, .la[data-motion='reduced'] .la-ico::after, .la[data-motion='reduced'] .la-flash { animation: none; }
+.la[data-motion='reduced'] .la-bar i, .la[data-motion='reduced'] .la-prog i, .la[data-motion='reduced'] .la-meter i, .la[data-motion='reduced'] .la-dots i { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .la-card, .la-ico::after, .la-flash { animation: none !important; }
+  .la-bar i, .la-prog i, .la-meter i, .la-dots i { transition: none !important; }
+}

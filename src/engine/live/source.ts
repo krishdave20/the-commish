@@ -56,3 +56,27 @@ export function liveSource(reader: Reader, o: { leagueId: string; season: string
     },
   };
 }
+
+interface PastReader {
+  liveMatchups(id: string, week: number, o?: FetchOpts): Promise<Loaded<Matchup[]>>;
+  scores(season: string, week: number, o?: FetchOpts): Promise<Loaded<ScoreGame[]>>;
+  /** a finished week's scores, kept for a day */
+  pastScores?(season: string, week: number, o?: FetchOpts): Promise<Loaded<ScoreGame[]>>;
+}
+
+/** One finished week, read once: its matchups and its NFL games (all final). Same snapshot shape as a live poll, so the same derivations apply. */
+export function pastWeekSource(reader: PastReader, o: { leagueId: string; season: string; week: number; now?: () => number }): LiveSource {
+  const now = o.now ?? Date.now;
+  return {
+    kind: 'live',
+    async poll() {
+      const [m, s] = await Promise.all([
+        reader.liveMatchups(o.leagueId, o.week),
+        (typeof reader.pastScores === 'function' ? reader.pastScores(o.season, o.week) : reader.scores(o.season, o.week)).then((r) => r.data, () => null),
+      ]);
+      const games: NflGame[] = s ? parseScores(s) : [];
+      const t = now();
+      return { week: o.week, at: t, clock: t, kind: 'live', rows: rowsFromMatchups(m.data), games, gamesKnown: games.length > 0 };
+    },
+  };
+}

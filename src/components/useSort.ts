@@ -17,6 +17,9 @@ export interface Column<T> {
   className?: string;
   /** a secondary column: hidden until "more columns" is on (needs a `tableId` on the table) */
   more?: boolean;
+  /** one of the few columns a phone keeps in the row (2 to 4 of them); every other column opens under the row when it is tapped.
+      A table with no `essential` column is left as it is. */
+  essential?: boolean;
 }
 
 function compare(a: number | string, b: number | string): number {

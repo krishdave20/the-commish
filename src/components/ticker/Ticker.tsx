@@ -5,6 +5,7 @@ import { useWantsReducedMotion } from '../motion';
 import { LiveDot } from './LiveDot';
 import { nflItems, pinnedItem, tickerItems } from './items';
 import type { NflItem, TickerItem } from './items';
+import { useTickerMode } from './useTickerMode';
 import { useTickerCollapsed } from './useTickerPref';
 import './ticker.css';
 
@@ -67,6 +68,7 @@ function Game({ g }: { g: NflItem }) {
     focus, and is a plain scrollable strip with reduced motion. It folds away (remembered on this device). Only my own score changes are announced. */
 export function Ticker() {
   const live = useLiveMaybe();
+  const mode = useTickerMode();
   const reduced = useWantsReducedMotion();
   const [collapsed, setCollapsed] = useTickerCollapsed();
   const [held, setHeld] = useState(false);
@@ -94,6 +96,8 @@ export function Ticker() {
   }, [mine]);
   const nfl = useMemo(() => (games ? nflItems(games, starters) : []), [games, starters]);
 
+  // the band is kept open, empty, while the scores load (it was on last time), so nothing below it jumps
+  if (mode === 'hold') return <section className="ticker" aria-hidden="true" data-hold="true" />;
   if (!live || !live.available || !view || view.matchups.length === 0) return null;
 
   const pin = pinnedItem(view);

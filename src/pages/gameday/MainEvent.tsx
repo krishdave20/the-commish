@@ -3,6 +3,8 @@ import { formatOdds, formatPoints1 } from '../../app/format';
 import { formatKickoff, leadText } from '../../app/live/format';
 import { FEATURE } from '../../app/names';
 import { Whistle } from '../../components/art/Whistle';
+import { Avatar } from '../../components/Avatar';
+import { FieldSituation } from '../../components/field';
 import { CountUp } from '../../components/CountUp';
 import { Segmented } from '../../components/Segmented';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -75,14 +77,20 @@ function Starters({ t, filter }: { t: TeamLive; filter: Filter }) {
               <li key={p.pid} className="gd-row" data-state={p.state}>
                 <span className="gd-slot">{SLOT_LABEL[p.slot] ?? p.slot}</span>
                 <span className="gd-who">
-                  <span className="gd-pname">{p.name}</span>
-                  <span className="gd-meta">{p.pos}{p.nfl ? ` · ${p.gameText || p.nfl}` : ''}</span>
+                  <Avatar pid={p.pid} name={p.name} pos={p.pos} team={p.nfl ?? undefined} size={28} />
+                  <span className="gd-who-text">
+                    <span className="gd-pname">{p.name}</span>
+                    <span className="gd-meta">{p.pos}{p.nfl ? ` · ${p.gameText || p.nfl}` : ''}</span>
+                  </span>
                 </span>
                 <StatusCell p={p} />
                 <span className="gd-pts">{formatPoints1(p.actual)}</span>
                 <span className="gd-proj" title={p.assumed ? 'clock unavailable: half the game is assumed left' : undefined}>
                   {formatPoints1(p.projection)}{p.assumed && <sup>*</sup>}
                 </span>
+                {p.game && p.game.id !== 'guess' && (p.state === 'live' || p.state === 'final') && (
+                  <span className="gd-sit"><FieldSituation game={p.game} team={p.nfl} pos={p.pos} quarters /></span>
+                )}
                 <span className="gd-bar" aria-hidden="true"><i style={{ width: `${share * 100}%` }} /></span>
               </li>
             );

@@ -1,0 +1,210 @@
+/* The phone pass (owner request, Oct 18, 2026: "improve the phone website experience"). Everything here is under 760 px wide and follows the
+   iOS Human Interface Guidelines: a bottom tab bar, a large title that collapses into a compact top bar, sheets, 44 px targets, 16 px inputs,
+   safe areas, nothing that needs a hover. Wide screens are untouched: this file is one media query. Tokens only.
+   The markup is in src/app/PhoneChrome.tsx (shell), components/Drawer.tsx (sheets), SortableTable.tsx (tap-to-expand rows). */
+
+@media (max-width: 760px) {
+  /* ---------- sizes ----------
+     Nothing on a phone is under 13 px except the tab bar's labels (iOS tab labels are 10 to 11 pt). Body is 16, so iOS never zooms an input. */
+  :root {
+    --fs-micro: 13px; --fs-xs: 13px; --fs-sm: 14px; --fs-table: 14px; --fs-base: 16px;
+    --bar-h: 44px;
+    --inset-top: env(safe-area-inset-top, 0px);
+    --tabbar-h: 56px;
+    /* Where the live activity pill's bottom edge sits on a phone: the tab bar, the home-indicator safe area and a gap above it. The pill's
+       owner reads this (and `--activity-top` on wide screens); it never needs to know how tall the tab bar is. */
+    --activity-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--s-2));
+  }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 8.5rem; }
+  body { -webkit-tap-highlight-color: transparent; }
+  a, button, summary, [role='radio'], tr.click { touch-action: manipulation; }
+
+  /* ---------- the shell ---------- */
+  .shell { --top-h: calc(var(--inset-top) + var(--ticker-h, 0px) + var(--bar-h)); }
+  .shell[data-ticker='on'], .shell[data-ticker='hold'] { --ticker-h: 36px; }
+  .shell[data-ticker='collapsed'] { --ticker-h: 28px; }
+  /* the page keeps its own room clear of the tab bar (and the live pill when one shows) */
+  .app { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+  body[data-la] .app { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--touch) + var(--s-2)); }
+  .main { padding-bottom: var(--s-4); }
+  .site-foot { padding-block: var(--s-2) var(--s-3); }
+
+  /* the header: the score ticker, then the bar. The bar overlaps the large title (negative bottom margin), so at the top of the page the title sits
+     right under the ticker with no empty bar over it; once the title has scrolled away the bar fills in with the team's name. Nothing shifts. */
+  .sidebar[data-phone] { display: flex; flex-direction: column; align-items: stretch; padding-top: var(--inset-top); z-index: 40; }
+  .pt-bar {
+    position: relative; z-index: 1; display: grid; place-items: center; height: var(--bar-h); margin-bottom: calc(var(--bar-h) * -1);
+    padding-inline: max(var(--s-3), env(safe-area-inset-right, 0px)) max(var(--s-3), env(safe-area-inset-left, 0px));
+    pointer-events: none; transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  }
+  .sidebar[data-collapsed='true'] .pt-bar { background: var(--sheet); box-shadow: 0 1px 0 var(--rule-2); pointer-events: auto; }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .sidebar[data-collapsed='true'] .pt-bar { background: var(--bar-glass); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); }
+  }
+  .pt-team {
+    display: inline-flex; align-items: center; justify-content: center; min-height: var(--touch); max-width: 100%; padding: 0 var(--s-3);
+    font: inherit; font-family: var(--serif); font-size: 24px; line-height: 1; color: var(--ink); background: none; border: 0; cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), visibility var(--t-fast);
+  }
+  .sidebar[data-collapsed='true'] .pt-team { opacity: 1; visibility: visible; transform: none; }
+
+  /* the large title: scrolls away with the page, so nothing shifts when the bar changes */
+  .tn-large { padding: var(--s-1) max(var(--s-3), env(safe-area-inset-right, 0px)) 0 max(var(--s-3), env(safe-area-inset-left, 0px)); gap: 0; }
+  .tn-large .tn-team { font-size: clamp(40px, 11.5vw, 48px); line-height: 1.05; }
+  .tn-large .tn-ctx { font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ---------- the ticker: a slim single line under the bar ---------- */
+  .shell[data-phone] .ticker { height: var(--ticker-h); position: relative; font-size: var(--fs-xs); }
+  .shell[data-phone] .tk-item, .shell[data-phone] .tk-pin { position: relative; min-height: 28px; line-height: 28px; }
+  /* the whole 36 px band is the tap area of an item */
+  .shell[data-phone] .tk-item::after, .shell[data-phone] .tk-pin::after { content: ''; position: absolute; inset: -4px 0; }
+  .shell[data-phone] .tk-close { min-height: var(--ticker-h); min-width: var(--touch); }
+  .shell[data-phone] .tk-open { min-height: var(--ticker-h); }
+
+  /* ---------- the bottom tab bar ---------- */
+  .tabbar {
+    position: fixed; z-index: 45; left: 0; right: 0; bottom: 0; background: var(--sheet); box-shadow: 0 -1px 0 var(--rule);
+    padding: 0 max(0px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(0px, env(safe-area-inset-left, 0px));
+  }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .tabbar { background: var(--bar-glass); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); }
+  }
+  .tabbar { overflow: hidden; }
+  .tabbar ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); height: var(--tabbar-h); }
+  .tabbar li { min-width: 0; }
+  .tb-item {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; height: 100%; padding: 0 2px;
+    font: inherit; font-size: 11px; line-height: 1.1; color: var(--ink-2); text-decoration: none; background: none; border: 0; border-radius: 0; cursor: pointer;
+    transition: color var(--t-fast) var(--ease);
+  }
+  .tb-item:hover { color: var(--ink); }
+  .tb-item:focus-visible { outline-offset: -3px; }
+  .tb-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tb-icon { position: relative; display: grid; place-items: center; }
+  .tb-ico { display: block; transition: stroke-width var(--t-fast) var(--ease); }
+  .tb-item[aria-current='page'], .tb-item[data-active='true'] { color: var(--green); }
+  .tb-item[aria-current='page'] .tb-label, .tb-item[data-active='true'] .tb-label { font-weight: 600; }
+  .tb-item[aria-current='page'] .tb-ico, .tb-item[data-active='true'] .tb-ico { stroke-width: 2.1; }
+  .tb-item[aria-current='page']::before, .tb-item[data-active='true']::before {
+    content: ''; position: absolute; top: 0; left: 50%; width: 28px; height: 2px; margin-left: -14px; border-radius: 0 0 2px 2px; background: var(--green);
+  }
+  /* games are on: a red pulse on the game day icon, ringed so it reads against the line art */
+  .tabbar .tb-icon .live-dot { position: absolute; top: -2px; right: -5px; width: 9px; height: 9px; background: var(--red); box-shadow: 0 0 0 2px var(--sheet); }
+  .tabbar .tb-icon .live-dot::after { background: var(--red); }
+
+  /* ---------- sheets (the drawer on a phone): from the bottom, with a handle; swipe down to close ---------- */
+  .drawer-root[data-sheet] .drawer {
+    top: auto; left: 0; right: 0; bottom: 0; width: auto; display: flex; flex-direction: column;
+    max-height: calc(100dvh - max(env(safe-area-inset-top, 0px), var(--s-3)) - var(--s-3));
+    border-radius: var(--r) var(--r) 0 0; padding-top: 0; box-shadow: 0 -6px 24px var(--scrim); overscroll-behavior: contain;
+  }
+  .sheet-handle { display: grid; place-items: center; height: var(--s-4); flex: none; touch-action: none; cursor: grab; }
+  .sheet-handle > span { display: block; width: 36px; height: 5px; border-radius: 3px; background: var(--ink-3); opacity: 0.55; }
+  .drawer-root[data-sheet] .drawer-head { flex: none; padding: 0 var(--s-3) var(--s-2) var(--s-3); touch-action: none; }
+  .drawer-root[data-sheet] .drawer-body { flex: 1 1 auto; min-height: 0; padding: var(--s-2) var(--s-3) max(var(--s-4), env(safe-area-inset-bottom, 0px)); }
+  @media (prefers-reduced-motion: no-preference) {
+    /* backwards, not both: a finished animation would pin the transform and the finger could not move the sheet */
+    .drawer-root[data-sheet] .drawer { animation: wr-sheet var(--t-base) var(--ease) backwards; }
+  }
+
+  /* the "more" sheet: every section as a tile, then the account and appearance */
+  .more-sheet { display: grid; gap: var(--s-3); }
+  .more-appearance { display: grid; gap: var(--s-1); }
+  .more-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+  .more-link {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: var(--touch); padding: var(--s-2) var(--s-3);
+    border-radius: var(--r); background: var(--rule-2); color: var(--ink); text-decoration: none; font-size: var(--fs-base);
+  }
+  .more-link .nav-up { margin-left: auto; margin-right: var(--s-1); }
+  .more-link[aria-current='page'] .nav-up { background: var(--gold-on-inverse); }
+  .more-link:hover { color: var(--ink); background: var(--rule); }
+  .more-link[aria-current='page'] { background: var(--ink); color: var(--paper); font-weight: 500; }
+  .more-link[aria-current='page'] .live-dot, .more-link[aria-current='page'] .live-dot::after { background: var(--paper); }
+  .more-quiet { background: none; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule); }
+  .more-tools { justify-self: stretch; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); padding-top: var(--s-2); border-top: 1px solid var(--rule); }
+  .more-tools .switcher { justify-content: flex-start; flex: 1 1 auto; }
+  .more-tools .switcher select { max-width: 100%; }
+
+  /* ---------- in-page tabs: one scrollable strip, never two rows, pinned under the top bar while the page scrolls ---------- */
+  .tabs > .seg {
+    position: sticky; top: var(--top-h); z-index: 20; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    justify-self: stretch; width: auto; gap: 0 var(--s-4); background: var(--paper);
+    margin-inline: calc(var(--s-3) * -1); padding-inline: var(--s-3); box-shadow: inset 0 -1px 0 var(--rule);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, var(--ink) var(--s-3), var(--ink) calc(100% - var(--s-3)), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, var(--ink) var(--s-3), var(--ink) calc(100% - var(--s-3)), transparent 100%);
+  }
+  .tabs > .seg::-webkit-scrollbar { display: none; }
+  .tabs > .seg button { flex: 0 0 auto; min-width: var(--touch); padding: var(--s-2) 0; white-space: nowrap; }
+  /* every other segmented control is one row too: it fills the width when its choices fit and scrolls sideways when they do not */
+  .seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; width: 100%; contain: inline-size; }
+  .tabs > .seg { width: auto; }
+  .seg::-webkit-scrollbar { display: none; }
+  .seg button { flex: 1 0 auto; white-space: nowrap; }
+
+  /* ---------- the page head: the title with its refresh button, then two quiet lines (what the page is, and how fresh its data is) ---------- */
+  .page-head { position: relative; display: grid; gap: 0; }
+  .head-title { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; padding-right: 6rem; }
+  .page-head h1 { font-size: 30px; display: flex; align-items: center; min-height: var(--touch); }
+  .head-title > .micro { font-size: var(--fs-sm); letter-spacing: normal; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stamp-row { margin-left: 0; width: 100%; justify-content: flex-start; flex-wrap: nowrap; gap: var(--s-2); line-height: 1.3; }
+  .stamp-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stamp-row .btn { position: absolute; top: 0; right: 0; }
+  .page-head > .note, .page-head > .progress { flex: none; }
+
+  /* ---------- the headline strip: two to a row, compact serif numbers ---------- */
+  .strip, .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3) var(--s-3); }
+  .strip .kpi, .kpis .kpi { min-width: 0; }
+  .strip .kpi .big, .kpis .kpi .big, .kpi .big { font-size: 32px; }
+  .strip .kpi .big { font-size: 32px; }
+  .strip-name { font-size: 26px; overflow-wrap: anywhere; }
+  .kpi .sub { font-size: var(--fs-xs); }
+
+  /* ---------- tables: the few columns that answer the question, the rest one tap away ---------- */
+  .tw { overscroll-behavior-x: contain; }
+  th.xc, td.xc { width: var(--touch); padding: 0; text-align: center; }
+  .xbtn { display: inline-grid; place-items: center; width: var(--touch); height: var(--touch); padding: 0; border: 0; background: none; color: var(--ink-2); cursor: pointer; }
+  .xbtn > i { display: block; width: 8px; height: 8px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform var(--t-base) var(--ease); }
+  .xbtn[aria-expanded='true'] > i { transform: translateY(2px) rotate(-135deg); }
+  tr.xopen > td { border-bottom-color: transparent; }
+  tr.xrow > td { padding: 0 var(--s-2) var(--s-3); background: var(--sheet); }
+  tr.xrow:hover > td { background: var(--sheet); }
+  .xdl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2) var(--s-3); margin: 0; padding-top: var(--s-2); }
+  .xdl > div { display: grid; gap: 2px; min-width: 0; }
+  .xdl dt { font-size: var(--fs-xs); color: var(--ink-2); letter-spacing: var(--ls-micro); }
+  .xdl dd { margin: 0; min-width: 0; font-size: var(--fs-table); overflow-wrap: anywhere; }
+  .xrow-act { margin-top: var(--s-2); }
+  /* a table made of its essentials has no need of a pinned column or of "more columns" */
+  .tw[data-compact] th.sticky-col, .tw[data-compact] td.sticky-col { position: static; box-shadow: none; }
+  td.wrap { min-width: 0; }
+  /* a compact table is built to fit: names wrap rather than push the row past the screen, numbers stay on one line */
+  .tw[data-compact] td, .tw[data-compact] td.nowrap { white-space: normal; }
+  .tw[data-compact] td.n { white-space: nowrap; }
+  .tw[data-compact] th { white-space: normal; vertical-align: bottom; }
+  .tw[data-compact] th, .tw[data-compact] td { padding-inline: var(--s-1); }
+  .tw[data-compact] th:first-child, .tw[data-compact] td:first-child { padding-left: 0; }
+  .tw[data-compact] .oddcell { min-width: 0; grid-template-columns: 2.6em minmax(2rem, 1fr); }
+
+  /* ---------- forms: labels above, a field per row, the primary button as wide as the screen ---------- */
+  .form-row { flex-direction: column; align-items: stretch; gap: var(--s-3); }
+  .form-row > label.ctl { width: 100%; }
+  .form-row input[type='text'], .form-row input[type='url'], .form-row input[type='search'], .form-row input[type='number'], .form-row select { width: 100%; }
+  .form-row > .btn { width: 100%; }
+  .form-row > .btn.solid, .row > .btn.solid:only-of-type, .form-actions .btn.solid { min-height: 48px; }
+  /* a primary action that stays under the thumb: it rides at the bottom of the screen while its form is on it */
+  .form-row > .btn.solid { position: sticky; bottom: max(var(--s-3), env(safe-area-inset-bottom, 0px)); z-index: 5; box-shadow: var(--shadow-pop); }
+  .signin-wrap { padding-block: var(--s-4) var(--s-5); }
+  input[type='range'] { width: 100%; }
+
+  .heat-wrap .heat { width: 100%; height: auto; max-width: 100%; }
+
+  /* ---------- little things ---------- */
+  a.plink { min-width: var(--touch); }
+  .scen { grid-template-columns: 1fr; }
+  /* one column that can shrink: without it a wide table inside a tab pushes the whole page past the screen */
+  .page { gap: var(--s-4); grid-template-columns: minmax(0, 1fr); }
+  /* a toast-sized note never sits under the tab bar */
+  .skip-link:focus { top: calc(var(--top-h) + var(--s-2)); }
+}
+
+@keyframes wr-sheet { from { transform: translateY(100%); } to { transform: none; } }

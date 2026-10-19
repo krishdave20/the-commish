@@ -24,7 +24,8 @@ export interface LiveValue {
   replay: ReplaySource | null;
   replayLoading: boolean;
   replayError: string | null;
-  startReplay: () => Promise<void>;
+  /** replay a finished week (default: last week) as if it were live */
+  startReplay: (week?: number) => Promise<void>;
   stopReplay: () => void;
   /** one poll now */
   refresh: () => Promise<void>;

@@ -32,13 +32,21 @@ export function kickoffsOf(games: readonly NflGame[], now: number, byClock = fal
   return out;
 }
 
-/** My live matchup in the engine's shape: points, the starters still to play and the live win chance. */
-export function liveMatchOf(m: MatchupLive | null): LiveMatch | null {
+/** My live matchup in the engine's shape: points, the starters still to play, the live win chance, who scored most, and (an estimate from
+    kickoff times) when the last of the matchup's games ended. */
+export function liveMatchOf(m: MatchupLive | null, week?: number): LiveMatch | null {
   if (!m) return null;
   const left = (t: MatchupLive['a']) => t.starters.filter((p) => p.state === 'pre' || p.state === 'live').map((p) => ({ name: p.name, pos: p.pos }));
+  const top = (t: MatchupLive['a']) => {
+    const best = t.starters.slice().sort((x, y) => y.actual - x.actual)[0];
+    return best && best.actual > 0 ? { name: best.name, pts: best.actual } : null;
+  };
+  const kicks = [...m.a.starters, ...m.b.starters].map((p) => p.game?.kickoff).filter((k): k is number => typeof k === 'number');
   return {
-    mine: { name: m.a.name, pts: m.a.actual, left: left(m.a) },
-    theirs: { name: m.b.name, pts: m.b.actual, left: left(m.b) },
+    mine: { name: m.a.name, pts: m.a.actual, left: left(m.a), top: top(m.a) },
+    theirs: { name: m.b.name, pts: m.b.actual, left: left(m.b), top: top(m.b) },
     winP: m.winA, started: m.started, final: m.final,
+    finalAt: kicks.length ? Math.max(...kicks) + GAME_LENGTH : null,
+    ...(week !== undefined ? { week } : {}),
   };
 }

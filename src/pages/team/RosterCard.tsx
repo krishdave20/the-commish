@@ -37,21 +37,21 @@ export function RosterCard({ engine }: { engine: Engine }) {
 
   const columns: Column<Row>[] = [
     {
-      key: 'player', header: 'player', value: (r) => r.p.name, className: 'sticky-col',
+      key: 'player', header: 'player', essential: true, value: (r) => r.p.name, className: 'sticky-col',
       render: (r) => <AvatarName pid={r.p.pid} name={r.p.name} pos={r.p.pos} team={r.p.nfl ?? undefined} size={28}><PlayerLink pid={r.p.pid} name={r.p.name} /><PlayerTags p={r.p} added={r.added} /></AvatarName>,
     },
     { key: 'pos', header: 'pos', value: (r) => r.p.pos },
     { key: 'nfl', header: 'team', value: (r) => r.p.nfl ?? '', more: true },
     { key: 'avg', header: 'avg', more: true, numeric: true, value: (r) => r.p.seasonAvg, render: (r) => (r.p.seasonAvg == null ? '—' : formatPoints1(r.p.seasonAvg)) },
     {
-      key: 'next', header: `wk ${cur + 1} proj`, numeric: true, value: (r) => r.next,
+      key: 'next', header: `wk ${cur + 1} proj`, essential: true, numeric: true, value: (r) => r.next,
       render: (r) => (
         <span title={`floor ${formatPoints1(r.lo)} · expected ${formatPoints1(r.next)} · ceiling ${formatPoints1(r.hi)}`}>
           {formatPoints1(r.next)} <span className="dim">{formatPoints1(r.lo)}–{formatPoints1(r.hi)}</span>
         </span>
       ),
     },
-    { key: 'ros', header: 'rest of season', numeric: true, value: (r) => r.ros, render: (r) => formatPoints1(r.ros) },
+    { key: 'ros', header: 'rest of season', essential: true, numeric: true, value: (r) => r.ros, render: (r) => formatPoints1(r.ros) },
     {
       key: 'opp', header: `wk ${cur + 1} opp`, more: true,
       render: (r) => <MatchupGrade opponent={r.p.opp[cur + 1]} dvp={r.p.dvp[cur + 1]} />,

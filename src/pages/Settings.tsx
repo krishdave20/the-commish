@@ -3,6 +3,7 @@ import { PAGES } from '../app/names';
 import { usePageTitle } from '../app/usePageTitle';
 import { CommissionersOffice } from '../components/art/CommissionersOffice';
 import { PageHeader } from '../components/PageHeader';
+import { AppearanceSection } from './settings/AppearanceSection';
 import { AboutSection } from './settings/AboutSection';
 import { AttributionSection } from './settings/AttributionSection';
 import { CacheSection } from './settings/CacheSection';
@@ -23,6 +24,7 @@ export default function Settings() {
       </div>
       <div className="accordion">
         <LinkedAccountsSection />
+        <AppearanceSection />
         <LeagueSection />
       <ScheduleSection />
       <LosersSection />

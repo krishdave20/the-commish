@@ -7,12 +7,14 @@ import { PlayDiagram } from '../components/art/PlayDiagram';
 import { HeadlineStrip } from '../components/HeadlineStrip';
 import { SectionHeader } from '../components/SectionHeader';
 import { Segmented } from '../components/Segmented';
+import { usePhone } from '../components/useMediaQuery';
 import type { Take, TakeKind } from '../takes/types';
 import { TakeCard } from './takes/TakeCard';
 
 type Scope = 'all' | 'mine' | 'waiver' | 'league';
-/** Cards drawn at first; a long feed grows by this much each time (a short first screen, one tap for more). */
+/** Cards drawn at first; a long feed grows by this much each time (a short first screen, one tap for more). A phone starts with half as many. */
 const PAGE = 12;
+const PAGE_PHONE = 6;
 const SCOPES: Array<{ value: Scope; label: string }> = [
   { value: 'all', label: 'all' },
   { value: 'mine', label: 'my players' },
@@ -28,7 +30,8 @@ function Feed() {
   const t = useTakes();
   const [scope, setScope] = useState<Scope>('all');
   const [kind, setKind] = useState<TakeKind | 'all'>('all');
-  const [limit, setLimit] = useState(PAGE);
+  const PAGE_NOW = usePhone() ? PAGE_PHONE : PAGE;
+  const [limit, setLimit] = useState(PAGE_NOW);
 
   const kinds = useMemo(() => {
     const n = new Map<TakeKind, number>();
@@ -58,10 +61,10 @@ function Feed() {
           tip={<>every take is a template filled with real numbers. no ai wrote them. each card keeps its detail (why it matters, the track record, sources) one tap away.</>}
         />
         <div className="row">
-          <Segmented label="Take scope" value={scope} onChange={(v) => { setScope(v); setLimit(PAGE); }} options={SCOPES} />
+          <Segmented label="Take scope" value={scope} onChange={(v) => { setScope(v); setLimit(PAGE_NOW); }} options={SCOPES} />
           <label className="ctl">
             detector
-            <select value={kind} onChange={(e) => { setKind(e.target.value as TakeKind | 'all'); setLimit(PAGE); }} aria-label="Detector kind">
+            <select value={kind} onChange={(e) => { setKind(e.target.value as TakeKind | 'all'); setLimit(PAGE_NOW); }} aria-label="Detector kind">
               <option value="all">all detectors</option>
               {kinds.map(([k, n]) => <option key={k} value={k}>{TAKE_KIND_LABEL[k]} ({n})</option>)}
             </select>
@@ -87,7 +90,7 @@ function Feed() {
       )}
       {shown.length > limit && (
         <div className="row">
-          <button type="button" className="btn" onClick={() => setLimit((n) => n + PAGE)}>show {Math.min(PAGE, shown.length - limit)} more</button>
+          <button type="button" className="btn" onClick={() => setLimit((n) => n + PAGE_NOW)}>show {Math.min(PAGE_NOW, shown.length - limit)} more</button>
           <span className="note">showing {limit} of {shown.length}</span>
         </div>
       )}

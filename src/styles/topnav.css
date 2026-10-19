@@ -1,5 +1,6 @@
 /* The site header: a large serif team name, the league switcher and appearance toggle at the right, and a row of section tabs.
-   Under 760px it is a sticky bar with the team name and a menu button; the tabs open from the button. Tokens only.
+   Under 760px it is a sticky top bar (brand, then the team name once the large title has scrolled away) with the score ticker under it;
+   the sections move to the bottom tab bar and its "more" sheet (phone.css, app/PhoneChrome.tsx). Tokens only.
    The class is still called .sidebar (the component's old name): it is the page's banner landmark. */
 .sidebar {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'brand tools' 'id id' 'nav nav';
@@ -17,7 +18,6 @@
 .tn-ctx { color: var(--ink-2); font-size: var(--fs-sm); }
 
 /* the switcher and the appearance toggle */
-.menu { display: contents; }
 .tn-tools { grid-area: tools; display: flex; align-items: center; gap: var(--s-2); justify-self: end; min-width: 0; }
 .tn-tools .switcher { display: flex; flex-wrap: wrap; align-items: end; justify-content: flex-end; gap: var(--s-1) var(--s-3); border: 0; padding: 0; margin: 0; }
 .switcher .micro { display: none; }
@@ -26,7 +26,8 @@
 .switcher .add { font-size: var(--fs-xs); align-self: center; }
 .switcher label.ctl { gap: 2px; }
 .tn-theme { align-self: center; }
-.menu-btn { display: none; }
+.tn-theme .seg { padding: 2px; }
+.tn-theme .seg button { padding: 3px 10px; font-size: var(--fs-xs); }
 
 /* section tabs: pills, the active one filled ink */
 .nav { grid-area: nav; display: flex; flex-wrap: wrap; gap: var(--s-2); padding-top: var(--s-1); }
@@ -41,6 +42,9 @@
 .nav a[aria-current='page'] .live-dot { background: var(--paper); }
 .nav a[aria-current='page'] .live-dot::after { background: var(--paper); }
 .nav a .live-dot { margin-left: 0; }
+/* a section promoted by the time of week: a small accent dot, and its reason on hover and for readers */
+.nav-up { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex: none; }
+.nav a[aria-current='page'] .nav-up { background: var(--gold-on-inverse); }
 
 /* the footer: under the hood, quietly */
 .site-foot { padding: var(--s-3) max(var(--s-4), env(safe-area-inset-left, 0px)) var(--s-5); max-width: calc(76rem + var(--s-4) * 2); margin-inline: auto; }
@@ -61,40 +65,11 @@
 /* ---------- touch screens: 44 px tabs ---------- */
 @media (pointer: coarse) { .nav a { min-height: var(--touch); } }
 
-/* ---------- phones: a compact sticky bar, with the tabs in a menu ---------- */
+/* ---------- phones: the header sticks to the top (what is in it, and its glass, is in phone.css) ---------- */
 @media (max-width: 760px) {
   .sidebar {
-    position: sticky; top: 0; z-index: 30; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: var(--s-3);
-    padding: var(--s-2) max(var(--s-3), env(safe-area-inset-left, 0px)); box-shadow: 0 1px 0 var(--rule-2); max-width: none;
+    position: sticky; top: 0; z-index: 30; display: block; padding: 0; max-width: none; width: auto;
   }
-  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-    .sidebar { background: var(--bar-glass); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); }
-  }
-  .wordmark { display: none; }
-  .tn-id { flex: 1 1 auto; padding: 0; gap: 0; }
-  .tn-team { font-size: 28px; }
-  .tn-ctx { font-size: var(--fs-micro); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  .menu-btn {
-    display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--touch); padding: 0 var(--s-3); max-width: 12rem; flex: none;
-    font: inherit; font-size: var(--fs-sm); color: var(--ink); background: var(--rule-2); border: 0; border-radius: var(--r); cursor: pointer;
-  }
-  .menu-ico { width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); flex: none; }
-  .sidebar[data-open='true'] .menu-ico { transform: translateY(1px) rotate(-135deg); }
-
-  /* the menu opens over the page, so nothing underneath moves */
-  .menu {
-    display: none; position: absolute; top: 100%; left: 0; right: 0; gap: var(--s-3); align-content: start;
-    background: var(--sheet); box-shadow: var(--shadow-pop);
-    padding: var(--s-3) max(var(--s-3), env(safe-area-inset-left, 0px)) var(--s-4); max-height: calc(100dvh - 3.6rem); overflow-y: auto; overscroll-behavior: contain;
-  }
-  .sidebar[data-open='true'] .menu { display: grid; }
-  .nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); padding: 0; }
-  .nav a { min-height: var(--touch); padding: var(--s-2) var(--s-3); background: var(--paper); }
-  .nav a[aria-current='page'] { background: var(--ink); }
-  .tn-tools { justify-self: stretch; flex-wrap: wrap; justify-content: space-between; }
-  .tn-tools .switcher { justify-content: flex-start; flex: 1 1 auto; }
-  .switcher .add { padding: var(--s-2) 0; }
   .site-foot { padding-inline: max(var(--s-3), env(safe-area-inset-left, 0px)); }
   .nav-sub a { min-height: var(--touch); }
 }

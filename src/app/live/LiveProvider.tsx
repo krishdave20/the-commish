@@ -130,19 +130,20 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const here = snapshot ? nextKickoff(snapshot.games, snapshot.clock) : null;
   const nextGame = here ?? (!replay && upcoming && upcoming.key === upKey ? upcoming.game : null);
 
-  const startReplay = useCallback(async () => {
-    if (!sleeper || !model || currentWeek < 2) { setReplayError('there is no finished week to replay yet.'); return; }
-    const w = currentWeek - 1;
+  const startReplay = useCallback(async (which?: number) => {
+    // any finished week of the season can be replayed; the default is the last one
+    const w = which ?? currentWeek - 1;
+    if (!sleeper || !model || currentWeek < 2 || w < 1 || w >= currentWeek) { setReplayError('there is no finished week to replay yet.'); return; }
     setReplayLoading(true);
     setReplayError(null);
     try {
       const [m, s, pr] = await Promise.all([
         sleeper.liveMatchups(leagueId, w),
-        sleeper.scores(season, w),
+        typeof sleeper.pastScores === 'function' ? sleeper.pastScores(season, w) : sleeper.scores(season, w),
         typeof sleeper.projections === 'function' ? sleeper.projections(season, w, model.meta.positions).then((r) => r.data, () => null) : Promise.resolve(null),
       ]);
       const games = parseScores(s.data).filter((g) => g.kickoff !== null);
-      if (!games.length) throw new Error('last week’s kickoff times are not available.');
+      if (!games.length) throw new Error(`week ${w}’s kickoff times are not available.`);
       const c = buildCtx({ model, week: w, scoring, rows: pr });
       setReplayWeek(w);
       setReplay(replaySource({ week: w, matchups: m.data, games, teamOf: (pid) => c.players[pid]?.nfl ?? null }));

@@ -19,6 +19,8 @@ export function weekRecap(s: Scope): Moment[] {
   const morning = s.now < startOfDay(s.now, s.tz) + 12 * HOUR;
   return [{
     id: 'week-recap', kind: 'week-recap', priority: morning ? 78 : 52,
+    // the live activity keeps the recap through Tuesday morning, picking up from the final whistle's
+    glance: morning,
     title: `week ${r.week} recap: you ${verdict} ${pts1(r.mine)}–${pts1(r.theirs)}`,
     detail: `against ${r.oppName} · ${tail}`,
     action: { label: 'see the playoff picture', to: '/race' },

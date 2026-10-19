@@ -4,10 +4,10 @@
 
 /* ---------- shell layout around the ticker: --ticker-h is the bar's height (0 when there is none) ---------- */
 .shell { --ticker-h: 0px; }
-.shell[data-ticker='on'] { --ticker-h: 40px; }
+.shell[data-ticker='on'], .shell[data-ticker='hold'] { --ticker-h: 40px; }
 .shell[data-ticker='collapsed'] { --ticker-h: 28px; }
 @media (max-width: 760px), (pointer: coarse) {
-  .shell[data-ticker='on'], .shell[data-ticker='collapsed'] { --ticker-h: var(--touch, 44px); }
+  .shell[data-ticker='on'], .shell[data-ticker='hold'], .shell[data-ticker='collapsed'] { --ticker-h: var(--touch, 44px); }
 }
 
 /* ---------- the bar ---------- */
@@ -16,8 +16,9 @@
   font-family: var(--sans, -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif); font-size: var(--fs-xs, 12px);
   position: relative; z-index: 40; min-width: 0;
 }
-/* on a wide screen it stays at the top while the page scrolls; on a phone it scrolls away, so it never crowds the sticky top bar */
+/* on a wide screen it stays at the top while the page scrolls; on a phone it rides inside the sticky top bar */
 @media (min-width: 761px) { .ticker { position: sticky; top: 0; } }
+/* (phones: the ticker sits inside the sticky top bar, so it needs none of its own: phone.css) */
 .ticker :focus-visible { outline-color: var(--on-inverse); }
 
 .tk-bar { display: flex; align-items: center; height: 100%; gap: var(--s-2, 8px); padding-inline: max(var(--s-2, 8px), env(safe-area-inset-left, 0px)) max(var(--s-2, 8px), env(safe-area-inset-right, 0px)); min-width: 0; }

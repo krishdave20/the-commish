@@ -1,5 +1,6 @@
 import { cityOf } from '../../engine/nfl';
 import type { NfGame } from '../../engine/nfl';
+import { FieldSituation } from '../../components/field';
 import { LiveDot } from '../../components/ticker/LiveDot';
 import { statusText, winnerOf } from './format';
 
@@ -39,6 +40,7 @@ export function GameCard({ g, mine, onOpen }: Props) {
         <span className="sr-only"> at </span>
         <Team g={g} side="home" />
       </span>
+      {g.state === 'live' && g.situation && <FieldSituation game={g} variant="card" />}
       <span className="nf-bar" aria-hidden="true" data-unknown={pct === null ? 'true' : undefined}><i style={{ width: `${pct ?? 0}%` }} /></span>
       {mine > 0 && <span className="nf-mine">{mine === 1 ? '1 of your starters' : `${mine} of your starters`}</span>}
       <span className="sr-only">{g.state === 'live' ? ', live' : ''}{', open game details'}</span>

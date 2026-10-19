@@ -84,6 +84,7 @@ The owner shared screenshots of another Sleeper app and asked to take cues from 
 - **Player headshots:** Sleeper's CDN (`https://sleepercdn.com/content/nfl/players/thumb/{player_id}.jpg`), the
   owner's explicit choice. Team defenses never show a team logo (NFL marks); they get a monogram. Any image that
   fails or is offline falls back to an initials monogram. Images are decorative next to names (alt="").
+- **Team colours on headshots** (owner request, Oct 18, 2026): each headshot sits on a circle in the player's team colours, like the reference app. Colours are facts stored in `src/engine/nfl/teamColors.ts`; team logos and marks still never appear.
 - **Dark mode:** follows the system appearance, with a toggle; the light parchment look stays the default.
 - **Content cues:** a sentence hero ("icemen leads killa k im gay 95.0 to 58.8"), plain-language odds
   ("you win 82 of every 100 simulations from here"), a dark "game plan" card of ranked actions, a "who this week
@@ -173,6 +174,15 @@ the page in `src/pages/GameDay.tsx` + `src/pages/gameday/`. Names: `PAGES.gameda
 - `src/components/Avatar.tsx` (`Avatar`, `AvatarStack`, `AvatarName`; helpers in `avatarUtils.ts`; sizes 20 / 28 / 40). A player is a round crop of the Sleeper thumb
   (`loading="lazy"`, `decoding="async"`, explicit width and height); a failed or offline image, a non-numeric id, or a team defense (`pos` "DEF") is an initials monogram.
   Defenses never request an image. Always decorative (`alt=""`, monogram `aria-hidden`); the visible name stays the accessible name.
+- **Team colours behind the headshots (owner request, Oct 18, 2026: "add some color like that").** `src/engine/nfl/teamColors.ts` holds a primary and a secondary hex per team (Sleeper's
+  abbreviations, old codes mapped) and a computed monogram colour (black or white, whichever has the better contrast on the primary, at least 4.5 : 1). `Avatar` passes them as custom
+  properties (`--av-bg`, `--av-ring`, `--av-fg`), so `avatar.css` stays token-only: the headshot (a cut-out on a transparent background) sits on the primary with a 2 px ring in the secondary
+  (1.5 px at 20); the monogram fallback is initials in the readable colour on the primary; a defense is its abbreviation on the primary (still no logo); a player with no team is neutral
+  (`--rule` / `--ink-2`). The team is the `team` prop, else the players file when the app has already loaded it (a passive read, it never fetches). Very dark teams get `avatar-edge`, a faint outer
+  ring (`--edge-inverse`) so navy does not vanish on the dark appearance. `AvatarStack` cuts circles with a 2 px (3 px at 40 and 56) `--paper` ring; a surface on `--sheet` sets `--av-cut-bg`.
+  Sizes are 20 / 28 / 40 / 56. Team marks and logos stay out; only colours.
+- **Where the headshots are:** game day (starter rows 28, around the league stacks 28, game balls 40, left on the sideline 28, the drive chart popover 20, storylines with a player 40), the NFL page
+  (stats leaders 28, box score team leaders 28, the fantasy mix rows 28), the huddle hero (stacks at 40) and every older call site. 20 px on phones in dense rows.
 - **Who this week hinges on** (`src/engine/hinges/`, UI in `src/pages/gameday/matchup/Hinges.tsx`, mounted in the locker room's lineup tab): at stake = win chance now minus win
   chance if the starter were swapped for a typical free agent, in percentage points. The win chance is `liveWinProb`, which is exactly `winProb` before kickoff; points already
   scored stay and only the unplayed share of his game is swapped (`projection - (mu - replacement) x remaining`), so a finished game is worth 0. Negative means a free agent beats him.
@@ -225,3 +235,107 @@ and a change of lead. The countdown ticks each second only while the page is vis
 
 **Mounting**: `<LiveActivity />` (from `src/components/live-activity`) goes in the app shell inside `LiveProvider`. `MomentsProvider` can wrap the frame so everything shares one computation; without it each user
 (`LiveActivity`, a `MomentBanner`, the huddle) starts its own through `MomentsScope`. The huddle's start/sit alerts card and waiver adds card are replaced by the game plan.
+
+## Game day, round two: every week, the league's story, and the field (owner request, Oct 18, 2026)
+"See all the past weeks and build out around the league", "show where they are on the field like in Sleeper", "do the football field graphic thingie for the drive chart".
+
+**Every week.** A row of week chips (1 to the current week; playoff weeks show once the season gets there) with previous/next arrows replaces the this-week/last-week switch;
+it is `?week=N` (`pages/gameday/weekParam.ts`; `now` and `last` still work; no `week` opens on this week, or on last week's finals on an off-day). The week in progress and a replay come
+from the one shared poller. Any finished week is read once by `useWeekView`: `/v1/league/{id}/matchups/{week}` + the finished week's scores (`pastScores`) + that week's projections
+(only for "projected" labels and the pre-kickoff win chance; the points are actual), kept in memory per Sleeper client for the visit when every game is final. No new poller.
+"Replay week N" works for any finished week (`startReplay(week)`; it needs that week's kickoff times from `pastScores`); picking another week stops a replay.
+
+**Around the league.** Cards: both teams with their two best starters (`AvatarStack`), score, win chance with a meter, starters live / on deck, projected final, and, when a starter is live,
+"live: [player] on the field" (preferring a player whose unit is on the field) with his game's situation. Sort: live first (default), closest, biggest. Above them a swipeable
+storylines strip (`engine/live/storylines.ts`, rules over the week's numbers): highest score, closest finish (matchups that are over), biggest comeback (the biggest win-chance swing of a team
+now ahead, from its lowest point: before kickoff, or any poll this visit saw; it must have been 35% or less and swing 30 points or more), player of the week, heartbreaker (a loss where the
+points left on the bench beat the margin), bench blunder, and the standings story. Standings (`engine/live/standings.ts`) come from the model's history rows and the model's own seeding
+rule (`rankTeams`): before the week = finished weeks, after = plus the matchups with points on the board, so a live week reads "if the results hold" and a past week "who moved after week N"
+(who crosses the playoff line, by how many places, record before and after). Playoff weeks give no standings story. A past week is a "week N in review".
+
+**Where they are on the field** (`engine/live/situation.ts`, checked live Oct 18). Sleeper's `metadata`: `possession`, `yard_line` (1 to 50, or "" with no spot), `yard_line_territory`,
+`down`, `down_and_distance` ("2nd & 7", "1st & Goal"), `red_zone`, `away_used_timeouts`, `home_used_timeouts` (used, so left = 3 minus used), the `*_score_quarterN` fields.
+- **Yard mapping.** From the possession team's own goal line: `own = territory === possession ? yard_line : 100 - yard_line` (0 own goal line, 50 midfield, 99 one yard out); yards to goal = `100 - own`.
+  On screen the field runs left to right with the AWAY team's goal line at 0 and the HOME team's at 100: `x = territory === away ? yard_line : 100 - yard_line`. The away team attacks right, the home team
+  left. `yard_line` 50 is x = 50 whatever the territory; a spot with no territory away from midfield is unknown. Red zone: yards to goal 20 or less, or Sleeper's `red_zone` flag.
+  Tested for both territories, both teams, midfield and the goal line.
+- **Offense or defense.** A skill player is on offense while his team has the ball; a team defense is the reverse (on defense while the other team has it); a kicker counts as offense; otherwise "off the field".
+- **Mini field** (`components/field/MiniField`, 120 x 28, the `Turf` art): the ball, a gold tick at the line to gain, an arrow the way the offense goes, a red-zone tint, team codes in the end zones.
+  Accessible label "lac on offense, 2nd and 7 at the kc 44". Under every live or finished starter (main event rows, head to head), in the "around the league" live line, on the NFL scoreboard cards of live games
+  (decorative there: the card is a button) and in the NFL game drawer. Quarters (Q1 to Q4, OT) open from a "quarters" button. Not started: the kickoff time; final: the score; halftime: "halftime".
+  Replays carry no ball position (the replay has no field data), so they show the clock only.
+
+**Drive chart** (`components/field/DriveTurf`): the turf field (stripes, yard lines, hash marks, yard numbers) with your team's name in the left end zone and your opponent's in the right. Each scoring update
+is a football in time order, left to right, bigger for more points, light green for you, light red for the opponent, small and pale for the league, hollow for a correction; the newest has a drive arrow (static
+under reduced motion). A thin gold line is the running margin, anchored to the scoreboard now, above midfield = you lead. Tap, hover or focus a play for "+6.4 · ja'marr chase · cin vs pit · q3 8:12" (the game as it
+stood at that poll, from the snapshot kept for it); each play is a button named by its points, then the context as screen-reader text. A finished week with no replay shows its top 14 scoring starters in kickoff
+order and says "replay the week to watch it drive". On a phone the field spans the width at 80 px.
+
+**Phone.** Week chips scroll sideways and centre the chosen week (`centerScrollLeft`); starter rows become two-line cards (name and points, then the situation); around-the-league cards are one column;
+storylines snap card by card; every target is 44 px.
+
+## The phone pass (owner request, Oct 18, 2026: "improve the phone website experience")
+Under 760 px wide the shell is the iOS pattern; wide screens and tablets keep the top tabs. All phone styling lives in `src/styles/phone.css`
+(imported last in `main.tsx`, so it wins a tie), the markup in `src/app/PhoneChrome.tsx`.
+- **Navigation:** a bottom tab bar (fixed, safe-area padding, line icons in `tabIcons.tsx`): huddle, then the next three sections in the navigation's order,
+  then "more", which opens every section as a sheet (with the light/dark/auto switch and the league picker). The open page is green with a top mark;
+  "more" lights when the open page is not one of the four. A red pulse sits on the game day icon while games are on.
+- **Large title:** the team name (and league, week and record) is a large title in the page flow; the sticky top bar overlaps it, so at the top of the page
+  there is no empty bar, and once the title has scrolled away (`useScrolled`, with hysteresis) the bar fills in with the team's name (tap it to go to the
+  top). Collapsed top chrome is the ticker (36 px) plus the bar (44 px), 80 px. Nothing shifts: the title is not in the sticky part.
+- **Ticker:** one slim line inside the sticky header. The whole 36 px band is the tap area. It remembers it was there last time (`wr.ticker.seen.v1`) and
+  holds its (empty) space while the first scores load, so the page does not jump when it arrives.
+- **Live activity pill:** placed by the shell at `--activity-bottom` (phone.css: tab bar + safe area + gap) above the tab bar, or at `--activity-top` on wide
+  screens. Hidden on a very short screen (its state stays on the game day tab's pulse). On a phone it is also hidden while the ticker pins the same live score.
+- **Sheets:** `Drawer` is a bottom sheet on a phone: drag handle, swipe the handle or title bar down to close (96 px, or a quick flick), safe-area padding, Esc,
+  backdrop, focus trap and focus return as before.
+- **Tables:** a column marked `essential` stays in the row on a phone (2 to 4 of them); a tap on the row, or its 44 px chevron, opens the rest as label and value
+  pairs under it (`SortableTable`; the draft rankings and the streamers do the same by hand). Tables without `essential` columns are unchanged. The mock draft
+  board, game log and a few wide tables still scroll sideways, as a last resort.
+- **In-page tabs** (`PageTabs`): one scrollable strip, never two rows, sticky under the top bar (`--top-h`), the chosen tab scrolled into view.
+  Every other `Segmented` is one row too (it fills the width, or scrolls).
+- **Smaller things:** headline strips two to a row; moment banners one line and tappable end to end; avatars 20 px in rows; forms with labels above, 16 px inputs,
+  a full-width primary button riding at the bottom of the screen; the what-if roster as one card per player; the seeding heatmap scales instead of scrolling.
+- **Type:** on a phone nothing is under 13 px (`--fs-micro`/`--fs-xs` 13, `--fs-sm` 14, body 16) except the tab bar's labels (11).
+- **Loading:** every page but the huddle and check in is its own chunk; the playoff machine, brackets, odds detail, the what-if lab, the mock draft and the
+  on-the-clock tab are chunks of their own, fetched when the tab opens. The waiver wire no longer downloads the players file (only "trending & risers" does).
+- **Time-aware navigation** (`navOrder.ts`, `useNavOrder.ts`; setting "smart order" in front office, `prefs.smartNav`, on by default): huddle first, up to two
+  promoted sections (game time: game day, nfl; waivers window: waiver wire, locker room; Monday night: game day; Tuesday recap: playoff picture; lineup days
+  Wed to Sat: locker room, waiver wire; deadline week: trade block; pre-draft and drafting: draft room, scouting report; offseason: draft room, trade block;
+  playoffs: playoff picture, game day), the rest fixed, front office last. Promoted tabs carry a gold dot and "up front: reason" as title and for readers.
+  The `?now=` and `?phase=` previews drive it. A reorder while the page is open glides (FLIP, `useFlip`), never on load, never with reduced motion.
+- **Appearance:** `ThemeSwitch` (light, dark, auto) in the wide header, at the top of the more sheet and in front office; same storage as before (`wr.theme.v1`).
+- `viewport-fit=cover` is set in `index.html` so `env(safe-area-inset-*)` works.
+
+## The live activity, built out (owner request, Oct 18, 2026)
+"Add more detail into the live activity, it's kinda un built out." The pill is now Apple's Live Activities / Dynamic Island shape: a **compact** pill, an **expanded** card (a header, a centre, a bottom with the pager and
+one action) and, with several running, **minimal** circles. Pure content in `src/engine/moments/activity.ts` (`buildActivities`, `compactText`, `stateKey`, `bigMoments`, `playerLine`); the pieces in `src/components/live-activity/`
+(`LiveActivity.tsx` the frame and the state, `views.tsx` the compact and expanded bodies, `labels.ts`, `icons.tsx`, `useBigMoment.ts`, `useSwipe.ts`, `useActivityClock.ts`); styles in `src/styles/live-activity.css`
+(moved out of moments.css). It polls nothing of its own: it reads the moments, game day's `LiveProvider` (view and scoring feed) and the draft pick feed the moments already poll.
+
+| Activity | Moment(s) | Compact | Expanded |
+|---|---|---|---|
+| live matchup | `live-matchup`, `monday-night` | my monogram and score, theirs and my win %, a hairline of starter-minutes played: "icemen 95.0 · 58.8 · 80%" | both teams with their two best starters (`AvatarStack`), big serif scores, projected finals, a thin win meter, "now playing" (up to 3 of my starters whose game is on, those on the field first: "chase · on offense · 2nd & 7 at pit 34 · q3 8:12"), the last scoring play ("+6.4 · ja'marr chase · 2 min ago"), yet to play / live / done; action "open game day" |
+| kickoff and lineup lock | `game-day`, `final-check` | "kickoff 1:42:10", "inactives 29:37" | the countdown with the local time, the first kickoff and its game, my starters in that window (kickoffs within 90 minutes of the first), starters with an injury designation or on a bye ("caleb williams: questionable"); "check lineup" |
+| waivers | `waivers-tonight` | "waivers 5h 12m" | when they process (local time), my top two adds with lineup lift and bid, FAAB left (FAAB leagues only); "open waiver wire" |
+| the draft | `draft-clock`, `draft-countdown` | "on the clock", "pick in 4", "draft paused", "draft 3d 4h" | picks until my turn and my next pick number, the top 3 by VOR with tier, my open slots, the last pick; "open on the clock" |
+| final whistle | `final-whistle` (new), `week-recap` | "W 112.3–98.0" | the result, my top scorer, the playoff odds change (needs the stored first look at the week); "see the week" (`/gameday?week=N`) |
+
+- **New moment** `final-whistle` (priority 91, `glance: true`): my matchup is settled (every starter on both sides done) or, from the model, every game of the week is over. It lasts 12 hours from the matchup's last game
+  (`LiveMatch.finalAt`, an estimate: the latest starter kickoff plus 3.5 hours). On Tuesday it steps aside for `week-recap`, which now also has `glance` through the morning, so the two never sit side by side.
+  `glance` (additive on `Moment`) lets `ongoing()` pass a moment that is neither live nor a countdown.
+- **Additive fields:** `MomentModel.faabLeft` and `waiver.adds` (the top two), `LiveSide.top`, `LiveMatch.finalAt` and `week`, `MomentsValue.draftLive` (the best three left, my needs, the last pick: from the pick feed
+  and rankings, only while a draft is on).
+- **Several at once:** one activity per kind, the highest-priority moment of the kind leading; the best is the pill, the others are minimal circles (3 on desktop, 2 on a phone, then "+n"). A tap on a circle picks it (the pick lasts
+  while the best stays the best); open, left/right (swipe, the arrows, the arrow keys) move between activities with page dots; swipe up (or down, the way a sheet goes), Esc or a tap outside folds.
+- **Hiding:** the × or a 500 ms long press hides an activity until its state changes: the lead changing hands, the draft clock getting close or reaching you, a countdown turning urgent (under 5 minutes) or changing label
+  (inactives to kickoff), the final whistle. It forgets the hiding when the activity goes (next week's waivers show again).
+- **Big moment:** a poll in which my score rose by 6 or more points flashes "+6.4 · chase" in the pill for 4.5 s (rule on the delta alone: it never says touchdown). Only polls that arrive after the page opened count. Reduced
+  motion: no width animation, just the text.
+- **Live region (polite):** the draft clock reaching you, the lead changing hands, the final whistle arriving, a big moment of mine; never a countdown tick.
+- **Clock:** a countdown that shows seconds ticks each second, one that shows minutes every 15 s, nothing ticks otherwise (the open matchup card ticks every 15 s for "2 min ago"); nothing ticks while the page is hidden.
+- **Placement** is the shell's: `--activity-top` (desktop) and `--activity-bottom` (phone), with fallbacks from `--ticker-h` and `--tabbar-h`. On a phone an open card is a sheet (24 px corners, inside the safe areas).
+  On a phone the pill hides the live matchup while the ticker pins it (`HIDE_MATCHUP_WITH_TICKER` in `LiveActivity.tsx`; the pill shows it when the ticker is folded).
+- Compact copy changed: "waivers 5h 12m", "kickoff 1:42:10" (was "waivers in 5h 12m"). A moment of no known kind keeps the old wording and the plain title/detail card.
+- Previews with `?now=` use today's data: Tuesday 8 pm (waivers) and Monday 11 pm (recap) work from any day; a kickoff countdown needs the clock inside this week's schedule (this week: `2026-10-15T17:00`, Thursday
+  5 pm; Sunday 10 am is `2026-10-18T10:00`). `?phase=drafting` only changes the huddle, not the pill (the pill's provider is the shell's).

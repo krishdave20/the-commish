@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMoments } from '../../app/moments/momentsContext';
 import { formatStamp } from '../../engine/moments';
 import type { Moment } from '../../engine/moments';
+import '../../styles/moments.css';
 
 const TOP = 3;
 

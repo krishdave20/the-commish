@@ -7,7 +7,7 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Locator, Page } from '@playwright/test';
-import { FEATURE, FOOTER_KEYS, LOSERS_COPY, NAV_GROUPS, PAGES } from '../src/app/names.ts';
+import { FEATURE, FOOTER_KEYS, LOSERS_COPY, NAV_KEYS, NFL_COPY, PAGES, type PageKey } from '../src/app/names.ts';
 import { ALLOWED_AXE, FAIL_IMPACTS, isAllowed, scan, summarize, type AxeFinding } from './axe.ts';
 import { manifest, myWeekPoints, pickPlayerWithUsage } from './fixture.ts';
 import { RESULTS_DIR, SCREENS_DIR, expect, recordOverflow, signIn, test } from './session.ts';
@@ -63,7 +63,7 @@ const tab = (group: string, label: string, check: (page: Page) => Promise<void>)
 
 const TABS = {
   offseason: 'Offseason sections', draftPrep: 'Draft prep', player: 'Player sections', team: 'Locker room sections', race: 'Playoff picture sections',
-  waivers: 'Waiver wire sections', trades: 'Trade block sections', draft: 'Draft room section', gameday: 'league view',
+  waivers: 'Waiver wire sections', trades: 'Trade block sections', draft: 'Draft room section', gameday: 'league view', nfl: 'nfl view',
 };
 
 const ROUTES: Route[] = [
@@ -72,12 +72,11 @@ const ROUTES: Route[] = [
     states: [{
       id: 'default',
       run: async (page) => {
-        // the headline strip replaced the odds and matchup cards
-        const strip = page.getByRole('group', { name: 'your season' });
-        await expect(strip).toBeVisible();
-        await expect(strip).toContainText('playoff odds');
-        await expect(strip).toContainText('this week’s matchup');
-        await expect(heading(page, FEATURE.alerts)).toBeVisible();
+        // a sentence about the week, and the dark "game plan" card
+        const hero = page.getByRole('region', { name: 'this week in a sentence' });
+        await expect(hero).toBeVisible();
+        await expect(hero.locator('.hero-line'), 'the hero sentence').not.toHaveText('');
+        await expect(heading(page, 'your game plan')).toBeVisible();
       },
     }],
   },
@@ -109,9 +108,41 @@ const ROUTES: Route[] = [
           await expect(heading(page, FEATURE.aroundLeague)).toBeVisible();
         },
       },
+      { id: 'head-to-head', run: tab(TABS.gameday, 'head to head', async (page) => { await expect(heading(page, 'starters, head to head')).toBeVisible(); }) },
+      { id: 'hinges', run: tab(TABS.gameday, 'hinges on', async (page) => { await expect(heading(page, 'who this week hinges on')).toBeVisible(); }) },
       { id: 'game-balls', run: tab(TABS.gameday, FEATURE.gameBalls, async (page) => { await expect(heading(page, FEATURE.gameBalls)).toBeVisible(); }) },
       { id: 'drive-chart', run: tab(TABS.gameday, FEATURE.driveChart, async (page) => { await expect(heading(page, FEATURE.driveChart)).toBeVisible(); }) },
       { id: 'sideline', run: tab(TABS.gameday, FEATURE.sideline, async (page) => { await expect(heading(page, FEATURE.sideline)).toBeVisible(); }) },
+      {
+        // the week picker reaches every played week; a finished week reads as final, with a replay offer (and no "hinges" tab: it is over)
+        id: 'past-week',
+        run: async (page) => {
+          const week = manifest.week - 2;
+          await pickWeek(page, week);
+          await expect(page).toHaveURL(new RegExp(`week=${week}`));
+          await expect(page.getByRole('button', { name: `replay week ${week}` })).toBeVisible();
+          await expect(page.getByRole('radiogroup', { name: TABS.gameday }).getByRole('radio', { name: 'hinges on' })).toHaveCount(0);
+          await expect(heading(page, FEATURE.mainEvent)).toBeVisible();
+          await expect(page.locator('.gd-big').first(), 'a played week has real points').not.toHaveAttribute('aria-label', /\s0\.0$/);
+          await pickWeek(page, manifest.week);
+        },
+      },
+    ],
+  },
+  {
+    id: 'nfl', path: PAGES.nfl.path, h1: PAGES.nfl.name, title: PAGES.nfl.name,
+    states: [
+      {
+        id: 'scoreboard',
+        run: async (page) => {
+          // one card per NFL game, grouped by slot
+          await expect(page.getByRole('radiogroup', { name: TABS.nfl }).getByRole('radio', { name: NFL_COPY.tabs.scoreboard })).toBeChecked();
+          await expect(gameCards(page).nth(9), 'at least ten NFL games on the scoreboard').toBeVisible();
+        },
+      },
+      { id: 'stats', run: tab(TABS.nfl, NFL_COPY.tabs.stats, async (page) => { await expect(heading(page, 'nfl stats')).toBeVisible(); await expectRows(table(page, /passing leaders/i), 5, 'passing leaders'); }) },
+      { id: 'standings', run: tab(TABS.nfl, NFL_COPY.tabs.standings, async (page) => { await expectRows(table(page, /AFC East standings/i), 4, 'AFC East'); }) },
+      { id: 'playoff-picture', run: tab(TABS.nfl, NFL_COPY.tabs.picture, async (page) => { await expectRows(table(page, /AFC playoff picture/i), 7, 'AFC playoff picture'); }) },
     ],
   },
   {
@@ -172,6 +203,16 @@ const ROUTES: Route[] = [
     id: 'waiver-wire', path: PAGES.waivers.path, h1: PAGES.waivers.name, title: PAGES.waivers.name,
     states: [
       { id: 'the-wire', run: async (page) => { await expectRows(table(page, /^waiver wire$/i), 1, 'waiver wire'); } },
+      {
+        id: 'streamers',
+        run: tab(TABS.waivers, 'streamers', async (page) => {
+          await expect(page).toHaveURL(/tab=streamers/);
+          for (const pos of ['qb', 'te', 'def', 'k', 'flex fliers']) await expectRows(table(page, new RegExp(`^Streamers: ${pos}$`, 'i')), 1, `streamers: ${pos}`);
+          await page.getByRole('radiogroup', { name: 'Streaming week' }).getByRole('radio', { name: 'week after' }).click();
+          await expectRows(table(page, /^Streamers: qb$/i), 1, 'streamers: qb, week after');
+          await page.getByRole('radiogroup', { name: 'Streaming week' }).getByRole('radio', { name: 'next week' }).click();
+        }),
+      },
       { id: 'risers', run: tab(TABS.waivers, 'trending & risers', async (page) => { await expectRows(table(page, /usage risers/i), 1, 'usage risers'); }) },
     ],
   },
@@ -203,12 +244,36 @@ const ROUTES: Route[] = [
           await expect(page.getByRole('button', { name: /replay your draft/i })).toBeVisible();
         }),
       },
+      {
+        id: 'draft-grades',
+        run: tab(TABS.draft, 'draft grades', async (page) => {
+          await expect(page).toHaveURL(/tab=grades/);
+          await expectRows(table(page, /draft grades by team/i), 12, 'draft grades');
+          await expect(heading(page, 'highlights')).toBeVisible();
+        }),
+      },
+      {
+        id: 'team-ratings',
+        run: tab(TABS.draft, 'team ratings', async (page) => {
+          await expect(page).toHaveURL(/tab=ratings/);
+          await expect(heading(page, 'power ratings')).toBeVisible();
+          await expectRows(table(page, /team power ratings/i), 12, 'team power ratings');
+        }),
+      },
     ],
   },
   {
     id: 'front-office', path: PAGES.settings.path, h1: PAGES.settings.name, title: PAGES.settings.name,
     states: [
-      { id: 'default', run: async (page) => { await expect(heading(page, 'linked accounts')).toBeVisible(); } },
+      {
+        id: 'default',
+        run: async (page) => {
+          await expect(heading(page, 'linked accounts')).toBeVisible();
+          // appearance and the navigation's smart order now live here too
+          await expect(heading(page, 'appearance')).toBeVisible();
+          await expect(page.getByRole('radiogroup', { name: 'Smart order' }).getByRole('radio', { name: 'smart order: off' }), 'the tests run with smart order off').toBeChecked();
+        },
+      },
       {
         // "run checks" lives inside the closed injury report accordion
         id: 'injury-report',
@@ -268,17 +333,26 @@ function writeAxeReport(): AxeFinding[] {
   return findings;
 }
 
+/** one button per NFL game on the scoreboard ("final/ot AMZNSEA Seattle 3-3 14 at DEN ...") */
+const gameCards = (page: Page) => page.locator('main button', { hasText: / at / });
+
+/** On a phone the appearance toggle, the league switcher and the full list of sections sit in the "more" sheet of the bottom tab bar. Open it. */
+async function showNav(page: Page, project: string) {
+  if (project !== 'phone') return;
+  const sheet = page.getByRole('dialog', { name: 'more' });
+  if (!(await sheet.isVisible())) await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'more' }).click();
+  await expect(sheet).toBeVisible();
+}
+
+/** game day's week picker: one chip per played week ("week 5", "week 6 (this week)") */
+const pickWeek = (page: Page, week: number) => page.getByRole('group', { name: 'week' }).getByRole('button', { name: new RegExp(`^week ${week}\\b`) }).click();
+
 const ticker = (page: Page) => page.getByRole('region', { name: 'league scores' });
 const fileSafe = (s: string) => s.replace(/[^a-z0-9-]+/gi, '-');
 
-/** the screenshot, the horizontal overflow check and (desktop) the axe scan for the state the page is in */
-async function record(page: Page, session: { project: string }, key: string, path: string) {
-  await settled(page);
-  mkdirSync(SCREENS_DIR, { recursive: true });
-  await page.screenshot({ path: resolve(SCREENS_DIR, `${session.project}-${fileSafe(key)}.png`), fullPage: true });
-
-  // no horizontal page scroll at any width
-  const w = await page.evaluate(() => {
+/** The document's width against the window's, and the widest elements poking out past the window that are not inside their own scroller. */
+async function measureOverflow(page: Page) {
+  return page.evaluate(() => {
     const inner = window.innerWidth;
     // the widest elements poking out past the window that are not inside their own horizontal scroller
     const offenders: string[] = [];
@@ -296,6 +370,16 @@ async function record(page: Page, session: { project: string }, key: string, pat
     }
     return { scrollWidth: document.documentElement.scrollWidth, innerWidth: inner, offenders: offenders.slice(0, 6) };
   });
+}
+
+/** the screenshot, the horizontal overflow check and (desktop) the axe scan for the state the page is in */
+async function record(page: Page, session: { project: string }, key: string, path: string) {
+  await settled(page);
+  mkdirSync(SCREENS_DIR, { recursive: true });
+  await page.screenshot({ path: resolve(SCREENS_DIR, `${session.project}-${fileSafe(key)}.png`), fullPage: true });
+
+  // no horizontal page scroll at any width
+  const w = await measureOverflow(page);
   const ok = w.scrollWidth <= w.innerWidth + 1;
   recordOverflow(session.project, fileSafe(key), { path: `${path} [${key}]`, scrollWidth: w.scrollWidth, innerWidth: w.innerWidth, ok, ...(ok ? {} : { offenders: w.offenders }) });
   expect.soft(ok, `${key} overflows horizontally at ${session.project} width: document ${w.scrollWidth}px wide in a ${w.innerWidth}px window. Widest elements outside a scroller: ${w.offenders.join('; ')}`).toBe(true);
@@ -397,25 +481,28 @@ test.describe('smoke', () => {
     });
 
     test('game day: "replay last week" moves the scoreboard and fills the drive chart', async ({ app: page, session }) => {
+      test.setTimeout(90_000);
       /* The replay runs on Date.now (6 sim minutes per second, times the speed). The session freezes Date at the fixture moment,
          so nothing would move on its own: this test is the clock. Each step moves the frozen Date forward 4 s while the real
          timers (the 700 ms poll) keep running. At 8x that is 192 sim minutes a step, so last week plays out in a few steps. */
       const T0 = manifest.captured_at;
       const bigs = () => page.locator('.gd-big').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''));
       try {
-        await page.goto(`/#${PAGES.gameday.path}`);
+        await page.goto(`/#${PAGES.gameday.path}?week=${manifest.week}`);
         await expect(heading(page, FEATURE.mainEvent)).toBeVisible();
         const before = await bigs();
         expect(before.length, 'two sides in the main event').toBe(2);
 
-        await page.getByRole('button', { name: /^replay week \d+$/ }).click();
+        // the replay offer sits on a finished week: pick last week on the week picker
+        await pickWeek(page, manifest.week - 1);
+        await page.getByRole('button', { name: `replay week ${manifest.week - 1}` }).click();
         await expect(page.getByRole('group', { name: 'replay controls' })).toBeVisible();
-        await expect(ticker(page).locator('.tk-tag'), 'the ticker says replay').toContainText('replay');
+        await expect(ticker(page).locator('.tk-tag').first(), 'the ticker says replay').toContainText('replay');
         await page.getByRole('radiogroup', { name: 'replay speed' }).getByRole('radio', { name: '8×' }).click();
 
         const again = page.getByRole('button', { name: 'play again' });
         let moved = false;
-        for (let step = 1; step <= 80 && !(await again.isVisible()); step++) {
+        for (let step = 1; step <= 30 && !(await again.isVisible()); step++) {
           await session.context.clock.setFixedTime(T0 + step * 4000);
           await page.waitForTimeout(800); // one 700 ms poll tick
           if (!moved) moved = (await bigs()).join('|') !== before.join('|');
@@ -433,27 +520,39 @@ test.describe('smoke', () => {
         expect(await feed.count(), 'the drive chart has entries').toBeGreaterThan(5);
 
         await page.getByRole('button', { name: 'stop replay' }).click();
-        await expect(page.getByRole('button', { name: /^replay week \d+$/ })).toBeVisible();
+        await expect(page.getByRole('button', { name: `replay week ${manifest.week - 1}` })).toBeVisible();
       } finally {
-        await session.context.clock.setFixedTime(T0);
+        await session.context.clock.setFixedTime(T0).catch(() => undefined);
       }
     });
 
-    test('score ticker: my matchup is first, it folds away and stays folded after a reload', async ({ app: page }) => {
+    test('score ticker: my matchup is pinned first, then the league and the NFL; it folds away and stays folded after a reload', async ({ app: page }) => {
       await page.goto('/#/');
       await expect(page.getByRole('heading', { level: 1, name: PAGES.home.name })).toBeVisible();
       const bar = ticker(page);
       await expect(bar).toBeVisible();
-      const items = bar.locator('a.tk-item');
-      await expect(items.first(), 'my matchup leads the ticker').toHaveAttribute('data-mine', 'true');
-      await expect(bar.locator('a.tk-item[data-mine="true"]'), 'only my matchup is marked').toHaveCount(1);
-      expect(await items.count(), 'every league matchup is on the ticker').toBeGreaterThan(3);
-      await expect(items.first()).toHaveAttribute('href', /#\/gameday\?m=\d+/);
+      // my matchup is pinned at the left, ahead of the scrolling rotation
+      const pin = bar.locator('a.tk-pin');
+      await expect(pin, 'my matchup is pinned').toBeVisible();
+      await expect(pin).toHaveAttribute('href', /#\/gameday\?m=\d+/);
+      const teamName = (await page.locator('.tn-team').innerText()).trim().toLowerCase();
+      expect((await pin.locator('.tk-team').first().innerText()).trim().toLowerCase(), 'the pin leads with my team').toBe(teamName);
+      const box = async (l: Locator) => (await l.boundingBox())!;
+      const firstItem = bar.locator('a.tk-item').first();
+      expect((await box(pin)).x, 'pinned before the rotation').toBeLessThan((await box(firstItem)).x);
+      // the rotation: the rest of the league (never my own matchup again), then the NFL, whose games open the nfl page's drawer
+      const league = bar.getByRole('list', { name: 'your league scores' }).locator('a.tk-item');
+      expect(await league.count(), 'other league matchups').toBeGreaterThan(3);
+      await expect(league.first()).toHaveAttribute('href', /#\/gameday\?m=\d+/);
+      await expect(bar.locator('a.tk-item[data-mine="true"]:not(.tk-game)'), 'my own matchup is not repeated in the rotation').toHaveCount(0);
+      const nfl = bar.getByRole('list', { name: 'nfl scores' }).locator('a.tk-game');
+      expect(await nfl.count(), 'NFL games').toBeGreaterThan(5);
+      await expect(nfl.first()).toHaveAttribute('href', /#\/nfl\?game=/);
 
       try {
         await bar.getByRole('button', { name: 'hide scores' }).click();
         await expect(bar.getByRole('button', { name: /show scores/ })).toBeVisible();
-        await expect(items).toHaveCount(0);
+        await expect(bar.locator('a.tk-item')).toHaveCount(0);
         await page.reload();
         await expect(page.getByRole('heading', { level: 1, name: PAGES.home.name })).toBeVisible();
         await expect(ticker(page).getByRole('button', { name: /show scores/ }), 'still folded after a reload').toBeVisible();
@@ -466,21 +565,245 @@ test.describe('smoke', () => {
       await expect(ticker(page).getByRole('button', { name: 'hide scores' })).toBeVisible();
     });
 
-    test('navigation: the groups are this week, league, moves and players, with front office and under the hood at the bottom', async ({ app: page, session }) => {
+    test('navigation: section tabs under the team header (phone: a bottom tab bar and a "more" sheet), and under the hood in the footer', async ({ app: page, session }) => {
       await page.goto('/#/');
-      if (session.project === 'phone') await page.getByRole('button', { name: /^menu/ }).click();
       const primary = page.getByRole('navigation', { name: 'Primary' });
-      for (const g of NAV_GROUPS) {
-        await expect(primary.getByText(g.label, { exact: true }), `nav group "${g.label}"`).toBeVisible();
-        for (const k of g.keys) await expect(primary.getByRole('link', { name: PAGES[k].name, exact: true }), `${PAGES[k].name} under ${g.label}`).toBeVisible();
+      const clean = (t: string) => t.replace(/\s*\((live|up front:[^)]*)\)/g, '').replace(/\s+/g, ' ').trim();
+      const name = (k: PageKey) => PAGES[k].name;
+      await expect(page.locator('.tn-team'), 'the big team name').not.toHaveText('');
+      // smart order is off for the tests (e2e/session.ts), so the tabs keep the fixed order of names.ts
+      const atFixture: PageKey[] = [...NAV_KEYS];
+
+      if (session.project === 'phone') {
+        // the iOS pattern: huddle and the next three sections in that order, then "more"
+        const bar = page.locator('nav.tabbar');
+        await expect(bar).toBeVisible();
+        await expect(primary.getByRole('link'), 'four sections and "more"').toHaveCount(4);
+        for (const [i, k] of atFixture.slice(0, 4).entries()) {
+          await expect(primary.getByRole('link').nth(i), `tab bar slot ${i + 1}`).toHaveAccessibleName(new RegExp(`^${escapeRe(name(k))}( \\(|$)`));
+        }
+        await expect(primary.getByRole('link', { name: name('home') })).toHaveAttribute('aria-current', 'page');
+        // "more" opens a sheet with every section in the same order, and under the hood last
+        await showNav(page, 'phone');
+        const sheet = page.getByRole('dialog', { name: 'more' });
+        const all = sheet.getByRole('navigation', { name: 'All sections' }).getByRole('link');
+        expect((await all.allInnerTexts()).map(clean)).toEqual([...atFixture, ...FOOTER_KEYS].map(name));
+        await expect(sheet.getByRole('button', { name: /^appearance:/ }).or(sheet.getByRole('radio', { name: /dark/i })).first(), 'the appearance control lives in the sheet').toBeVisible();
+        // a section outside the four opens from the sheet and closes it
+        await sheet.getByRole('link', { name: name('trades') }).click();
+        await expect(page.getByRole('heading', { level: 1, name: name('trades') })).toBeVisible();
+        await expect(sheet).toHaveCount(0);
+        await expect(primary.getByRole('button', { name: 'more' }), 'a section outside the four lights "more"').toHaveAttribute('data-active', 'true');
+        await primary.getByRole('link', { name: name('home') }).click();
+        await expect(page.getByRole('heading', { level: 1, name: name('home') })).toBeVisible();
+        return;
       }
+
+      const links = primary.getByRole('link');
+      await expect(links).toHaveCount(NAV_KEYS.length);
+      expect((await links.allInnerTexts()).map(clean)).toEqual(atFixture.map(name));
+      await expect(links.filter({ hasText: /up front:/ }), 'nothing is promoted with smart order off').toHaveCount(0);
+      await expect(primary.getByRole('link', { name: name('home'), exact: false }).first()).toHaveAttribute('aria-current', 'page');
       const footer = page.getByRole('navigation', { name: 'Reference' });
-      for (const k of FOOTER_KEYS) await expect(footer.getByRole('link', { name: PAGES[k].name, exact: true })).toBeVisible();
-      // the groups are in order down the page
-      const labels = await primary.locator('.nav-label').allInnerTexts();
-      expect(labels.map((l) => l.trim())).toEqual(NAV_GROUPS.map((g) => g.label));
-      await primary.getByRole('link', { name: PAGES.gameday.name, exact: true }).click();
-      await expect(page.getByRole('heading', { level: 1, name: PAGES.gameday.name })).toBeVisible();
+      for (const k of FOOTER_KEYS) await expect(footer.getByRole('link', { name: name(k), exact: true })).toBeVisible();
+      await primary.getByRole('link', { name: name('gameday') }).click();
+      await expect(page.getByRole('heading', { level: 1, name: name('gameday') })).toBeVisible();
+      await expect(primary.getByRole('link', { name: name('gameday') })).toHaveAttribute('aria-current', 'page');
+      await footer.getByRole('link', { name: name('method') }).click();
+      await expect(page.getByRole('heading', { level: 1, name: name('method') })).toBeVisible();
+    });
+
+    test('smart nav order: the sections that matter now come up front, with a reason; "smart order: off" restores the fixed order', async ({ app: page, session }) => {
+      const primary = page.getByRole('navigation', { name: 'Primary' });
+      const slotName = (i: number) => primary.getByRole('link').nth(i);
+      const savePref = async (smartNav: boolean) => {
+        await page.evaluate((v) => {
+          window.localStorage.setItem('wr.prefs.v1', JSON.stringify({ smartNav: v }));
+          window.dispatchEvent(new Event('wr-prefs'));
+        }, smartNav);
+      };
+      try {
+        await page.goto('/#/');
+        await expect(primary).toBeVisible();
+        await savePref(true);
+        // Friday evening (the fixture clock): lineup days, so the locker room and the waiver wire follow huddle
+        await expect(slotName(1)).toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.team.name)}`));
+        await expect(slotName(2)).toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.waivers.name)}`));
+        await expect(slotName(0)).toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.home.name)}`));
+
+        // Tuesday 8 pm: waivers run overnight, so the waiver wire comes up front, with the reason
+        await page.goto('/#/?now=2026-10-20T20:00');
+        await expect(slotName(1), 'waiver wire is second on Tuesday night').toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.waivers.name)}.*up front: waivers`));
+        if (session.project !== 'phone') await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('link').last()).toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.settings.name)}`));
+
+        // Sunday 1 pm: kickoff, so game day (and the nfl page) come up front
+        await page.goto('/#/?now=2026-10-18T13:00');
+        await expect(slotName(1), 'game day is second on Sunday at kickoff').toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.gameday.name)}.*up front`));
+
+        // the front office switch turns it off again, and the order goes back to names.ts
+        await page.goto('/#/settings?now=live');
+        await page.getByRole('radiogroup', { name: 'Smart order' }).getByRole('radio', { name: 'smart order: off' }).click();
+        await page.goto('/#/?now=2026-10-20T20:00');
+        await expect(slotName(1), 'back to the fixed second tab').toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES[NAV_KEYS[1]!].name)}`));
+        await expect(primary.getByRole('link').filter({ hasText: /up front:/ })).toHaveCount(0);
+      } finally {
+        await page.goto('/#/?now=live');
+        await savePref(false);
+      }
+    });
+
+    test('narrow and wide phones: no horizontal overflow at 320 px and 430 px on the key pages', async ({ app: page, session }) => {
+      test.skip(session.project !== 'phone', 'phone widths only');
+      const routes = ['/', PAGES.gameday.path, PAGES.team.path, `${PAGES.race.path}?tab=brackets`, PAGES.waivers.path, PAGES.nfl.path, PAGES.draft.path, PAGES.settings.path];
+      const size = page.viewportSize()!;
+      try {
+        for (const width of [320, 430]) {
+          await page.setViewportSize({ width, height: 812 });
+          for (const path of routes) {
+            await page.goto(`/#${path}`);
+            await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+            await expect(ticker(page)).toBeVisible();
+            await settled(page);
+            const w = await measureOverflow(page);
+            recordOverflow(`phone${width}`, fileSafe(path || 'home'), { path, scrollWidth: w.scrollWidth, innerWidth: w.innerWidth, ok: w.scrollWidth <= w.innerWidth + 1, ...(w.scrollWidth <= w.innerWidth + 1 ? {} : { offenders: w.offenders }) });
+            expect.soft(w.scrollWidth <= w.innerWidth + 1, `${path} overflows at ${width} px: document ${w.scrollWidth}px wide. Widest elements outside a scroller: ${w.offenders.join('; ')}`).toBe(true);
+          }
+        }
+      } finally {
+        await page.setViewportSize(size);
+      }
+    });
+
+    test('nfl page: a game opens in a drawer (?game=), and "nfl only" hides the fantasy sections and the live pill', async ({ app: page }) => {
+      await page.goto(`/#${PAGES.nfl.path}`);
+      await expect(gameCards(page).nth(9)).toBeVisible();
+      const only = page.getByRole('button', { name: 'nfl only' });
+      await expect(only).toHaveAttribute('aria-pressed', 'false');
+      try {
+        // a game opens in a drawer, and the URL carries it
+        await gameCards(page).first().click();
+        await expect(page).toHaveURL(/#\/nfl\?game=\w+/);
+        const drawer = page.getByRole('dialog');
+        await expect(drawer).toBeVisible();
+        await expect(drawer.getByRole('heading', { name: /\bat\b/i }).first(), 'the matchup is the drawer title').toBeVisible();
+        await expect(drawer.getByRole('heading', { name: 'by quarter' })).toBeVisible();
+        await expect(drawer.getByRole('heading', { name: 'the fantasy mix' }), 'the fantasy sections show by default').toBeVisible();
+        await drawer.getByRole('button', { name: 'close' }).click();
+        await expect(drawer).toHaveCount(0);
+        await expect(page).not.toHaveURL(/game=/);
+
+        // a link straight to the drawer works too (the ticker's NFL games use it)
+        await page.getByRole('region', { name: 'league scores' }).getByRole('list', { name: 'nfl scores' }).locator('a.tk-game').first().click();
+        await expect(page.getByRole('dialog')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(page.getByRole('dialog')).toHaveCount(0);
+
+        // "nfl only": no owners, no your-players, no fantasy sections, and the preview pill steps aside
+        await page.goto(`/#${PAGES.nfl.path}?now=2026-10-20T20:00`);
+        await expect(page.locator('.la-head'), 'the preview pill shows on the nfl page').toBeVisible();
+        await only.click();
+        await expect(only).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.locator('.la-head'), 'nfl only hides the pill').toHaveCount(0);
+        await gameCards(page).first().click();
+        await expect(page.getByRole('dialog').getByRole('heading', { name: 'by quarter' })).toBeVisible();
+        await expect(page.getByRole('dialog').getByRole('heading', { name: 'the fantasy mix' }), 'no fantasy sections in nfl only').toHaveCount(0);
+        await page.keyboard.press('Escape');
+        // remembered on this device
+        await page.reload();
+        await expect(page.getByRole('button', { name: 'nfl only' })).toHaveAttribute('aria-pressed', 'true');
+      } finally {
+        await page.goto(`/#${PAGES.nfl.path}?now=live`);
+        const btn = page.getByRole('button', { name: 'nfl only' });
+        if ((await btn.getAttribute('aria-pressed')) === 'true') await btn.click();
+        await expect(btn).toHaveAttribute('aria-pressed', 'false');
+      }
+    });
+
+    test('moments: previewing a Tuesday 8 pm (?now=) shows the waivers pill and the waiver wire banner; ?now=live clears them', async ({ app: page }) => {
+      try {
+        await page.goto(`/#/?now=2026-10-20T20:00`);
+        // a fresh load with the preview in the URL: the way a person opens a shared preview link. (Switching to a preview from inside
+        // a session that has already been around the app, e.g. after /takes, shows the banner and hero but not the pill: reported.)
+        await page.reload();
+        await expect(page.getByRole('heading', { level: 1, name: PAGES.home.name })).toBeVisible();
+        const pill = page.locator('.la-head');
+        await expect(pill, 'the live activity pill').toBeVisible();
+        await expect(pill, 'a countdown to the waiver run').toContainText(/^waivers (in )?\d+h/);
+        await expect(page.locator('.la-tag'), 'it says it is a preview').toHaveText('preview');
+        // the card opens from the pill and folds back with Escape
+        await pill.click();
+        await expect(pill).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.locator('.la-panel')).toBeVisible();
+        await expect(page.locator('.la-go')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(pill).toHaveAttribute('aria-expanded', 'false');
+
+        // the preview clock follows you to other pages, and the waiver wire gets its banner
+        await page.goto(`/#${PAGES.waivers.path}`);
+        await expect(page.getByRole('heading', { level: 1, name: PAGES.waivers.name })).toBeVisible();
+        const banner = page.getByRole('complementary', { name: 'right now' });
+        await expect(banner, 'the moment banner on the waiver wire').toBeVisible();
+        await expect(banner).toContainText(/waivers process/i);
+        await expect(banner).toContainText(/\d+h .*left|\d+m .*left/);
+        await expect(pill, 'the pill is still there').toBeVisible();
+        // the pill can be dismissed
+        await page.getByRole('button', { name: /^dismiss/ }).click();
+        await expect(pill).toHaveCount(0);
+      } finally {
+        await page.goto(`/#/?now=live`);
+      }
+      await expect(page.locator('.la-head'), 'back on the real clock the pill is gone').toHaveCount(0);
+      await expect(page.locator('.la-tag')).toHaveCount(0);
+    });
+
+    test('huddle: the hero is a sentence about my week, with both teams, and a game plan under it', async ({ app: page }) => {
+      await page.goto('/#/');
+      const hero = page.getByRole('region', { name: 'this week in a sentence' });
+      await expect(hero).toBeVisible();
+      const line = (await hero.locator('.hero-line').innerText()).toLowerCase();
+      const team = (await page.locator('.tn-team').innerText()).trim().toLowerCase();
+      expect(line, 'the sentence names my team').toContain(team);
+      expect(line.split(/\s+/).length, 'a sentence, not a label').toBeGreaterThan(5);
+      await expect(hero).toContainText(/\d+% to win|every 100/);
+      await expect(heading(page, 'your game plan')).toBeVisible();
+    });
+
+    test('dark mode: the appearance switch (light, dark, auto) sets data-theme, and the key pages pass axe in the dark', async ({ app: page, session }) => {
+      await page.goto('/#/');
+      const html = page.locator('html');
+      // on a phone the switch is in the "more" sheet
+      const choose = async (label: 'light' | 'dark' | 'auto') => {
+        await showNav(page, session.project);
+        const radio = page.getByRole('radiogroup', { name: 'Appearance' }).first().getByRole('radio', { name: label });
+        await radio.click();
+        await expect(radio).toBeChecked();
+        if (session.project === 'phone') await page.keyboard.press('Escape');
+      };
+      try {
+        await choose('light');
+        await expect(html).toHaveAttribute('data-theme', 'light');
+        await choose('dark');
+        await expect(html).toHaveAttribute('data-theme', 'dark');
+        // the colours ease over (a transition), so wait for the page background to settle on a dark one
+        await expect.poll(async () => {
+          const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+          return (bg.match(/\d+/g) ?? []).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
+        }, { message: 'the page background is dark' }).toBeLessThan(80);
+        // it is remembered across a reload
+        await page.reload();
+        await expect(html).toHaveAttribute('data-theme', 'dark');
+        // axe, screenshots and overflow in the dark, on four key pages
+        for (const [id, path] of [['huddle', '/'], ['locker-room', PAGES.team.path], ['playoff-picture', `${PAGES.race.path}?tab=brackets`], ['nfl', PAGES.nfl.path]] as const) {
+          await page.goto(`/#${path}`);
+          await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+          await expect(ticker(page)).toBeVisible();
+          await record(page, session, `dark--${id}`, path);
+        }
+      } finally {
+        await page.goto('/#/');
+        await choose('auto').catch(() => undefined);
+      }
+      await expect(html, 'auto follows the system again').not.toHaveAttribute('data-theme', /.+/);
     });
   });
 

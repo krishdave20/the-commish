@@ -85,9 +85,22 @@ describe('the live matchup', () => {
       b: team('killa', 58.8, [starter('e', 'final')]), winA: 0.8, started: true, final: false,
     };
     expect(liveMatchOf(m as never)).toEqual({
-      mine: { name: 'icemen', pts: 95, left: [{ name: 'b', pos: 'WR' }, { name: 'c', pos: 'WR' }] },
-      theirs: { name: 'killa', pts: 58.8, left: [] }, winP: 0.8, started: true, final: false,
+      mine: { name: 'icemen', pts: 95, left: [{ name: 'b', pos: 'WR' }, { name: 'c', pos: 'WR' }], top: null },
+      theirs: { name: 'killa', pts: 58.8, left: [], top: null }, winP: 0.8, started: true, final: false, finalAt: null,
     });
     expect(liveMatchOf(null)).toBeNull();
+  });
+
+  it('names the top scorer, the week, and when the last game ended (the latest kickoff plus a game)', () => {
+    const p = (name: string, actual: number, kickoff: number | null) => ({ name, pos: 'WR', state: 'final', actual, game: kickoff === null ? null : { kickoff } });
+    const m = {
+      a: { name: 'icemen', actual: 30, starters: [p('a', 8.4, 1000), p('b', 21.6, 5 * H)] },
+      b: { name: 'killa', actual: 12, starters: [p('c', 12, 2 * H)] }, winA: 1, started: true, final: true,
+    };
+    const out = liveMatchOf(m as never, 7)!;
+    expect(out.mine.top).toEqual({ name: 'b', pts: 21.6 });
+    expect(out.theirs.top).toEqual({ name: 'c', pts: 12 });
+    expect(out.week).toBe(7);
+    expect(out.finalAt).toBe(5 * H + 3.5 * H);
   });
 });

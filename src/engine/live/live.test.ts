@@ -180,7 +180,7 @@ describe('derived stats', () => {
     const bench = buildView(ctx(), snap).bench;
     const t1 = bench.find((b) => b.rid === 1)!;
     expect(t1).toMatchObject({ started: 21, best: 37, left: 16, isMe: true });
-    expect(t1.top).toEqual({ name: 'Backup Wideout', points: 22 });
+    expect(t1.top).toEqual({ name: 'Backup Wideout', points: 22, pid: 'b1', pos: 'WR', nfl: 'CCC' });
     expect(bench.find((b) => b.rid === 3)!.left).toBe(0);
     expect(bench[0]!.rid).toBe(1);
   });

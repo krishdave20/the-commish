@@ -11,6 +11,7 @@ import { emptyScenario, toggleIn, withOverride } from '../../engine';
 import type { Engine, ModelPlayer, PlayerOverride, Scenario } from '../../engine';
 import { PlayerTags } from './PlayerTags';
 import { useSaved } from './useSaved';
+import './team.css';
 
 function setOverride(s: Scenario, pid: string, patch: Partial<PlayerOverride>): Scenario {
   const o: PlayerOverride = { ...s.overrides[pid], ...patch };
@@ -134,7 +135,7 @@ export function LabCard({ engine }: { engine: Engine }) {
       )}
 
       <div className="tw">
-        <table>
+        <table className="lab-table">
           <caption className="sr-only">What-if roster</caption>
           <thead>
             <tr><th scope="col">player</th><th scope="col">out until</th><th scope="col" className="n">points a game</th><th scope="col" className="n">avg</th><th scope="col">drop</th></tr>
@@ -148,8 +149,8 @@ export function LabCard({ engine }: { engine: Engine }) {
               const mavg = wks.length ? wks.reduce((s, w) => s + (p.mu[w] || 0), 0) / wks.length : 0;
               return (
                 <tr key={p.pid} className={`${added ? 'added' : ''}${dropped ? ' dropped' : ''}`.trim() || undefined}>
-                  <td><PlayerLink pid={p.pid} name={p.name} /> <span className="dim">{p.pos}</span><PlayerTags p={p} /></td>
-                  <td className="keep">
+                  <td className="lab-name"><PlayerLink pid={p.pid} name={p.name} /> <span className="dim">{p.pos}</span><PlayerTags p={p} /></td>
+                  <td className="keep" data-label="out until">
                     <select
                       aria-label={`Out until for ${p.name}`} value={o.returnWeek ? String(o.returnWeek) : ''}
                       onChange={(e) => setScenario((s) => setOverride(s, p.pid, { returnWeek: e.target.value ? Number(e.target.value) : undefined }))}
@@ -158,7 +159,7 @@ export function LabCard({ engine }: { engine: Engine }) {
                       {Array.from({ length: maxWeek - cur }, (_, i) => cur + 1 + i).map((w) => <option key={w} value={w}>{`week ${w}`}</option>)}
                     </select>
                   </td>
-                  <td className="n keep">
+                  <td className="n keep" data-label="points a game">
                     <input
                       type="number" min={0} max={60} step={0.5} placeholder="model" aria-label={`Points per game for ${p.name}`}
                       defaultValue={o.ppg ?? ''} key={`${p.pid}-${o.ppg ?? ''}`}
@@ -169,15 +170,18 @@ export function LabCard({ engine }: { engine: Engine }) {
                       }}
                     />
                   </td>
-                  <td className="n dim">{formatPoints1(mavg)}</td>
-                  <td className="keep">
+                  <td className="n dim" data-label="avg">{formatPoints1(mavg)}</td>
+                  <td className="keep lab-act">
                     {added ? (
                       <button type="button" className="tog" aria-label={`Remove ${p.name}`} onClick={() => remove(p.pid)}>remove</button>
                     ) : (
-                      <input
-                        type="checkbox" checked={dropped} aria-label={`Drop ${p.name}`} style={{ accentColor: 'var(--red)' }}
-                        onChange={() => setScenario((s) => ({ ...toggleIn(s, 'drops', p.pid), pins: s.pins.filter((x) => x !== p.pid) }))}
-                      />
+                      <label className="lab-drop">
+                        <input
+                          type="checkbox" checked={dropped} aria-label={`Drop ${p.name}`} style={{ accentColor: 'var(--red)' }}
+                          onChange={() => setScenario((s) => ({ ...toggleIn(s, 'drops', p.pid), pins: s.pins.filter((x) => x !== p.pid) }))}
+                        />
+                        <span aria-hidden="true">drop</span>
+                      </label>
                     )}
                   </td>
                 </tr>

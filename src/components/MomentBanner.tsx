@@ -21,7 +21,7 @@ function Banner({ page }: { page: MomentPage }) {
         {left && <span className="mb-left"> · {left} left</span>}
         <span className="mb-detail"> · {m.detail}</span>
       </p>
-      {goes && <Link className="mb-go" to={m.action.to}>{m.action.label} →</Link>}
+      {goes && <Link className="mb-go" to={m.action.to}><span className="mb-go-text">{m.action.label}</span> <span className="mb-go-arrow">→</span></Link>}
     </aside>
   );
 }

@@ -1,33 +1,44 @@
-/* Player avatars: a round crop of Sleeper's thumbnail, or an initials monogram. Tokens only (colours, spacing, motion), so dark mode
-   follows the palette. Sizes are 20 / 28 / 40; the circle is always a fixed box, so a late image never shifts the row. */
+/* Player avatars: a round crop of Sleeper's thumbnail (a cut-out on a transparent background) sitting on the player's team colour, with a thin ring in the
+   team's second colour; or an initials monogram on that colour. `Avatar` passes the team colours as custom properties (--av-bg, --av-ring, --av-fg);
+   everything else here is tokens (spacing, motion, the neutral palette), so dark mode follows. A player with no team (a free agent) keeps the neutral defaults below.
+   Sizes are 20 / 28 / 40 / 56; the circle is always a fixed box, so a late image never shifts the row. */
 .avatar {
   --av: 28px;
-  position: relative; display: inline-grid; place-items: center; flex: none;
+  --av-ring-w: 2px;
+  --av-bg: var(--rule);
+  --av-ring: var(--rule-2);
+  --av-fg: var(--ink-2);
+  position: relative; display: inline-grid; place-items: center; flex: none; box-sizing: border-box;
   inline-size: var(--av); block-size: var(--av); border-radius: 50%; overflow: hidden;
-  background: var(--rule-2); color: var(--ink-2); vertical-align: middle;
-  font-family: var(--sans); font-weight: 500; line-height: 1; letter-spacing: 0; user-select: none;
-  font-size: calc(var(--av) * 0.4);
+  border: var(--av-ring-w) solid var(--av-ring);
+  background: var(--av-bg); color: var(--av-fg); vertical-align: middle;
+  font-family: var(--sans); font-weight: 600; line-height: 1; letter-spacing: 0; user-select: none;
+  font-size: calc(var(--av) * 0.38);
 }
-.avatar[data-size='20'] { --av: 20px; }
+.avatar[data-size='20'] { --av: 20px; --av-ring-w: 1.5px; }
 .avatar[data-size='28'] { --av: 28px; }
 .avatar[data-size='40'] { --av: 40px; }
+.avatar[data-size='56'] { --av: 56px; }
 .avatar-img { inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center top; display: block; }
-.avatar[data-kind='monogram'] { background: var(--rule); }
-.avatar[data-kind='monogram'][data-pos='DEF'] { font-size: calc(var(--av) * 0.34); letter-spacing: -0.02em; }
+.avatar[data-kind='monogram'][data-pos='DEF'] { font-size: calc(var(--av) * 0.32); letter-spacing: -0.02em; }
 
-/* overlapping groups: a paper ring cuts each circle from its neighbour (the reference's headline) */
-.avatar-stack { display: inline-flex; align-items: center; flex: none; vertical-align: middle; }
-.avatar-stack > .avatar { box-shadow: 0 0 0 2px var(--paper); }
-.avatar-stack[data-size='40'] > .avatar { box-shadow: 0 0 0 3px var(--paper); }
+/* a very dark circle or ring would sink into the dark appearance's paper: a faint light edge outside it (the token is transparent on the light look) */
+.avatar-edge { outline: 1px solid var(--edge-inverse); outline-offset: 0; }
+
+/* overlapping groups: a paper ring cuts each circle from its neighbour (the reference's headline). It is --paper; a surface that sits on --sheet sets --av-cut-bg
+   (both tokens adapt to dark mode) */
+.avatar-stack { --av-gap: 2px; --av-cut: var(--av-cut-bg, var(--paper)); display: inline-flex; align-items: center; flex: none; vertical-align: middle; }
+.avatar-stack[data-size='40'], .avatar-stack[data-size='56'] { --av-gap: 3px; }
+.avatar-stack > .avatar { box-shadow: 0 0 0 var(--av-gap) var(--av-cut); }
 .avatar-stack > .avatar + .avatar { margin-inline-start: calc(var(--av) * -0.3); }
-.avatar-more { background: var(--rule); color: var(--ink-2); }
+.avatar-more { --av-bg: var(--rule); --av-fg: var(--ink-2); --av-ring: var(--rule); }
 
 /* a name with its avatar: the one pattern the tables use */
 .avatar-name { display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; max-width: 100%; }
 .avatar-name > :last-child { min-width: 0; }
 
 /* phones: a table row has little width to spare, so the 28 px crop shrinks to 20 and the gap tightens */
-@media (max-width: 480px) {
+@media (max-width: 760px) {
   .avatar-name { gap: var(--s-1); }
-  .avatar-name > .avatar[data-size='28'] { --av: 20px; }
+  .avatar-name > .avatar[data-size='28'] { --av: 20px; --av-ring-w: 1.5px; }
 }

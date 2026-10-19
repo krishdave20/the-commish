@@ -61,8 +61,13 @@ export const test = base.extend<{ page: Page; app: Page }, { session: Session }>
   session: [async ({ browser }, provide, workerInfo) => {
     const project = workerInfo.project.name;
     const { viewport, baseURL } = workerInfo.project.use;
-    const context = await browser.newContext({ viewport: viewport ?? { width: 1280, height: 900 }, baseURL, reducedMotion: 'reduce' });
+    const context = await browser.newContext({ viewport: viewport ?? { width: 1280, height: 900 }, baseURL, reducedMotion: 'reduce', timezoneId: 'America/New_York', locale: 'en-US' });
     const collected = newCollected();
+    // Smart nav order (the sections that matter now come up front) is switched off for every test, so the tabs keep their fixed order.
+    // One dedicated test turns it on. The init script only writes the pref when none is stored, so a test can change it.
+    await context.addInitScript(() => {
+      try { if (!window.localStorage.getItem('wr.prefs.v1')) window.localStorage.setItem('wr.prefs.v1', JSON.stringify({ smartNav: false })); } catch { /* storage blocked */ }
+    });
     await installNetwork(context, collected);
     await freezeTime(context);
     const page = await context.newPage();
@@ -70,7 +75,7 @@ export const test = base.extend<{ page: Page; app: Page }, { session: Session }>
     const session: Session = { context, page, collected, project, signedIn: false };
     await provide(session);
     const empties = [...collected.servedEmpty.entries()].map(([k, v]) => `${k}: ${v.length} request(s)`);
-    console.log(`[${project}] served from the fixture: ${collected.served.sleeper} sleeper, ${collected.served.fantasycalc} fantasycalc, ${collected.served.nflverse} nflverse.`
+    console.log(`[${project}] served from the fixture: ${collected.served.sleeper} sleeper, ${collected.served.fantasycalc} fantasycalc, ${collected.served.nflverse} nflverse, ${collected.served.headshots} headshots (placeholder png), ${collected.served.headshotsAborted} headshots aborted (monogram fallback).`
       + ` Documented empty answers: ${empties.length ? empties.join('; ') : 'none needed'}.`);
     await context.close();
   }, { scope: 'worker' }],

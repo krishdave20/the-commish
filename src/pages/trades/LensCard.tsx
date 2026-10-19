@@ -41,12 +41,12 @@ export function LensCard({ engine, dyn, redraft, explore, setExplore }: Props) {
 
   const columns: Column<Row>[] = [
     {
-      key: 'team', header: 'team', value: (r) => r.team, className: 'nowrap',
+      key: 'team', header: 'team', essential: true, value: (r) => r.team, className: 'nowrap',
       render: (r) => <><span className="pname">{r.team}</span>{r.isMe && <span className="you">you</span>}</>,
     },
-    { key: 'label', header: 'label', value: (r) => r.label, render: (r) => <span className={`pill ${PILL[r.label]}`} title={LENS_BLURB[r.label]}>{r.label}</span> },
+    { key: 'label', header: 'label', essential: true, value: (r) => r.label, render: (r) => <span className={`pill ${PILL[r.label]}`} title={LENS_BLURB[r.label]}>{r.label}</span> },
     {
-      key: 'odds', header: 'playoff odds', numeric: true, value: (r) => r.playoffPct,
+      key: 'odds', header: 'playoff odds', essential: true, numeric: true, value: (r) => r.playoffPct,
       render: (r) => <>{formatOdds(r.playoffPct)} <span className="dim">{ordinal(r.playoffRank)}</span></>,
     },
     {

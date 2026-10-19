@@ -3,6 +3,7 @@ import { useLiveMaybe } from '../../app/live/liveContext';
 import { useMoments } from '../../app/moments/momentsContext';
 import { AvatarStack } from '../../components/Avatar';
 import type { TeamLive } from '../../engine/live';
+import '../../styles/moments.css';
 
 /** The three starters who matter most on a side: the highest live projections. */
 const topThree = (t: TeamLive) => t.starters.slice().sort((a, b) => b.projection - a.projection).slice(0, 3).map((p) => ({ pid: p.pid, name: p.name, pos: p.pos, team: p.nfl ?? undefined }));

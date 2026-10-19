@@ -9,6 +9,7 @@ import './styles/components.css';
 import './styles/bracket.css';
 import './styles/theme.css';
 import { App } from './App.tsx';
+import './styles/phone.css'; // after every other stylesheet (the app's imports above pull in the page ones), so a phone rule wins a tie
 import { StartupError } from './app/StartupError.tsx';
 import { createAccountStore, createDataLayer } from './data';
 

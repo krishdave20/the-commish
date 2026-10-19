@@ -32,12 +32,9 @@ const NONE: WaiverEntry[] = [];
 /** rows drawn at first; the rest of the wire is one tap away */
 const PAGE = 15;
 
-function Board({ engine }: { engine: Engine }) {
-  const { scenario } = useScenario();
-  const settled = useDebounced(scenario, 250);
-  const [win, setWin] = useState<WaiverWindow>('reg');
-  const [pos, setPos] = useState('all');
-  const cur = engine.model.meta.currentWeek;
+/** The trending and risers tab. It alone needs the players file (about 12,000 entries) and the nflverse bundle, so the wire and the streamers
+    never download, unzip or parse either one. */
+function RisersTab() {
   const nv = useNflverse();
   const file = usePlayersFile();
   const { model } = useModel();
@@ -54,7 +51,15 @@ function Board({ engine }: { engine: Engine }) {
     }
     return out;
   }, [nv.bundle, model, file.data]);
+  return <UsageRisers weeks={nv.bundle?.weekly ?? null} through={nv.bundle?.manifest.throughWeek ?? null} freeAgents={freeAgents} loading={nv.loading} />;
+}
 
+function Board({ engine }: { engine: Engine }) {
+  const { scenario } = useScenario();
+  const settled = useDebounced(scenario, 250);
+  const [win, setWin] = useState<WaiverWindow>('reg');
+  const [pos, setPos] = useState('all');
+  const cur = engine.model.meta.currentWeek;
   const board = useComputed(() => engine.waivers(settled, win), [engine, settled, win]);
   const full = board.value?.list ?? NONE;
   const positions = useMemo(() => POS_ORDER.filter((x) => full.some((w) => w.player.pos === x)), [full]);
@@ -68,12 +73,12 @@ function Board({ engine }: { engine: Engine }) {
 
   const columns: Column<WaiverEntry>[] = [
     {
-      key: 'player', header: 'player', value: (w) => w.player.name, className: 'nowrap sticky-col',
+      key: 'player', header: 'player', essential: true, value: (w) => w.player.name, className: 'nowrap sticky-col',
       render: (w) => <AvatarName pid={w.player.pid} name={w.player.name} pos={w.player.pos} team={w.player.nfl ?? undefined} size={28}><PlayerLink pid={w.player.pid} name={w.player.name} /> <span className="dim">{w.player.nfl ?? ''}</span><PlayerTags p={w.player} /></AvatarName>,
     },
     { key: 'pos', header: 'pos', value: (w) => w.player.pos, className: 'dim' },
-    { key: 'gain', header: FEATURE.lift, numeric: true, value: (w) => w.gain, render: (w) => <span className="pos-c">{signed(w.gain)}</span> },
-    { key: 'bid', header: 'faab bid', numeric: true, value: (w) => w.bid, render: (w) => formatMoney(w.bid) },
+    { key: 'gain', header: FEATURE.lift, essential: true, numeric: true, value: (w) => w.gain, render: (w) => <span className="pos-c">{signed(w.gain)}</span> },
+    { key: 'bid', header: 'faab bid', essential: true, numeric: true, value: (w) => w.bid, render: (w) => formatMoney(w.bid) },
     { key: 'drop', header: 'drop', value: (w) => w.drop.name, className: 'dim nowrap' },
     { key: 'starts', header: 'starts', more: true, numeric: true, value: (w) => w.starts, render: (w) => `${w.starts}/${w.nweeks}` },
     { key: 'next', header: `wk ${cur + 1} proj`, more: true, numeric: true, value: (w) => w.next, render: (w) => formatPoints1(w.next) },
@@ -133,7 +138,7 @@ function Board({ engine }: { engine: Engine }) {
         ) : tab === 'streamers' ? (
           <Streamers engine={engine} />
         ) : (
-          <UsageRisers weeks={nv.bundle?.weekly ?? null} through={nv.bundle?.manifest.throughWeek ?? null} freeAgents={freeAgents} loading={nv.loading} />
+          <RisersTab />
         )}
       </PageTabs>
     </>

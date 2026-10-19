@@ -1,7 +1,7 @@
 /* Time-aware moments: rules over real data and the clock. `moments(ctx)` is pure and returns what matters right now, best first.
    See types.ts for the contract and docs/WEB_APP_NOTES.md ("Moments") for the rules. */
 import { drafting, draftGrade, offseason, preDraft, topTake } from './rules/draft.ts';
-import { liveMatchup, mondayNight } from './rules/live.ts';
+import { finalWhistle, liveMatchup, mondayNight } from './rules/live.ts';
 import { clinchScenario, playoffs, toiletBowl, tradeDeadline, weekRecap } from './rules/season.ts';
 import { finalCheck, gameDay, injuryReport, lineupOk, lineupSwap, waiversCleared, waiversTonight } from './rules/week.ts';
 import { buildScope } from './scope.ts';
@@ -15,6 +15,7 @@ export { hero } from './hero.ts';
 export * from './snapshot.ts';
 export * from './adapt.ts';
 export { draftGradeFromPicks } from './grade.ts';
+export * from './activity.ts';
 export type { Hero } from './hero.ts';
 
 type Rule = (s: Scope) => Moment[];
@@ -23,7 +24,7 @@ type Rule = (s: Scope) => Moment[];
 export const RULES: readonly Rule[] = [
   preDraft, drafting, draftGrade,
   waiversTonight, waiversCleared, gameDay, lineupSwap, injuryReport, lineupOk, finalCheck,
-  liveMatchup, mondayNight, weekRecap,
+  liveMatchup, mondayNight, finalWhistle, weekRecap,
   tradeDeadline, clinchScenario, toiletBowl, playoffs,
   offseason, topTake,
 ];
@@ -50,9 +51,9 @@ export function moments(ctx: MomentCtx): Moment[] {
 /** The default lead time of a countdown in the live activity. */
 export const ACTIVITY_LEAD = 12 * 3_600_000;
 
-/** Moments the live activity may show now: something live, or a countdown that is close enough. Best first. */
+/** Moments the live activity may show now: something live, a recap to glance at, or a countdown that is close enough. Best first. */
 export function ongoing(list: readonly Moment[], now: number): Moment[] {
-  return list.filter((m) => isCurrent(m, now) && (m.live || (m.countdownTo !== undefined && m.countdownTo > now && now >= (m.ongoingFrom ?? m.countdownTo - ACTIVITY_LEAD)))).sort(byPriority);
+  return list.filter((m) => isCurrent(m, now) && (m.live || m.glance || (m.countdownTo !== undefined && m.countdownTo > now && now >= (m.ongoingFrom ?? m.countdownTo - ACTIVITY_LEAD)))).sort(byPriority);
 }
 
 /** The best moment for a page's banner, or null. */

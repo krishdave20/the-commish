@@ -52,7 +52,7 @@ export function StatsView({ weeks, info, records, currentWeek, loading }: Props)
     { key: 'rank', header: '#', numeric: true, value: (r) => r.rank, render: (r) => (r.tied ? `t${r.rank}` : r.rank), className: 'dim' },
     {
       key: 'player', header: 'player', value: (r) => r.name, className: 'nowrap sticky-col',
-      render: (r) => <AvatarName pid={r.pid} name={r.name} pos={r.pos}><PlayerLink pid={r.pid} name={r.name} /> <span className="nf-meta">{r.pos}</span></AvatarName>,
+      render: (r) => <AvatarName pid={r.pid} name={r.name} pos={r.pos} team={r.team} size={28}><PlayerLink pid={r.pid} name={r.name} /> <span className="nf-meta">{r.pos}</span></AvatarName>,
     },
     { key: 'team', header: 'team', value: (r) => r.team, render: (r) => <span className="nf-abbr">{r.team}</span> },
     { key: 'gp', header: 'gp', numeric: true, value: (r) => r.games },

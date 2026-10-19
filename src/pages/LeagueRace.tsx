@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import type { Picks } from '../engine';
 import type { SeedingMode } from '../components/bracket/assemble';
 import { EnginePage } from '../app/EnginePage';
 import { ScenarioBar } from '../app/ScenarioBar';
 import { PageTabs } from '../components/PageTabs';
-import { BracketCard } from './race/BracketCard';
-import { MagicNumber } from './race/MagicNumber';
-import { PlayoffMachine } from './race/PlayoffMachine';
+import { BlockSkeleton } from '../components/Skeleton';
 import { RaceStrip } from './race/RaceStrip';
-import { SeedingCard } from './race/SeedingCard';
 import { StandingsCard } from './race/StandingsCard';
 import { TeamDrawer } from './race/TeamDrawer';
+
+// the brackets, the machine and the odds detail pull in the bracket engine and charts: each is fetched when its tab opens
+const BracketCard = lazy(() => import('./race/BracketCard').then((m) => ({ default: m.BracketCard })));
+const PlayoffMachine = lazy(() => import('./race/PlayoffMachine').then((m) => ({ default: m.PlayoffMachine })));
+const OddsDetail = lazy(() => import('./race/OddsDetail'));
 
 export default function LeagueRace() {
   const [open, setOpen] = useState<number | null>(null);
@@ -33,13 +35,12 @@ export default function LeagueRace() {
           >
             {(tab) => tab === 'standings' ? (
               <StandingsCard engine={engine} onOpen={setOpen} />
-            ) : tab === 'brackets' ? <BracketCard engine={engine} picks={picks} seeding={seeding} setSeeding={setSeeding} />
-            : tab === 'machine' ? <PlayoffMachine engine={engine} picks={picks} setPicks={setPicks} />
-            : (
-              <div className="grid2">
-                <SeedingCard engine={engine} />
-                <MagicNumber engine={engine} />
-              </div>
+            ) : (
+              <Suspense fallback={<BlockSkeleton height="18rem" />}>
+                {tab === 'brackets' ? <BracketCard engine={engine} picks={picks} seeding={seeding} setSeeding={setSeeding} />
+                  : tab === 'machine' ? <PlayoffMachine engine={engine} picks={picks} setPicks={setPicks} />
+                  : <OddsDetail engine={engine} />}
+              </Suspense>
             )}
           </PageTabs>
           <TeamDrawer engine={engine} rid={open} onClose={() => setOpen(null)} />

@@ -4,12 +4,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { LeagueBundle, NflState, Phase, SleeperDraft, SleeperLeague } from '../../data';
-import { isDynasty, picksUntilMyTurn, slotOfUser } from '../../engine';
+import { bestAvailable, isDynasty, myNeeds, picksUntilMyTurn, slotOfUser } from '../../engine';
 import { draftGradeFromPicks, hero, momentModel, moments, ongoing, oddsAtStartOf, waiverInfo } from '../../engine/moments';
-import type { DraftCtx, MomentCtx, MomentModel, MomentTake, OffseasonCtx } from '../../engine/moments';
+import type { DraftCtx, DraftLiveInfo, MomentCtx, MomentModel, MomentTake, OffseasonCtx } from '../../engine/moments';
 import { WAIVER_TZ } from '../../engine/moments';
 import { LOSERS_COPY } from '../names';
-import { draftModeOf, myRosterOf, planOrder } from '../../pages/draft/model';
+import { draftModeOf, myRosterOf, planOrder, teamDirectory, teamLabel } from '../../pages/draft/model';
 import { liveSource } from '../../pages/draft/pickFeed';
 import { usePickFeed } from '../../pages/draft/usePickFeed';
 import { buildStandings } from '../../pages/standings';
@@ -139,7 +139,7 @@ export function useMomentsCore(b: Basics, extras: Extras | null): MomentsValue {
   // under a preview clock the feed describes today: a live score only fits a moment when games are on (or the slate is half over)
   const gamesOn = kickoffs.some((g) => g.state === 'live') || (kickoffs.some((g) => g.state === 'final') && kickoffs.some((g) => g.state === 'pre'));
   const liveMatch = useMemo(
-    () => (live && !live.replay && (!previewing || gamesOn) ? liveMatchOf(live.view?.mine ?? null) : null),
+    () => (live && !live.replay && (!previewing || gamesOn) ? liveMatchOf(live.view?.mine ?? null, live.view?.week) : null),
     [live, previewing, gamesOn],
   );
 
@@ -180,6 +180,30 @@ export function useMomentsCore(b: Basics, extras: Extras | null): MomentsValue {
   const feed = usePickFeed({ source, intervalMs: 8000 });
   const prep = usePrepChecks(league?.league_id ?? '');
 
+  /* the draft room's live snapshot, flattened for the live activity: the inputs come through the resource store (the room reads the same key), the picks from the feed above */
+  const draftingNow = phase === 'drafting' && !!draft && !!plan;
+  const draftInputs = useDraftInputs(league, { draftId: draft?.draft_id ?? null, enabled: !!league && draftingNow });
+  const draftRankings = useRankings(league, draftInputs.data);
+  const draftLive = useMemo<DraftLiveInfo | null>(() => {
+    if (!draftingNow || !draftRankings || !plan || !bundle || !draft) return null;
+    try {
+      const rid = myRosterOf(bundle, draft, userId, plan.order);
+      if (rid === null) return null;
+      const picks = feed.state.picks;
+      const turn = picksUntilMyTurn(plan.order, picks, rid);
+      const dir = teamDirectory(bundle, userId);
+      const lastPick = picks.reduce<(typeof picks)[number] | null>((m, p) => (!m || p.pick_no > m.pick_no ? p : m), null);
+      const who = lastPick ? draftRankings.byPid[lastPick.player_id] : undefined;
+      const byRid = lastPick ? lastPick.roster_id || (plan.order.find((o) => o.pickNo === lastPick.pick_no)?.rosterId ?? 0) : 0;
+      return {
+        picksUntil: turn.picksBetween, nextPick: turn.nextPickNo,
+        best: bestAvailable(draftRankings, picks, { limit: 3 }).map((r) => ({ pid: r.pid, name: r.name, pos: r.pos, team: r.team, tier: r.tier, vor: r.vor })),
+        needs: myNeeds(draftRankings, picks, rid).openSlots.map((x) => x.replace(/_/g, ' ').toLowerCase()),
+        last: lastPick ? { pickNo: lastPick.pick_no, name: who?.name ?? `player ${lastPick.player_id}`, pos: who?.pos ?? '', by: teamLabel(dir, byRid) } : null,
+      };
+    } catch { return null; }
+  }, [draftingNow, draftRankings, plan, bundle, draft, userId, feed.state.picks]);
+
   const ctx = useMemo<MomentCtx | null>(() => {
     if (!league || !bundle) return null;
     let draftCtx: DraftCtx | null = null;
@@ -217,6 +241,6 @@ export function useMomentsCore(b: Basics, extras: Extras | null): MomentsValue {
   return useMemo<MomentsValue>(() => {
     if (!ctx) return { ...NO_MOMENTS, now, previewing };
     const list = moments(ctx);
-    return { ctx, moments: list, ongoing: ongoing(list, now), hero: hero(ctx), now, previewing };
-  }, [ctx, now, previewing]);
+    return { ctx, moments: list, ongoing: ongoing(list, now), hero: hero(ctx), now, previewing, draftLive };
+  }, [ctx, now, previewing, draftLive]);
 }

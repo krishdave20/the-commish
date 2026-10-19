@@ -4,17 +4,18 @@ import { useLive } from '../../app/live/liveContext';
 import { Segmented } from '../../components/Segmented';
 import { REPLAY_SPEEDS } from '../../engine/live';
 
-/** "Replay last week": the one way to watch the whole slate unfold without waiting for Sunday. Same engine, same page. */
-export function ReplayBar() {
+/** "Replay week N": the one way to watch a whole slate unfold without waiting for Sunday, for any finished week. Same engine, same page.
+    `week` is the finished week on screen; the button shows only for a week that is over. */
+export function ReplayBar({ week }: { week: number | null }) {
   const live = useLive();
   const [, bump] = useReducer((n: number) => n + 1, 0);
   const r = live.replay;
   if (!r) {
-    if (live.currentWeek < 2) return null;
+    if (week === null || week < 1 || week >= live.currentWeek) return null;
     return (
       <div className="gd-replay">
-        <button type="button" className="btn quiet" onClick={() => { void live.startReplay(); }} disabled={live.replayLoading}>
-          {live.replayLoading ? 'loading…' : `replay week ${live.currentWeek - 1}`}
+        <button type="button" className="btn quiet" onClick={() => { void live.startReplay(week); }} disabled={live.replayLoading}>
+          {live.replayLoading ? 'loading…' : `replay week ${week}`}
         </button>
         {live.replayError && <span className="note neg-c" role="status">{live.replayError}</span>}
       </div>

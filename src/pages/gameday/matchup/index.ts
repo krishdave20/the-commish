@@ -2,7 +2,8 @@
    themselves), so a page only has to mount them:
      <HeadToHead />  starters, head to head: slot by slot, mirrored, with totals
      <Hinges />      who this week hinges on: win chance at stake per starter, with an opponent toggle */
-export { HeadToHead, HeadToHeadTable, HEAD_TO_HEAD_TITLE } from './HeadToHead';
+export { HeadToHead, HeadToHeadFor, HeadToHeadTable, HEAD_TO_HEAD_TITLE } from './HeadToHead';
+export { GamesContext, useGameFor } from './useGameFor';
 export { pairStarters, slotShare, projectionOf } from './pairing';
 export type { Pairing } from './pairing';
 export { Hinges, HingesTable, HINGES_TITLE } from './Hinges';

@@ -2,3 +2,21 @@
 .tog-pair { display: inline-flex; gap: var(--s-1); }
 /* a phone has no room for pin and bench side by side beside a name with a headshot: stack them (each stays a 44 px target) */
 @media (max-width: 480px) { .tog-pair { display: inline-grid; justify-items: stretch; } }
+
+/* the what-if roster on a phone: one card per player, the player on top and each control under its own label (labels above, 16 px inputs) */
+.lab-drop > span { display: none; }
+@media (max-width: 760px) {
+  .lab-table, .lab-table tbody, .lab-table tr, .lab-table td { display: block; }
+  .lab-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); }
+  .lab-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-2) var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--rule-2); align-items: end; }
+  .lab-table td { padding: 0; border: 0; min-width: 0; text-align: left; }
+  .lab-table td.lab-name { grid-column: 1 / -1; font-size: var(--fs-base); }
+  .lab-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--fs-xs); color: var(--ink-2); margin-bottom: var(--s-1); }
+  .lab-table td.n { text-align: left; }
+  .lab-table select, .lab-table input[type='number'] { width: 100%; }
+  .lab-table td.lab-act { display: flex; justify-content: flex-end; }
+  .lab-table td > input[type='checkbox'] { margin: 0; }
+  .lab-drop { display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--touch); cursor: pointer; }
+  .lab-drop > span { display: inline; }
+  .lab-table tr.dropped > td.keep, .lab-table tr.dropped > td.lab-name { text-decoration: none; }
+}

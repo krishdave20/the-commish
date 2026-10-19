@@ -193,6 +193,54 @@ describe('a simulated week (Central time, week 7)', () => {
     expect(ids(ctx('2026-10-25T14:00', { schedule: { games: week7({ tnf: 'final', s1: 'live' }), nextGames: [] }, live: liveMatch() }))).not.toContain('monday-night');
   });
 
+  it('the final whistle: your matchup is settled, so the live activity shows the result for 12 hours', () => {
+    const final = liveMatch({
+      final: true, week: 7, finalAt: at('2026-10-25T16:30'),
+      mine: { name: 'icemen', pts: 112.3, left: [], top: { name: 'caleb williams', pts: 31.2 } }, theirs: { name: 'killa k im gay', pts: 98, left: [] },
+    });
+    // Sunday 5 pm: the early slate is over and Sunday night is still to come
+    const games = week7({ tnf: 'final', s1: 'final', s2: 'final', s3: 'final' });
+    const c = ctx('2026-10-25T17:00', { schedule: { games, nextGames: week8() }, live: final });
+    const m = get(c, 'final-whistle');
+    expect(m).toMatchObject({ kind: 'final-whistle', priority: 91, glance: true, title: 'final: you won 112.3–98.0', pill: { text: 'W 112.3–98.0' } });
+    expect(m.detail).toBe('against killa k im gay · your top scorer: caleb williams (31.2)');
+    expect(m.action).toEqual({ label: 'see the week', to: '/gameday?week=7' });
+    // it is not live and not a countdown, yet the activity may show it
+    expect(ongoing(moments(c), c.now.getTime()).map((x) => x.id)).toContain('final-whistle');
+    // the live score has gone, and there is no second moment about the same matchup
+    expect(ids(c)).not.toContain('live-matchup');
+    // 12 hours after the last game ended it is over
+    expect(m.endsAt).toBe(at('2026-10-25T16:30') + 12 * HOUR);
+    const next = ctx('2026-10-26T04:31', { schedule: { games, nextGames: week8() }, live: final });
+    expect(ids(next)).not.toContain('final-whistle');
+  });
+
+  it('the final whistle reads a loss and a tie, and needs a settled matchup', () => {
+    const base = { schedule: { games: week7({ tnf: 'final', s1: 'final', s2: 'final', s3: 'final' }), nextGames: week8() } };
+    const lost = get(ctx('2026-10-25T17:00', { ...base, live: liveMatch({ final: true, mine: { name: 'icemen', pts: 80, left: [] }, theirs: { name: 'killa', pts: 91.5, left: [] } }) }), 'final-whistle');
+    expect(lost.title).toBe('final: you lost 80.0–91.5');
+    expect(lost.pill!.text).toBe('L 80.0–91.5');
+    const tied = get(ctx('2026-10-25T17:00', { ...base, live: liveMatch({ final: true, mine: { name: 'icemen', pts: 90, left: [] }, theirs: { name: 'killa', pts: 90, left: [] } }) }), 'final-whistle');
+    expect(tied.pill!.text).toBe('T 90.0–90.0');
+    expect(ids(ctx('2026-10-25T17:00', { ...base, live: liveMatch() }))).not.toContain('final-whistle');
+    expect(ids(ctx('2026-10-25T17:00', { ...base, live: liveMatch({ started: false, final: true }) }))).not.toContain('final-whistle');
+    expect(ids(ctx('2026-10-25T17:00', { ...base, live: null }))).not.toContain('final-whistle');
+  });
+
+  it('the final whistle from the model when every game of the week is over (Monday 11 pm), and Tuesday’s recap takes over from there', () => {
+    const games = week7({ tnf: 'final', s1: 'final', s2: 'final', s3: 'final', mnf: 'final' });
+    const lastResult = { week: 7, mine: 112.3, theirs: 98, oppName: 'killa k im gay' };
+    const mon = ctx('2026-10-26T23:00', { schedule: { games, nextGames: week8() }, model: model({ lastResult }) });
+    expect(get(mon, 'final-whistle').title).toBe('final: you won 112.3–98.0');
+    // from midnight Tuesday the week recap carries the same news (with the odds), and the live activity keeps it through the morning
+    const earlyTue = ctx('2026-10-27T00:30', { schedule: { games, nextGames: week8() }, model: model({ lastResult }) });
+    expect(ids(earlyTue)).not.toContain('final-whistle');
+    expect(ids(earlyTue)).toContain('week-recap');
+    expect(get(earlyTue, 'week-recap').glance).toBe(true);
+    // not while a game is still on
+    expect(ids(ctx('2026-10-26T20:00', { schedule: { games: week7({ tnf: 'final', s1: 'final', s2: 'final', s3: 'final', mnf: 'live' }), nextGames: [] }, model: model({ lastResult }) }))).not.toContain('final-whistle');
+  });
+
   it('Tuesday 9 am: the recap, with the odds before and after from the stored snapshot', () => {
     const games = week7({ tnf: 'final', s1: 'final', s2: 'final', s3: 'final', mnf: 'final' });
     const c = ctx('2026-10-27T09:00', {

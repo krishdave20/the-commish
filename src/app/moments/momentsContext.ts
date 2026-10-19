@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Hero, Moment, MomentCtx } from '../../engine/moments';
+import type { DraftLiveInfo, Hero, Moment, MomentCtx } from '../../engine/moments';
 
 export interface MomentsValue {
   /** the engine's context, null until there is a league to talk about */
@@ -13,6 +13,8 @@ export interface MomentsValue {
   now: number;
   /** a `?now=` preview is on: the clock is not the real one */
   previewing: boolean;
+  /** while a draft is on: the best players left, my needs and the last pick, from the pick feed the moments already poll (the live activity's expanded card) */
+  draftLive?: DraftLiveInfo | null;
 }
 
 export const NO_MOMENTS: MomentsValue = { ctx: null, moments: [], ongoing: [], hero: null, now: 0, previewing: false };

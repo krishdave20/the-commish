@@ -1,12 +1,15 @@
 import { cleanup, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createFakeSleeper, liveSampleModel, sampleAccount, sampleLiveMatchups, sampleLiveProjections, sampleLoadModel, sampleScores,
 } from '../test/fakes';
 import type { FakeGameState } from '../test/fakes';
+import { savePrefs } from './prefs';
 import { renderApp } from './testUtils';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); window.localStorage.clear(); });
+// the order of the tabs follows the time of week; these tests are about the markup, so they use the fixed order (navOrder.test.ts has the rules)
+beforeEach(() => { savePrefs({ smartNav: false }); });
 
 const linked = [sampleAccount()];
 
@@ -65,8 +68,4 @@ describe('section tabs', () => {
     expect(link.querySelector('.live-dot')).not.toBeNull();
   });
 
-  it('names the current page on the phone menu button', async () => {
-    renderApp({ linked, route: '/gameday' });
-    expect(await screen.findByRole('button', { name: 'menu, you are on game day' })).toBeInTheDocument();
-  });
 });
