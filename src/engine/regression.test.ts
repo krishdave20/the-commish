@@ -34,7 +34,10 @@
      7. No date or timezone stub is needed: the reference only formats `new Date()` for a display label and
         takes the current week from the saved NFL state, not from the clock. */
 import { beforeAll, describe, expect, it } from 'vitest';
+import { SD_CALIBRATION } from './calibration.ts';
 import { createEngine, emptyScenario } from './index.ts';
+import { baseSimInput } from './simInput.ts';
+import { simulate } from './sim.ts';
 import { fixtureModel, readText } from './test-helpers.ts';
 import type { FixtureSource } from '../data/transport.ts';
 import type { Model } from './types.ts';
@@ -265,15 +268,39 @@ describe('default engine (DEF fix on) against the reference: documented deviatio
     expect(mine).toEqual(refTop3);
   });
 
-  it('every team\'s playoff odds stay within ±3.0 points of the reference', () => {
+  /* The default engine is also calibrated (SD_CALIBRATION, src/engine/calibration.ts), so its odds are no longer held to the
+     reference's numbers: the reference's SD is the uncalibrated one. The contract is now a property, checked against the same
+     default engine simulated with the uncalibrated SD: the odds as a whole move toward 50%, every team that was clearly a
+     favourite or an underdog (more than 20 points from a coin flip, not locked) sits strictly closer to 50%, and the playoff
+     odds still add up to the number of playoff spots. (Not asserted for every team: the odds must add up to the spots, so a
+     middling team can lose a little when the longshots gain, e.g. Sussybakamogus 37.4% to 36.8%.) */
+  it('calibrated playoff odds are less extreme than uncalibrated ones, and still add up to the playoff spots', () => {
+    const uncal = simulate({ ...baseSimInput(fixedModel), volatility: 1 / SD_CALIBRATION });
+    const nP = fixedModel.meta.playoffTeams;
+    let sumCal = 0, sumRaw = 0, farCal = 0, farRaw = 0, checked = 0;
+    for (const t of fixedModel.teams) {
+      const raw = uncal.teams[t.rid]!.playoff;
+      sumCal += t.playoffPct; sumRaw += raw;
+      farCal += Math.abs(t.playoffPct - 0.5); farRaw += Math.abs(raw - 0.5);
+      if (raw < 0.02 || raw > 0.98 || Math.abs(raw - 0.5) <= 0.2) continue; // locked, or too near a coin flip for the move to be one-directional
+      checked++;
+      expect(Math.abs(t.playoffPct - 0.5), `${t.team}: ${t.playoffPct} vs uncalibrated ${raw}`).toBeLessThan(Math.abs(raw - 0.5));
+    }
+    expect(checked).toBeGreaterThanOrEqual(4);
+    expect(farCal).toBeLessThan(farRaw);
+    expect(sumCal).toBeCloseTo(nP, 6);
+    expect(sumRaw).toBeCloseTo(nP, 6);
+  });
+
+  it('calibrated odds stay close to the reference\'s: within 6 points per team (the moves are small this deep into a season)', () => {
     let worst = 0, worstTeam = '';
     for (const rt of refTeams) {
       const mine = fixedModel.teams.find((t) => t.rid === rt.rid)!;
       const diff = Math.abs(mine.playoffPct - rt.playoff_pct) * 100;
       if (diff > worst) { worst = diff; worstTeam = rt.team; }
-      expect(diff, `${rt.team}: ${mine.playoffPct} vs ${rt.playoff_pct}`).toBeLessThanOrEqual(3.0);
     }
-    console.log(`[regression] default (DEF fix) max playoff-odds difference: ${worst.toFixed(4)} points (${worstTeam})`);
+    console.log(`[regression] default (DEF fix + SD calibration) max playoff-odds difference: ${worst.toFixed(4)} points (${worstTeam})`);
+    expect(worst).toBeLessThanOrEqual(6);
   });
 
   it('the cause is the DEF fix: a defense `gms_active` ignores is locked with actual points, and team SD drops', () => {
@@ -287,7 +314,7 @@ describe('default engine (DEF fix on) against the reference: documented deviatio
       expect(d.hi[cur]).toBe(d.mu[cur]);
     }
     expect(model.players.filter((p) => p.pos === 'DEF' && p.playedThisWeek).length).toBe(0);
-    expect(fixedModel.meta.teamWeeklySd).toBeLessThan(model.meta.teamWeeklySd);
+    expect(fixedModel.meta.teamWeeklySdRaw!).toBeLessThan(model.meta.teamWeeklySd); // before calibration; compat builds are uncalibrated
     expect(fixedModel.meta.ratioSamples.DEF).toBeGreaterThan(0);
     expect(model.meta.ratioSamples.DEF).toBe(0);
   });

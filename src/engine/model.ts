@@ -3,10 +3,11 @@
    Pure: the same pull and user id always give the same Model. Steps, in the reference's order:
      scorer (league settings) → player info from projections → NFL opponents from the schedule →
      calibrated floor/ceiling ratios, residual SD and held-out band coverage on the last ≤4 completed weeks →
-     team SD → matchup grades → expected points per player-week (injury multipliers, the IR four-week rule,
-     actual points once a game kicked off) → the free-agent pool with position caps → teams with their
+     team SD (× SD_CALIBRATION unless referenceCompat) → matchup grades → expected points per player-week (injury multipliers, the IR four-week rule,
+     the late-season blend with the season average from PROJECTION_BLEND_START_WEEK unless referenceCompat, actual points once a game kicked off) → the free-agent pool with position caps → teams with their
      expected lineup points → the 20,000-run season simulation → win-win 1-for-1 trade ideas → meta. */
 import { bestTotal } from './lineup.ts';
+import { BLEND_POSITIONS, PROJECTION_BLEND_START_WEEK, SD_CALIBRATION, blendedMean, calibratedSd } from './calibration.ts';
 import { ELIG, IDP_POS, OFFENSE_POS, startingSlots } from './lineup.ts';
 import { rulesFromLeagueSettings } from './bracket/rules.ts';
 import { SIM_RUNS, simulate } from './sim.ts';
@@ -170,11 +171,13 @@ export function buildModel(pull: LeaguePull, who: BuildOpts): Model {
     const s = sdev(resid[pos] || []);
     SDP[pos] = isFinite(s) && (resid[pos] || []).length >= MIN_CAL_SAMPLES ? s : FALLBACK_SD[pos]!;
   }
-  const teamSd = Math.sqrt(slots.reduce((s, sl) => {
+  const rawTeamSd = Math.sqrt(slots.reduce((s, sl) => {
     const ps = ELIG[sl]!;
     const v = ps.length === 1 ? SDP[ps[0]!]! : SDP.WR || 6.6;
     return s + v * v;
   }, 0)) || 20;
+  /* the SD every probability reads: the raw spread scaled by the validation study's calibration (1 in referenceCompat) */
+  const teamSd = calibratedSd(rawTeamSd, who.referenceCompat);
 
   /* matchup grades: points each defense allows by position, vs league average */
   const allowed: Record<string, number[]> = {};
@@ -209,10 +212,31 @@ export function buildModel(pull: LeaguePull, who: BuildOpts): Model {
   const weeksAll: number[] = [];
   for (let w = cur; w <= maxWeek; w++) weeksAll.push(w);
 
+  /* late-season blend (see calibration.ts): from PROJECTION_BLEND_START_WEEK on, a player's mean is the projection pulled
+     toward his average over the games he played before this week, weight gp / (gp + 10) on the average. Off in referenceCompat. */
+  const blendOn = !who.referenceCompat && cur >= PROJECTION_BLEND_START_WEEK;
+  const gamesBy = new Map<string, { gp: number; avg: number | null }>();
+  const historyOf = (pid: string) => {
+    let h = gamesBy.get(pid);
+    if (!h) {
+      const xs: number[] = [];
+      for (let w = 1; w < cur; w++) { const y = actual(w, pid); if (y != null) xs.push(y); }
+      h = { gp: xs.length, avg: xs.length ? mean(xs) : null };
+      gamesBy.set(pid, h);
+    }
+    return h;
+  };
+  const projMean = (pid: string, w: number): number | null => {
+    const pr = projPts(w, pid);
+    if (pr == null || !blendOn || !BLEND_POSITIONS.includes(nameOf(pid).pos ?? '')) return pr;
+    const h = historyOf(pid);
+    return blendedMean(pr, h.avg, h.gp);
+  };
+
   /* expected points per player-week (same rules as the offline model) */
   const mu = (pid: string, w: number): number => {
     if (w === cur && playedNow.has(pid)) return actual(cur, pid) || 0;
-    const pr = projPts(w, pid);
+    const pr = projMean(pid, w);
     if (pr == null) return 0;
     const ni = nameOf(pid), onIR = rosterOf[pid] && rosterOf[pid]!.ir;
     if (w === cur) return Math.max(0, pr * (ni.inj != null && INJ_MULT[ni.inj] != null ? INJ_MULT[ni.inj]! : 1));
@@ -316,7 +340,7 @@ export function buildModel(pull: LeaguePull, who: BuildOpts): Model {
     method: 'projection', leagueId: league.league_id, leagueName: league.name, season: plan.season,
     username: leagueUser?.display_name ?? who.userId, userId: who.userId,
     maeProjection: misses.length ? r2(mean(misses)) : null, bandCoverage: coverage == null ? null : r2(coverage),
-    teamWeeklySd: teamSd, simRuns: SIM_RUNS, currentWeek: cur, lastRegularWeek: lastReg, maxWeek,
+    teamWeeklySd: teamSd, teamWeeklySdRaw: rawTeamSd, sdCalibration: who.referenceCompat ? 1 : SD_CALIBRATION, projectionBlend: { startWeek: PROJECTION_BLEND_START_WEEK, active: blendOn }, simRuns: SIM_RUNS, currentWeek: cur, lastRegularWeek: lastReg, maxWeek,
     playoffWeeks: poWeeks, playoffTeams: nP, playoff: rulesFromLeagueSettings(S, teams.length), divisions: nDiv, waiverBudget: S.waiver_budget || 0, slots,
     scoring: (sc.rec == null ? 1 : sc.rec) + ' per catch', calibrationWeeks: calWeeks,
     floorCeil: RQ, ratioSamples, residualSd: SDP, positions: POS, asOf: pull.asOf, stale: pull.stale,

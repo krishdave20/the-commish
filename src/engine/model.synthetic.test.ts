@@ -5,6 +5,7 @@ import { planPull } from '../data/plan.ts';
 import type { NflState, SleeperLeague, SleeperRoster } from '../data/contract.ts';
 import type { ProjectionRow, ScheduleGame, WeekStats } from '../data/types.ts';
 import { buildModel, FALLBACK_Q, FALLBACK_SD } from './model.ts';
+import { SD_CALIBRATION } from './calibration.ts';
 import { createScope } from './scenario.ts';
 import { quantile, simulate, simulateChunked } from './sim.ts';
 import { applyBaseSim, baseSimInput } from './simInput.ts';
@@ -144,7 +145,8 @@ describe('calibration', () => {
   it('team SD is the root of the summed slot variances', () => {
     // slots QB RB FLEX: QB fallback, RB fitted, FLEX uses the WR SD (fallback)
     const expected = Math.sqrt(FALLBACK_SD.QB! ** 2 + m.meta.residualSd.RB! ** 2 + FALLBACK_SD.WR! ** 2);
-    expect(m.meta.teamWeeklySd).toBeCloseTo(expected, 10);
+    expect(m.meta.teamWeeklySdRaw).toBeCloseTo(expected, 10);
+    expect(m.meta.teamWeeklySd).toBeCloseTo(expected * SD_CALIBRATION, 10); // the SD every probability uses is calibrated
   });
   it('reports held-out coverage: the last calibration week against a band fitted on the earlier ones', () => {
     const train = ratios.slice(0, 40);

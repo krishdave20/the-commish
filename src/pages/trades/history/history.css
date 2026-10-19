@@ -1,0 +1,13 @@
+/* Trade history: a timeline of real trades. One section card; trades are separated by a rule and a dot, not nested cards. Tokens only. */
+.timeline { list-style: none; margin: 0; padding: 0 0 0 var(--s-3); display: grid; gap: var(--s-4); border-left: 1px solid var(--rule); }
+.tcard { position: relative; display: grid; gap: var(--s-2); min-width: 0; }
+.tcard::before { content: ''; position: absolute; left: calc(-1 * var(--s-3) - 4px); top: 8px; inline-size: 7px; block-size: 7px; border-radius: 50%; background: var(--ink-3); }
+.tcard-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
+.tweek { font-family: var(--serif); font-size: 22px; line-height: 1.1; }
+.tsides { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--s-3) var(--s-5); align-items: start; }
+.tside { display: grid; gap: var(--s-1); min-width: 0; }
+.tside-head { display: flex; align-items: baseline; gap: var(--s-2); min-width: 0; }
+.tgrade { font-family: var(--serif); font-size: 32px; line-height: 1; min-width: 2ch; }
+.tside-team { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.tline { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); font-size: var(--fs-sm); }
+.tnums { list-style: none; margin: var(--s-1) 0 0; padding: 0; display: grid; gap: var(--s-1); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }

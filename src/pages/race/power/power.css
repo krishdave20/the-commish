@@ -1,0 +1,84 @@
+/* Power rankings (the playoff picture's "power rankings" tab). Tokens only. */
+.pw-head { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); padding-bottom: var(--s-3); border-bottom: 1px solid var(--rule); }
+.pw-mover { min-width: 9rem; display: grid; gap: var(--s-1); align-content: start; }
+.pw-mover-name { display: flex; align-items: baseline; gap: var(--s-2); font-family: var(--serif); font-size: 24px; line-height: 1.1; min-width: 0; }
+.pw-mover-name .pw-tname { overflow-wrap: anywhere; }
+.pw-big { font-family: var(--serif); font-size: 32px; line-height: 1; }
+
+.pw-weeks { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); min-width: 0; }
+.pw-weeks .seg { max-width: 100%; }
+.pw-basis { flex: 1 1 12rem; }
+
+/* movement: green up, red down, quiet when level */
+.pw-move { font-size: var(--fs-sm); font-weight: 600; font-family: var(--sans); white-space: nowrap; color: var(--ink-3); min-width: 2.2em; }
+.pw-move[data-dir='up'] { color: var(--green); }
+.pw-move[data-dir='down'] { color: var(--red); }
+
+.pw-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.pw-row {
+  display: grid; align-items: center; gap: var(--s-1) var(--s-3); padding: var(--s-2) var(--s-1); min-width: 0;
+  grid-template-columns: 2.2rem 3rem minmax(11rem, 1.1fr) 7.5rem 3.5rem minmax(14rem, 2.2fr);
+  border-top: 1px solid var(--rule-2);
+  transition: background var(--t-fast) var(--ease);
+}
+.pw-row:first-child { border-top: 0; }
+.pw-row[data-me] { background: var(--gold-soft); border-radius: var(--r-sm); }
+.pw-row[data-active]:not([data-me]) { background: var(--rule-2); border-radius: var(--r-sm); }
+.pw-rank { font-family: var(--serif); font-size: 26px; line-height: 1; text-align: end; }
+.pw-who { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.pw-team { all: unset; cursor: pointer; min-width: 0; min-height: var(--touch); display: inline-flex; align-items: center; border-radius: var(--r-xs); }
+.pw-team:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pw-tname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.pw-mover-name .pw-tname { font-weight: 400; white-space: normal; }
+.pw-index { display: grid; gap: var(--s-1); }
+.pw-num { font-size: var(--fs-table); font-variant-numeric: tabular-nums; }
+.pw-bar { display: block; block-size: 4px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+.pw-bar > i { display: block; block-size: 100%; background: var(--green); border-radius: 2px; }
+.pw-rec { font-size: var(--fs-table); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.pw-line-text { font-size: var(--fs-sm); color: var(--ink-2); min-width: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .pw-bar > i { transition: width var(--t-slow) var(--ease); }
+}
+
+/* phones: each team is a card. rank, movement and the team name lead; the index bar and the record share the second row; the line sits under them */
+@media (max-width: 680px) {
+  .pw-head { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+  .pw-head > .pw-mover:nth-child(3) { grid-column: 1 / -1; display: flex; align-items: baseline; gap: var(--s-3); }
+  .pw-head > .pw-mover:nth-child(3) .micro { min-width: 2.2rem; }
+  .pw-row {
+    grid-template-columns: 2rem 2.6rem minmax(0, 1fr) auto;
+    grid-template-areas: 'rank move who who' 'index index index rec' 'line line line line';
+    padding: var(--s-2) var(--s-2);
+  }
+  .pw-row > .pw-rank { grid-area: rank; }
+  .pw-row > .pw-move { grid-area: move; }
+  .pw-row > .pw-who { grid-area: who; }
+  .pw-row > .pw-rec { grid-area: rec; }
+  .pw-row > .pw-index { grid-area: index; grid-template-columns: 3.2rem minmax(0, 1fr); align-items: center; gap: var(--s-2); }
+  .pw-row > .pw-line-text { grid-area: line; }
+  .pw-rank { font-size: 24px; }
+  .pw-mover-name { font-size: 20px; }
+  .pw-big { font-size: 28px; }
+  .pw-who .avatar[data-size='28'] { --av: 24px; }
+}
+
+/* the bump chart */
+.pw-chart svg { overflow: visible; }
+.pw-col { fill: var(--rule-2); }
+.pw-line { cursor: pointer; outline: none; }
+.pw-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; }
+.pw-stroke { fill: none; stroke-linecap: round; pointer-events: none; }
+.pw-dot { pointer-events: none; fill: var(--paper); }
+.pw-name { fill: var(--ink-2); font-family: var(--sans); font-size: var(--fs-xs); pointer-events: none; }
+.pw-line[data-state='rest'] .pw-stroke { stroke: var(--ink-3); stroke-width: 1.5; opacity: 0.4; }
+.pw-line[data-state='rest'] .pw-dot { stroke: var(--ink-3); stroke-width: 1.25; opacity: 0.5; }
+.pw-line[data-state='me'] .pw-stroke { stroke: var(--green); stroke-width: 2.5; opacity: 0.8; }
+.pw-line[data-state='me'] .pw-dot { stroke: var(--green); stroke-width: 1.75; }
+.pw-line[data-state='me'] .pw-name { fill: var(--green); font-weight: 600; }
+.pw-line[data-state='focus'] .pw-stroke { stroke: var(--ink); stroke-width: 3.5; opacity: 1; }
+.pw-line[data-state='focus'] .pw-dot { stroke: var(--ink); stroke-width: 2; fill: var(--paper); }
+.pw-line[data-state='focus'] .pw-name { fill: var(--ink); font-weight: 600; }
+.pw-line[data-state='focus'][data-me] .pw-stroke, .pw-line[data-state='focus'][data-me] .pw-dot { stroke: var(--green); }
+.pw-line[data-state='focus'][data-me] .pw-name { fill: var(--green); }
+.pw-read { min-height: 2.9em; }

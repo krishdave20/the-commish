@@ -1,11 +1,33 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // base './' + HashRouter so the static build works from any path (GitHub Pages, a file server, etc.)
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [
+    react(),
+    // The installable app (docs/WEB_APP_NOTES.md, "Installable app"). The manifest is a static file (public/manifest.webmanifest, relative paths, so it
+    // works under /the-commish/); the worker is src/app/pwa/sw.ts, built to dist/sw.js with the built files listed in it. The page registers it itself
+    // (src/app/pwa/register.ts), so no script is injected into index.html. Nothing runs in `vite dev`.
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src/app/pwa',
+      filename: 'sw.ts',
+      injectRegister: false,
+      manifest: false,
+      registerType: 'prompt',
+      injectManifest: {
+        rollupFormat: 'iife',
+        // the app shell and built assets. public/data (the nightly nflverse JSON, written after the build) is left out: the worker caches it as it is read.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2,webmanifest}'],
+        globIgnores: ['data/**', 'sw.js'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      },
+      devOptions: { enabled: false },
+    }),
+  ],
   test: {
     environment: 'jsdom',
     setupFiles: ['src/test/setup.ts'],

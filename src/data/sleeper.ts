@@ -191,6 +191,18 @@ export function createSleeperClient(deps: SleeperClientDeps) {
   const fantasyCalc = (p: FantasyCalcParams, o?: FetchOpts) =>
     load<FantasyCalcRow[]>({ url: fantasyCalcUrl(p), label: 'FantasyCalc values', guard: shapes.fantasyCalc, o });
 
+  /* ---------- derived values ---------- */
+
+  /** A value worked out from raw responses and kept beside them (the almanac keeps each finished season here). Null when there is no copy
+      younger than `ttl` ms. */
+  async function recall<T>(key: string, ttl: number): Promise<T | null> {
+    const cached = await cache.get(`derived:${key}`).catch(() => null);
+    return cached && now() - cached.fetchedAt < ttl ? (cached.data as T) : null;
+  }
+  async function keep(key: string, data: unknown): Promise<void> {
+    await cache.put(`derived:${key}`, data, now()).catch(() => undefined);
+  }
+
   /* ---------- composite ---------- */
 
   async function leagueBundle(leagueId: string, o?: FetchOpts): Promise<Loaded<LeagueBundle>> {
@@ -211,7 +223,7 @@ export function createSleeperClient(deps: SleeperClientDeps) {
   return {
     nflState, user, userFetched, userLeagues, league, rosters, users, matchups, liveMatchups, transactions, tradedPicks,
     drafts, draft, draftPicks, draftTradedPicks, players, trending, winnersBracket, losersBracket,
-    stats, liveStats, pastStats, projections, seasonProjections, schedule, scores, pastScores, fantasyCalc, leagueBundle,
+    stats, liveStats, pastStats, projections, seasonProjections, schedule, scores, pastScores, fantasyCalc, leagueBundle, recall, keep,
   };
 }
 

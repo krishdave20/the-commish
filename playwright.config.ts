@@ -20,6 +20,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}/`,
     trace: 'on-first-retry',
+    // the app registers a service worker (src/app/pwa); the smoke test serves every call through page.route, which a worker would sidestep
+    serviceWorkers: 'block',
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } } },

@@ -2,7 +2,7 @@
    The name carries the flavor; the kicker says plainly what the page does. Routes do not change. */
 
 export type PageKey =
-  | 'home' | 'gameday' | 'nfl' | 'takes' | 'players' | 'team' | 'race' | 'waivers' | 'trades' | 'draft' | 'settings' | 'method' | 'signin';
+  | 'home' | 'gameday' | 'nfl' | 'takes' | 'players' | 'team' | 'race' | 'waivers' | 'trades' | 'draft' | 'almanac' | 'leagues' | 'settings' | 'method' | 'signin';
 
 export interface PageName {
   path: string;
@@ -25,6 +25,8 @@ export const PAGES: Record<PageKey, PageName> = {
   waivers: { path: '/waivers', name: 'waiver wire', kicker: 'who helps your lineup most', blurb: 'the best adds for your lineup, and what to bid on them.' },
   trades: { path: '/trades', name: 'trade block', kicker: 'score any deal', blurb: 'test any trade against your lineup and your playoff odds.' },
   draft: { path: '/draft', name: 'draft room', kicker: 'rankings, mock drafts, live assistant', blurb: 'rankings, mock drafts and a live assistant for draft day.' },
+  almanac: { path: '/almanac', name: 'record book', kicker: 'all-time records · champions · rivalries', blurb: 'every champion, every record and every head-to-head series in your league’s history, from sleeper’s own results.' },
+  leagues: { path: '/leagues', name: 'all leagues', kicker: 'every league you follow, at a glance', blurb: 'your record, standing and this week’s matchup in each league you follow, across every linked account.' },
   settings: { path: '/settings', name: 'front office', kicker: 'accounts, data, cache', blurb: 'linked accounts, refresh schedule, cache and data checks.' },
   method: { path: '/method', name: 'under the hood', kicker: 'model, calibration, sources', blurb: 'how the numbers are made.' },
   signin: { path: '/signin', name: 'check in', kicker: 'follow your sleeper leagues', blurb: 'enter a sleeper username to follow your leagues.' },
@@ -32,7 +34,7 @@ export const PAGES: Record<PageKey, PageName> = {
 
 /** The section tabs under the team header, and the phone menu, in order (owner request, Oct 18, 2026: tabs replace the sidebar).
     Front office is the last tab; under the hood sits quietly in the footer. */
-export const NAV_KEYS: PageKey[] = ['home', 'gameday', 'team', 'race', 'takes', 'nfl', 'waivers', 'trades', 'players', 'draft', 'settings'];
+export const NAV_KEYS: PageKey[] = ['home', 'gameday', 'team', 'race', 'takes', 'nfl', 'waivers', 'trades', 'players', 'draft', 'almanac', 'settings'];
 
 /** Kept for the smoke test, which still reads the old grouped navigation: one group holding every section tab. */
 export const NAV_GROUPS: ReadonlyArray<{ label: string; keys: PageKey[] }> = [{ label: 'sections', keys: NAV_KEYS }];

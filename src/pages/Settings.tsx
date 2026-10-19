@@ -4,6 +4,7 @@ import { usePageTitle } from '../app/usePageTitle';
 import { CommissionersOffice } from '../components/art/CommissionersOffice';
 import { PageHeader } from '../components/PageHeader';
 import { AppearanceSection } from './settings/AppearanceSection';
+import { AppSection } from './settings/AppSection';
 import { AboutSection } from './settings/AboutSection';
 import { AttributionSection } from './settings/AttributionSection';
 import { CacheSection } from './settings/CacheSection';
@@ -25,6 +26,7 @@ export default function Settings() {
       <div className="accordion">
         <LinkedAccountsSection />
         <AppearanceSection />
+        <AppSection />
         <LeagueSection />
       <ScheduleSection />
       <LosersSection />

@@ -61,7 +61,7 @@ export const test = base.extend<{ page: Page; app: Page }, { session: Session }>
   session: [async ({ browser }, provide, workerInfo) => {
     const project = workerInfo.project.name;
     const { viewport, baseURL } = workerInfo.project.use;
-    const context = await browser.newContext({ viewport: viewport ?? { width: 1280, height: 900 }, baseURL, reducedMotion: 'reduce', timezoneId: 'America/New_York', locale: 'en-US' });
+    const context = await browser.newContext({ viewport: viewport ?? { width: 1280, height: 900 }, baseURL, reducedMotion: 'reduce', serviceWorkers: 'block', timezoneId: 'America/New_York', locale: 'en-US' });
     const collected = newCollected();
     // Smart nav order (the sections that matter now come up front) is switched off for every test, so the tabs keep their fixed order.
     // One dedicated test turns it on. The init script only writes the pref when none is stored, so a test can change it.

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveMaybe } from '../../app/live/liveContext';
+import { useMatchupPillShowing } from '../live-activity/pillStore';
 import { useWantsReducedMotion } from '../motion';
 import { LiveDot } from './LiveDot';
 import { nflItems, pinnedItem, tickerItems } from './items';
@@ -63,8 +64,8 @@ function Game({ g }: { g: NflItem }) {
   );
 }
 
-/** The slim score bar across the top of every page, a dark band: my live matchup pinned at the left, then a scrolling rotation in two labelled
-    segments, "your league" (the other matchups) and "nfl" (live games first, then finals, then the kickoffs still to come). It stops on hover or
+/** The slim score bar across the top of every page, a dark band: my live matchup pinned at the left (on a phone, only while the live activity pill is not showing it),
+    then a scrolling rotation in two labelled segments, "your league" (the other matchups) and "nfl" (live games first, then finals, then the kickoffs still to come). It stops on hover or
     focus, and is a plain scrollable strip with reduced motion. It folds away (remembered on this device). Only my own score changes are announced. */
 export function Ticker() {
   const live = useLiveMaybe();
@@ -73,6 +74,8 @@ export function Ticker() {
   const [collapsed, setCollapsed] = useTickerCollapsed();
   const [held, setHeld] = useState(false);
   const [announce, setAnnounce] = useState('');
+  // on a phone the live activity pill, up in the top bar, is showing my live matchup: the ticker leaves its own pinned copy out and keeps the rest
+  const pillHasMine = useMatchupPillShowing();
   const last = useRef<string | null>(null);
 
   const view = live?.view ?? null;
@@ -100,7 +103,7 @@ export function Ticker() {
   if (mode === 'hold') return <section className="ticker" aria-hidden="true" data-hold="true" />;
   if (!live || !live.available || !view || view.matchups.length === 0) return null;
 
-  const pin = pinnedItem(view);
+  const pin = pillHasMine ? null : pinnedItem(view);
   const items = tickerItems(view);
   const chars = items.reduce((n, i) => n + i.left.length + i.right.length + 28, 0) + nfl.reduce((n, g) => n + g.text.length + 4, 0) + 24;
   const dur = Math.max(30, Math.round(chars * 0.22));

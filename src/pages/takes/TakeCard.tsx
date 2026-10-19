@@ -3,6 +3,7 @@ import { TAKE_KIND_LABEL } from '../../app/names';
 import { useTryInLab } from '../../app/tryInLab';
 import { useWatchlist } from '../../app/useWatchlist';
 import { Disclosure } from '../../components/Disclosure';
+import { ShareButton, takeCard } from '../../components/share';
 import type { Take } from '../../takes/types';
 
 const SOURCE_LABEL: Record<Take['sources'][number], string> = {
@@ -47,6 +48,7 @@ export function TakeCard({ take, compact = false, lean = false }: Props) {
       {has('trade') && (
         <Link className="btn quiet" to={`/trades?player=${encodeURIComponent(take.pid)}`} aria-label={`trade block: ${take.player}`}>trade block</Link>
       )}
+      <ShareButton card={takeCard(take)} />
     </div>
   );
   return (

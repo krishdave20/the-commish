@@ -25,6 +25,9 @@
 .switcher select { width: auto; max-width: 16rem; }
 .switcher .add { font-size: var(--fs-xs); align-self: center; }
 .switcher label.ctl { gap: 2px; }
+.tn-leagues { align-self: center; font-size: var(--fs-xs); color: var(--ink-2); text-decoration: none; padding: 2px var(--s-2); border-radius: var(--r-sm); white-space: nowrap; }
+.tn-leagues:hover { color: var(--ink); background: var(--rule-2); }
+.tn-leagues[aria-current='page'] { color: var(--ink); font-weight: 500; box-shadow: inset 0 -1px 0 var(--ink); border-radius: 0; }
 .tn-theme { align-self: center; }
 .tn-theme .seg { padding: 2px; }
 .tn-theme .seg button { padding: 3px 10px; font-size: var(--fs-xs); }

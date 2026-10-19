@@ -23,6 +23,7 @@ import { RookieClass } from './home/RookieClass';
 import { TopTakes } from './home/TopTakes';
 import { PostseasonBrackets } from './home/PostseasonBrackets';
 import { HuddleHero } from './home/Hero';
+import { NowCard } from '../components/live-activity';
 import { GamePlan } from './home/GamePlan';
 import { MomentsProvider } from '../app/moments/MomentsProvider';
 import { useMoments } from '../app/moments/momentsContext';
@@ -96,6 +97,8 @@ function HomeBody() {
       <PreviewTime />
 
       {data && <HuddleHero />}
+      {/* on a phone: the island's top activity as a lock-screen card (nothing on a wide screen) */}
+      {data && <NowCard />}
       {data && <GamePlan />}
 
       {!active?.leagueId && (

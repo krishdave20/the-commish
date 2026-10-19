@@ -24,7 +24,7 @@ async function settled(page: Page) {
 /** Source strings are lowercased by CSS on screen, but a few (check in, player names) are cased in the DOM, so compare without case. */
 const escapeRe = (text: string) => text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 const exactly = (text: string) => new RegExp(`^${escapeRe(text)}$`, 'i');
-const heading = (page: Page, name: string, level?: number) => page.getByRole('heading', { name: exactly(name), ...(level ? { level } : {}) });
+const heading = (page: Page, name: string | RegExp, level?: number) => page.getByRole('heading', { name: typeof name === 'string' ? exactly(name) : name, ...(level ? { level } : {}) });
 /** wait for at least `min` body rows (the data may still be arriving) */
 const expectRows = async (t: Locator, min: number, what: string) => expect(rowsOf(t).nth(min - 1), `${what}: at least ${min} rows`).toBeVisible();
 const table = (page: Page, name: string | RegExp) => page.getByRole('table', { name });
@@ -61,9 +61,11 @@ async function openTab(page: Page, group: string, label: string) {
 }
 const tab = (group: string, label: string, check: (page: Page) => Promise<void>) => async (page: Page) => { await openTab(page, group, label); await check(page); };
 
+const FEATURE_ALMANAC_NOW = `${manifest.season} so far, against the record book`; // the fixture season, the only one in this league's history
+
 const TABS = {
   offseason: 'Offseason sections', draftPrep: 'Draft prep', player: 'Player sections', team: 'Locker room sections', race: 'Playoff picture sections',
-  waivers: 'Waiver wire sections', trades: 'Trade block sections', draft: 'Draft room section', gameday: 'league view', nfl: 'nfl view',
+  waivers: 'Waiver wire sections', trades: 'Trade block sections', draft: 'Draft room section', gameday: 'league view', nfl: 'nfl view', almanac: 'Record book sections',
 };
 
 const ROUTES: Route[] = [
@@ -109,6 +111,7 @@ const ROUTES: Route[] = [
         },
       },
       { id: 'head-to-head', run: tab(TABS.gameday, 'head to head', async (page) => { await expect(heading(page, 'starters, head to head')).toBeVisible(); }) },
+      { id: 'scouting', run: tab(TABS.gameday, 'scouting', async (page) => { await expect(page).toHaveURL(/tab=scout/); await expect(heading(page, 'how to beat them')).toBeVisible(); }) },
       { id: 'hinges', run: tab(TABS.gameday, 'hinges on', async (page) => { await expect(heading(page, 'who this week hinges on')).toBeVisible(); }) },
       { id: 'game-balls', run: tab(TABS.gameday, FEATURE.gameBalls, async (page) => { await expect(heading(page, FEATURE.gameBalls)).toBeVisible(); }) },
       { id: 'drive-chart', run: tab(TABS.gameday, FEATURE.driveChart, async (page) => { await expect(heading(page, FEATURE.driveChart)).toBeVisible(); }) },
@@ -139,6 +142,15 @@ const ROUTES: Route[] = [
           await expect(page.getByRole('radiogroup', { name: TABS.nfl }).getByRole('radio', { name: NFL_COPY.tabs.scoreboard })).toBeChecked();
           await expect(gameCards(page).nth(9), 'at least ten NFL games on the scoreboard').toBeVisible();
         },
+      },
+      {
+        // nothing is live at the fixture moment (Friday, before Sunday), so "live" is not the default: it shows the empty state and the next kickoff
+        id: 'live',
+        run: tab(TABS.nfl, 'live', async (page) => {
+          await expect(page.getByText('no games live right now')).toBeVisible();
+          await expect(page.getByText(/next kickoff: .* at .*/i)).toBeVisible();
+          await expect(page.getByRole('link', { name: /see the scoreboard/i }).or(page.getByRole('button', { name: /see the scoreboard/i }))).toBeVisible();
+        }),
       },
       { id: 'stats', run: tab(TABS.nfl, NFL_COPY.tabs.stats, async (page) => { await expect(heading(page, 'nfl stats')).toBeVisible(); await expectRows(table(page, /passing leaders/i), 5, 'passing leaders'); }) },
       { id: 'standings', run: tab(TABS.nfl, NFL_COPY.tabs.standings, async (page) => { await expectRows(table(page, /AFC East standings/i), 4, 'AFC East'); }) },
@@ -188,6 +200,16 @@ const ROUTES: Route[] = [
     id: 'playoff-picture', path: PAGES.race.path, h1: PAGES.race.name, title: PAGES.race.name,
     states: [
       { id: 'standings', run: async (page) => { await expectRows(table(page, /playoff picture standings/i), 12, 'standings'); } },
+      {
+        id: 'power-rankings',
+        run: tab(TABS.race, 'power rankings', async (page) => {
+          await expect(page).toHaveURL(/tab=power/);
+          await expect(heading(page, /^week \d+ power rankings$/)).toBeVisible();
+          await expect(heading(page, 'rank by week')).toBeVisible();
+          await expect(page.locator('main svg').first(), 'the bump chart').toBeVisible();
+          await expect(page.getByText('results through week', { exact: false })).toBeVisible();
+        }),
+      },
       { id: 'brackets', run: tab(TABS.race, 'brackets', async (page) => {
         await expect(heading(page, FEATURE.bracket)).toBeVisible();
         // narrow screens show one bracket at a time, with a switch between them
@@ -221,6 +243,8 @@ const ROUTES: Route[] = [
     states: [
       { id: 'analyzer', run: async (page) => { await expect(heading(page, 'the analyzer')).toBeVisible(); } },
       { id: 'handshake-deals', run: tab(TABS.trades, 'handshake deals', async (page) => { await expect(heading(page, FEATURE.handshake)).toBeVisible(); await expectRows(table(page, /handshake deals/i), 1, 'handshake deals'); }) },
+      { id: 'trade-finder', run: tab(TABS.trades, 'trade finder', async (page) => { await expect(page).toHaveURL(/tab=finder/); await expect(heading(page, 'trade finder')).toBeVisible(); }) },
+      { id: 'trade-history', run: tab(TABS.trades, 'trade history', async (page) => { await expect(page).toHaveURL(/tab=history/); await expect(heading(page, 'trade history')).toBeVisible(); }) },
       { id: 'dynasty', run: tab(TABS.trades, 'dynasty', async (page) => { await expect(heading(page, FEATURE.contender)).toBeVisible(); }) },
     ],
   },
@@ -275,6 +299,15 @@ const ROUTES: Route[] = [
         },
       },
       {
+        // install and alerts live in the "app" accordion (a PWA: install button or iOS steps, and alerts while the app is open)
+        id: 'app',
+        run: async (page) => {
+          await page.locator('summary', { hasText: /^app\b/i }).click();
+          await expect(page.getByRole('radiogroup', { name: 'Alerts while the app is open' })).toBeVisible();
+          await expect(page.getByRole('radiogroup', { name: 'Alerts while the app is open' }).getByRole('radio', { name: 'alerts: off' }), 'alerts are off until asked for').toBeChecked();
+        },
+      },
+      {
         // "run checks" lives inside the closed injury report accordion
         id: 'injury-report',
         run: async (page) => {
@@ -301,6 +334,35 @@ const ROUTES: Route[] = [
         for (const h of ['where the data comes from', 'floors and ceilings', 'clinch marks', 'credits']) await expect(heading(page, h)).toBeVisible();
         await page.locator('summary', { hasText: /clinch marks/i }).click();
         await expect(page.locator('details[open]').first()).toBeVisible();
+      },
+    }],
+  },
+  {
+    id: 'record-book', path: PAGES.almanac.path, h1: PAGES.almanac.name, title: PAGES.almanac.name,
+    states: [
+      {
+        // the fixture league has no previous seasons (previous_league_id is null): this season so far, against the record book
+        id: 'champions',
+        run: async (page) => {
+          await expect(heading(page, FEATURE_ALMANAC_NOW)).toBeVisible();
+          await expectRows(table(page, /champions and toilet bowl winners by season/i), 1, 'champions');
+        },
+      },
+      { id: 'records', run: tab(TABS.almanac, 'records', async (page) => { await expect(page).toHaveURL(/tab=records/); for (const h of ['highest score', 'lowest score', 'biggest blowout', 'closest game']) await expect(heading(page, h)).toBeVisible(); }) },
+      { id: 'all-time', run: tab(TABS.almanac, 'all-time', async (page) => { await expect(page).toHaveURL(/tab=alltime/); await expectRows(table(page, /all-time standings/i), 12, 'all-time standings'); }) },
+      { id: 'rivalries', run: tab(TABS.almanac, 'rivalries', async (page) => { await expect(page).toHaveURL(/tab=rivalries/); await expect(heading(page, 'your rivals')).toBeVisible(); await expectRows(table(page, /head-to-head records/i), 12, 'head to head'); }) },
+    ],
+  },
+  {
+    id: 'all-leagues', path: PAGES.leagues.path, h1: PAGES.leagues.name, title: PAGES.leagues.name,
+    states: [{
+      id: 'default',
+      run: async (page) => {
+        // one card for the one league the fixture follows: record, standing and this week's matchup
+        await expect(page.getByText('you follow one league', { exact: false })).toBeVisible();
+        await expect(page.getByText(/\d+–\d+/).first()).toBeVisible();
+        await expect(page.getByText(/\d+(st|nd|rd|th) of \d+/).first()).toBeVisible();
+        await expect(page.getByText(/% playoff odds/).first()).toBeVisible();
       },
     }],
   },
@@ -587,7 +649,7 @@ test.describe('smoke', () => {
         await showNav(page, 'phone');
         const sheet = page.getByRole('dialog', { name: 'more' });
         const all = sheet.getByRole('navigation', { name: 'All sections' }).getByRole('link');
-        expect((await all.allInnerTexts()).map(clean)).toEqual([...atFixture, ...FOOTER_KEYS].map(name));
+        expect((await all.allInnerTexts()).map(clean)).toEqual([...atFixture, 'leagues', ...FOOTER_KEYS].map((k) => name(k as PageKey)));
         await expect(sheet.getByRole('button', { name: /^appearance:/ }).or(sheet.getByRole('radio', { name: /dark/i })).first(), 'the appearance control lives in the sheet').toBeVisible();
         // a section outside the four opens from the sheet and closes it
         await sheet.getByRole('link', { name: name('trades') }).click();
@@ -596,12 +658,20 @@ test.describe('smoke', () => {
         await expect(primary.getByRole('button', { name: 'more' }), 'a section outside the four lights "more"').toHaveAttribute('data-active', 'true');
         await primary.getByRole('link', { name: name('home') }).click();
         await expect(page.getByRole('heading', { level: 1, name: name('home') })).toBeVisible();
+        // back on the page the sheet was opened from (the huddle): it must stay closed
+        await expect(page.getByRole('dialog', { name: 'more' }), 'the "more" sheet does not pop open again on the page it was first opened from').toHaveCount(0);
         return;
       }
 
+      // front office moved out of the tab row into the header tools, next to "all leagues"
+      const tabRow = atFixture.filter((k) => k !== 'settings');
       const links = primary.getByRole('link');
-      await expect(links).toHaveCount(NAV_KEYS.length);
-      expect((await links.allInnerTexts()).map(clean)).toEqual(atFixture.map(name));
+      await expect(links).toHaveCount(tabRow.length);
+      expect((await links.allInnerTexts()).map(clean)).toEqual(tabRow.map(name));
+      const tools = page.locator('.tn-tools');
+      await expect(tools.getByRole('link', { name: name('leagues'), exact: true })).toHaveAttribute('href', /#\/leagues$/);
+      await expect(tools.getByRole('link', { name: name('settings'), exact: true })).toHaveAttribute('href', /#\/settings$/);
+      await expect(primary.getByRole('link', { name: name('settings') }), 'front office is not in the tab row').toHaveCount(0);
       await expect(links.filter({ hasText: /up front:/ }), 'nothing is promoted with smart order off').toHaveCount(0);
       await expect(primary.getByRole('link', { name: name('home'), exact: false }).first()).toHaveAttribute('aria-current', 'page');
       const footer = page.getByRole('navigation', { name: 'Reference' });
@@ -634,7 +704,7 @@ test.describe('smoke', () => {
         // Tuesday 8 pm: waivers run overnight, so the waiver wire comes up front, with the reason
         await page.goto('/#/?now=2026-10-20T20:00');
         await expect(slotName(1), 'waiver wire is second on Tuesday night').toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.waivers.name)}.*up front: waivers`));
-        if (session.project !== 'phone') await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('link').last()).toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.settings.name)}`));
+        if (session.project !== 'phone') await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('link').last()).toHaveAccessibleName(new RegExp(`^${escapeRe(PAGES.almanac.name)}`));
 
         // Sunday 1 pm: kickoff, so game day (and the nfl page) come up front
         await page.goto('/#/?now=2026-10-18T13:00');
@@ -654,7 +724,7 @@ test.describe('smoke', () => {
 
     test('narrow and wide phones: no horizontal overflow at 320 px and 430 px on the key pages', async ({ app: page, session }) => {
       test.skip(session.project !== 'phone', 'phone widths only');
-      const routes = ['/', PAGES.gameday.path, PAGES.team.path, `${PAGES.race.path}?tab=brackets`, PAGES.waivers.path, PAGES.nfl.path, PAGES.draft.path, PAGES.settings.path];
+      const routes = ['/', PAGES.gameday.path, PAGES.team.path, `${PAGES.race.path}?tab=brackets`, PAGES.waivers.path, PAGES.nfl.path, PAGES.draft.path, PAGES.settings.path, PAGES.almanac.path, PAGES.leagues.path, `${PAGES.race.path}?tab=power`, `${PAGES.trades.path}?tab=history`];
       const size = page.viewportSize()!;
       try {
         for (const width of [320, 430]) {
@@ -671,6 +741,60 @@ test.describe('smoke', () => {
         }
       } finally {
         await page.setViewportSize(size);
+      }
+    });
+
+    test('record book: a head-to-head cell opens a rivalry drawer (?vs=), and closing it clears the URL', async ({ app: page }) => {
+      await page.goto(`/#${PAGES.almanac.path}`);
+      await openTab(page, TABS.almanac, 'rivalries');
+      const matrix = table(page, /head-to-head records/i);
+      await expect(matrix).toBeVisible();
+      const cells = matrix.locator('tbody button');
+      await expect(cells.first()).toBeVisible();
+      // a cell whose pair has met: the first one with a series in it
+      await cells.nth(3).click();
+      await expect(page).toHaveURL(/vs=[^&]+~[^&]+|vs=[^&]+%7E[^&]+/);
+      const drawer = page.getByRole('dialog');
+      await expect(drawer).toBeVisible();
+      await expect(drawer.getByRole('heading', { name: /\bvs\b/ })).toBeVisible();
+      await expect(drawer).toContainText(/\d+\s*[–-]\s*\d+/);
+      await expect(drawer).toContainText(/average margin|never|meeting/i);
+      await page.keyboard.press('Escape');
+      await expect(drawer).toHaveCount(0);
+      await expect(page).not.toHaveURL(/vs=/);
+      // a link straight to a pair opens it too
+      await page.goto(`/#${PAGES.almanac.path}?tab=rivalries&vs=${encodeURIComponent('1270091973721587712~1270089224720232448')}`);
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await page.keyboard.press('Escape');
+    });
+
+    test('share: each share button opens a sheet that draws an image preview, and it closes', async ({ app: page }) => {
+      test.setTimeout(240_000); // five pages, each draws a 1080x1350 PNG in the browser
+
+      const shares: Array<{ what: string; path: string; button: RegExp; before?: (p: Page) => Promise<void> }> = [
+        { what: 'huddle', path: '/', button: /^share this week$/ },
+        { what: 'take', path: PAGES.takes.path, button: /^share this take$/ },
+        { what: 'matchup', path: PAGES.gameday.path, button: /^share this matchup$/ },
+        { what: 'bracket', path: PAGES.race.path, button: /^share this bracket$/, before: (p) => openTab(p, TABS.race, 'brackets') },
+        { what: 'draft grade', path: PAGES.draft.path, button: /^share this draft grade$/, before: (p) => openTab(p, TABS.draft, 'draft grades') },
+      ];
+      for (const sh of shares) {
+        await page.goto(`/#${sh.path}`);
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        await sh.before?.(page);
+        await page.getByRole('button', { name: sh.button }).first().click({ timeout: 20_000 });
+        const sheet = page.getByRole('dialog', { name: 'share' });
+        await expect(sheet, `${sh.what}: the share sheet`).toBeVisible();
+        // the card is drawn in the browser (canvas to PNG): an image with a real size, not the "drawing" placeholder
+        const img = sheet.locator('.share-preview img');
+        await expect(img, `${sh.what}: the preview image`).toBeVisible();
+        await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.naturalWidth), { message: `${sh.what}: the PNG has decoded` }).toBeGreaterThan(100);
+        await expect(img).toHaveAttribute('alt', /.+/);
+        await expect(sheet.getByRole('radiogroup', { name: 'card look' })).toBeVisible();
+        await expect(sheet.getByRole('button', { name: 'save image' })).toBeEnabled();
+        await expect(sheet.getByRole('status').filter({ hasText: /image ready/ })).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(sheet).toHaveCount(0);
       }
     });
 
@@ -700,10 +824,10 @@ test.describe('smoke', () => {
 
         // "nfl only": no owners, no your-players, no fantasy sections, and the preview pill steps aside
         await page.goto(`/#${PAGES.nfl.path}?now=2026-10-20T20:00`);
-        await expect(page.locator('.la-head'), 'the preview pill shows on the nfl page').toBeVisible();
+        await expect(page.locator('button.la-head'), 'the preview pill shows on the nfl page').toBeVisible();
         await only.click();
         await expect(only).toHaveAttribute('aria-pressed', 'true');
-        await expect(page.locator('.la-head'), 'nfl only hides the pill').toHaveCount(0);
+        await expect(page.locator('button.la-head'), 'nfl only hides the pill').toHaveCount(0);
         await gameCards(page).first().click();
         await expect(page.getByRole('dialog').getByRole('heading', { name: 'by quarter' })).toBeVisible();
         await expect(page.getByRole('dialog').getByRole('heading', { name: 'the fantasy mix' }), 'no fantasy sections in nfl only').toHaveCount(0);
@@ -719,22 +843,22 @@ test.describe('smoke', () => {
       }
     });
 
-    test('moments: previewing a Tuesday 8 pm (?now=) shows the waivers pill and the waiver wire banner; ?now=live clears them', async ({ app: page }) => {
+    test('moments: previewing a Tuesday 8 pm (?now=) shows the waivers pill and the waiver wire banner; ?now=live clears them', async ({ app: page, session }) => {
       try {
         await page.goto(`/#/?now=2026-10-20T20:00`);
         // a fresh load with the preview in the URL: the way a person opens a shared preview link. (Switching to a preview from inside
         // a session that has already been around the app, e.g. after /takes, shows the banner and hero but not the pill: reported.)
         await page.reload();
         await expect(page.getByRole('heading', { level: 1, name: PAGES.home.name })).toBeVisible();
-        const pill = page.locator('.la-head');
+        const pill = page.locator('button.la-head');
         await expect(pill, 'the live activity pill').toBeVisible();
         await expect(pill, 'a countdown to the waiver run').toContainText(/^waivers (in )?\d+h/);
-        await expect(page.locator('.la-tag'), 'it says it is a preview').toHaveText('preview');
+        await expect(page.locator('.la-tag').first(), 'it says it is a preview').toHaveText('preview');
         // the card opens from the pill and folds back with Escape
-        await pill.click();
+        await pill.click({ timeout: 20_000 });
         await expect(pill).toHaveAttribute('aria-expanded', 'true');
-        await expect(page.locator('.la-panel')).toBeVisible();
-        await expect(page.locator('.la-go')).toBeVisible();
+        await expect(page.locator(`[id="${(await pill.getAttribute('aria-controls')) ?? ''}"]`), 'the card opens').toBeVisible();
+        await expect(page.locator('.la-go:visible').first()).toBeVisible();
         await page.keyboard.press('Escape');
         await expect(pill).toHaveAttribute('aria-expanded', 'false');
 
@@ -746,13 +870,14 @@ test.describe('smoke', () => {
         await expect(banner).toContainText(/waivers process/i);
         await expect(banner).toContainText(/\d+h .*left|\d+m .*left/);
         await expect(pill, 'the pill is still there').toBeVisible();
-        // the pill can be dismissed
-        await page.getByRole('button', { name: /^dismiss/ }).click();
+        // the pill can be dismissed: with the x beside it on a wide screen, from the open card on a phone (no room beside the pill)
+        if (session.project === 'phone') await pill.click({ timeout: 20_000 });
+        await page.getByRole('button', { name: /^dismiss/ }).click({ timeout: 20_000 });
         await expect(pill).toHaveCount(0);
       } finally {
         await page.goto(`/#/?now=live`);
       }
-      await expect(page.locator('.la-head'), 'back on the real clock the pill is gone').toHaveCount(0);
+      await expect(page.locator('button.la-head'), 'back on the real clock the pill is gone').toHaveCount(0);
       await expect(page.locator('.la-tag')).toHaveCount(0);
     });
 

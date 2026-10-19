@@ -21,15 +21,36 @@ function withGames(a: FakeGameState, b: FakeGameState) {
 }
 
 describe('section tabs', () => {
-  it('has one row of tabs in order, with front office last, and under the hood in the footer', async () => {
+  it('has one row of tabs in order, front office with the account tools, and under the hood in the footer', async () => {
     renderApp({ linked });
     const nav = await screen.findByRole('navigation', { name: 'Primary' });
     expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual([
-      'huddle', 'game day', 'locker room', 'playoff picture', 'hot takes', 'nfl', 'waiver wire', 'trade block', 'scouting report', 'draft room', 'front office',
+      'huddle', 'game day', 'locker room', 'playoff picture', 'hot takes', 'nfl', 'waiver wire', 'trade block', 'scouting report', 'draft room', 'record book',
     ]);
+    expect(screen.getByRole('link', { name: 'front office' }).closest('.tn-tools')).not.toBeNull();
     const ref = screen.getByRole('navigation', { name: 'Reference' });
     expect(within(ref).getAllByRole('link').map((a) => a.textContent)).toEqual(['under the hood']);
     expect(within(nav).getByRole('link', { name: 'nfl' })).toHaveAttribute('href', '/nfl');
+  });
+
+  it('puts the record book before front office, and all leagues beside the league switcher (not among the tabs)', async () => {
+    renderApp({ linked });
+    const nav = await screen.findByRole('navigation', { name: 'Primary' });
+    expect(within(nav).getByRole('link', { name: 'record book' })).toHaveAttribute('href', '/almanac');
+    expect(within(nav).queryByRole('link', { name: 'all leagues' })).not.toBeInTheDocument();
+    const leagues = screen.getByRole('link', { name: 'all leagues' });
+    expect(leagues).toHaveAttribute('href', '/leagues');
+    expect(leagues.closest('.tn-tools')).not.toBeNull();
+    expect(leagues.closest('.tn-tools')!.querySelector('.switcher')).not.toBeNull();
+  });
+
+  it('marks the open page on the record book and on all leagues', async () => {
+    renderApp({ linked, route: '/almanac' });
+    const nav = await screen.findByRole('navigation', { name: 'Primary' });
+    expect(within(nav).getByRole('link', { name: 'record book' })).toHaveAttribute('aria-current', 'page');
+    cleanup();
+    renderApp({ linked, route: '/leagues' });
+    expect(await screen.findByRole('link', { name: 'all leagues' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('puts the team name over the tabs as a banner, not a heading, with the league, week and record under it', async () => {

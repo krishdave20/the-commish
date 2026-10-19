@@ -1,6 +1,6 @@
 import { EnginePage } from '../app/EnginePage';
 import { formatAsOf, formatCount, formatMoney, formatNum, formatPct, formatPoints, formatPoints1 } from '../app/format';
-import { MIN_CAL_SAMPLES } from '../engine';
+import { BLEND_MIN_GAMES, MIN_CAL_SAMPLES, PROJECTION_BLEND_START_WEEK, SD_CALIBRATION } from '../engine';
 import type { Engine } from '../engine';
 import { PlayDiagram } from '../components/art/PlayDiagram';
 import { MarkLegend } from '../components/ClinchMark';
@@ -56,7 +56,7 @@ function Body({ engine }: { engine: Engine }) {
             <li><b>player ids.</b> nflverse and sleeper number players differently, so the join runs on the gsis id first, then on name, team and position. whatever cannot be matched is listed on the injury report in the front office.</li>
             <li><b>last pull.</b> {formatAsOf(meta.asOf)}, week {meta.currentWeek} of {meta.lastRegularWeek} regular-season weeks{meta.stale ? ' (some pieces came from the saved copy)' : ''}.</li>
             <li><b>your league’s rules.</b> scoring is {meta.scoring}, with passing-touchdown and tight-end bonuses read from the league settings; roster slots ({meta.slots.join(', ')}), {meta.playoffTeams} playoff teams, {meta.divisions} {meta.divisions === 1 ? 'division' : 'divisions'} and the {formatMoney(meta.waiverBudget)} faab budget all come from the league itself.</li>
-            <li><b>player means.</b> sleeper’s projection, scored with those league settings.</li>
+            <li><b>player means.</b> sleeper’s projection, scored with those league settings; from week {PROJECTION_BLEND_START_WEEK} it is blended with each player’s season average (see calibration).</li>
           </ul>
         </Disclosure>
 
@@ -66,11 +66,11 @@ function Body({ engine }: { engine: Engine }) {
               ? `in this league, sleeper’s projection missed by ${formatPoints(meta.maeProjection)} points per player on average over weeks ${meta.calibrationWeeks.join(', ') || '—'}, scored with your league’s settings.`
               : 'not enough finished weeks yet to measure how far off sleeper’s projection is in this league.'}
           </p>
-          <h3>offline bake-off, held-out weeks 4 and 5</h3>
+          <h3>offline bake-off, held-out weeks 4 and 5 of 2026</h3>
           <Bars />
           <p className="note">
-            mean absolute error in points. gradient boosting on form, snap share and matchup, a residual correction and a season-average blend all missed by more than the projection,
-            so player means use the projection and the modeling goes where it holds up: floors and ceilings, matchup grades and the season simulation.
+            mean absolute error in points on the first weeks of 2026. gradient boosting on form, snap share and matchup, a residual correction and a season-average blend all missed by more than the projection there,
+            so early in the season player means use the projection alone. over a full 2025 season the season-average blend edged ahead, which is why it takes over from week {PROJECTION_BLEND_START_WEEK} (see calibration).
           </p>
         </Disclosure>
 
@@ -107,12 +107,38 @@ function Body({ engine }: { engine: Engine }) {
 
         <Disclosure title="season simulation" id="mth-sim">
           <p>
-            each team’s weekly score is its best lineup’s expected points plus noise of <b>{formatPoints1(meta.teamWeeklySd)}</b> points,
-            the spread of real results around projections (×0.85 for the week in progress). the first run is <b>{formatCount(meta.simRuns)}</b> simulated seasons;
+            each team’s weekly score is its best lineup’s expected points plus noise of <b>{formatPoints1(meta.teamWeeklySd)}</b> points
+            ({meta.teamWeeklySdRaw !== undefined && meta.sdCalibration !== undefined && meta.sdCalibration !== 1
+              ? <>the {formatPoints1(meta.teamWeeklySdRaw)} the projections missed by, times the {formatNum(meta.sdCalibration, 3)} calibration below</>
+              : <>the spread of real results around projections</>}; ×0.85 for the week in progress). the first run is <b>{formatCount(meta.simRuns)}</b> simulated seasons;
             what-ifs re-simulate in a background worker.
           </p>
           <p className="note">
             seeding: {meta.divisions > 0 ? 'division winners first, then wildcards by record, points for breaking ties' : 'by record, points for breaking ties'}.
+          </p>
+        </Disclosure>
+
+        <Disclosure title="calibration" id="mth-calibration">
+          <p>
+            we checked the odds against what happened in 104 finished leagues (2023 to 2025, 8,422 weekly matchups). every probability built on the team’s weekly spread was too sure of itself.
+            on a scale where 1 is exactly right and lower means overconfident, the weekly win chance scored <b>0.78</b>, the live win chance <b>0.79 to 0.89</b> (depending on how the game clock is approximated), playoff odds <b>0.80</b>, title odds <b>0.72</b>
+            and flush odds <b>0.74</b>. a team shown at 97% to make the playoffs got in 95% of the time, and one shown at 3% got in 6% of the time.
+          </p>
+          <p>
+            the cause is a spread that is too narrow: real score gaps ran 1.25 times wider than the model assumed. so the weekly spread is now multiplied by <b>{formatNum(SD_CALIBRATION, 3)}</b>
+            everywhere it feeds a probability: the season simulation (playoff, division, title, flush and consolation odds), the weekly win chance, the live win chance, trade odds, the game day swing numbers, the playoff machine and the brackets.
+            on games it had not seen, this took the weekly win chance from 0.78 to <b>0.99</b>. a 70% pick now shows about 66%. the season odds were not re-measured at this exact factor; in the test, a bigger stretch (×1.4) moved
+            playoff, title and flush odds to 0.97, 0.87 and 0.93, so expect them closer to right but not all the way.
+          </p>
+          <p>
+            <b>late-season blend.</b> over the whole 2025 season, pulling each player’s projection toward his own season average beat the plain projection (4.334 against 4.365 points of error per player-week), and
+            the gain was about twice as big from week {PROJECTION_BLEND_START_WEEK} on (0.039 points against 0.021 before it). on the first weeks of 2026 the projection won, so the blend starts in week {PROJECTION_BLEND_START_WEEK}:
+            a player’s mean is (1 − w) × his projection + w × his average, with w = games played ÷ (games played + 10), so about 0.47 after 9 games and 0.62 after 16.
+            it needs at least {BLEND_MIN_GAMES} games, skips players the projection already rules out (half a point or less), and leaves defenses and idp on the projection alone (the test did not cover them).
+            {meta.projectionBlend ? (meta.projectionBlend.active ? ' it is on this week.' : ` it is off this week (week ${meta.currentWeek}).`) : ''}
+          </p>
+          <p className="note">
+            the gain is small, about 0.3 points on a nine-player lineup, and it was measured on projections sleeper rewrote after the games, so the real-time gain may be smaller. a build that copies the original reference engine skips both corrections.
           </p>
         </Disclosure>
 

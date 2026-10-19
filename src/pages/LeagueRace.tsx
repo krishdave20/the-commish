@@ -13,6 +13,7 @@ import { TeamDrawer } from './race/TeamDrawer';
 const BracketCard = lazy(() => import('./race/BracketCard').then((m) => ({ default: m.BracketCard })));
 const PlayoffMachine = lazy(() => import('./race/PlayoffMachine').then((m) => ({ default: m.PlayoffMachine })));
 const OddsDetail = lazy(() => import('./race/OddsDetail'));
+const PowerRankings = lazy(() => import('./race/power/PowerRankings'));
 
 export default function LeagueRace() {
   const [open, setOpen] = useState<number | null>(null);
@@ -29,7 +30,7 @@ export default function LeagueRace() {
           <PageTabs
             label="Playoff picture sections" defaultTab="standings"
             tabs={[
-              { value: 'standings', label: 'standings' }, { value: 'brackets', label: 'brackets' },
+              { value: 'standings', label: 'standings' }, { value: 'power', label: 'power rankings' }, { value: 'brackets', label: 'brackets' },
               { value: 'machine', label: 'playoff machine' }, { value: 'odds', label: 'odds detail' },
             ]}
           >
@@ -38,6 +39,7 @@ export default function LeagueRace() {
             ) : (
               <Suspense fallback={<BlockSkeleton height="18rem" />}>
                 {tab === 'brackets' ? <BracketCard engine={engine} picks={picks} seeding={seeding} setSeeding={setSeeding} />
+                  : tab === 'power' ? <PowerRankings engine={engine} />
                   : tab === 'machine' ? <PlayoffMachine engine={engine} picks={picks} setPicks={setPicks} />
                   : <OddsDetail engine={engine} />}
               </Suspense>

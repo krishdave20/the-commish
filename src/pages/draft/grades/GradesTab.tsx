@@ -5,6 +5,7 @@ import { HeadlineStrip } from '../../../components/HeadlineStrip';
 import type { HeadlineItem } from '../../../components/HeadlineStrip';
 import { PlayerLink } from '../../../components/PlayerLink';
 import { SectionHeader } from '../../../components/SectionHeader';
+import { ShareButton, gradeCard } from '../../../components/share';
 import { SortableTable } from '../../../components/SortableTable';
 import type { Column } from '../../../components/useSort';
 import { showLetter } from '../../../engine/draft/grades.ts';
@@ -61,6 +62,8 @@ function Ready({ room, grades }: { room: DraftRoom; grades: DraftGrades }) {
   const [open, setOpen] = useState<number | null>(null);
   const mineId = room.myRosterId;
   const me = grades.teams.find((t) => t.rosterId === mineId) ?? null;
+  /** the card is about your draft, or the league's best when you have none */
+  const subject = me ?? grades.teams[0] ?? null;
 
   const rows = useMemo<Row[]>(
     () => grades.teams.map((g) => ({ g, team: teamLabel(room.teams, g.rosterId), mine: g.rosterId === mineId })),
@@ -130,6 +133,7 @@ function Ready({ room, grades }: { room: DraftRoom; grades: DraftGrades }) {
       <section className="card" aria-labelledby="grades-title">
         <SectionHeader
           id="grades-title" title="draft grades"
+          action={subject ? <ShareButton card={gradeCard(subject, teamLabel(room.teams, subject.rosterId), !!me, grades, room.league.season)} /> : undefined}
           tip={<>
             <strong>{DRAFT_DAY_LABEL}.</strong> sleeper only serves today’s projections and adp, not the numbers on draft day. adp barely moves after a draft;
             projections do. the grade blends the vor of the picks (45%), the projected starting lineup (35%) and how far each pick beat adp (20%, one pick capped at two rounds),

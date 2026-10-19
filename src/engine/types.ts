@@ -169,7 +169,14 @@ export interface ModelMeta {
   maeProjection: number | null;
   /** share of last-week outcomes inside the 20-80 band fitted on earlier weeks (target 0.6) */
   bandCoverage: number | null;
+  /** the team weekly score SD every probability uses: the raw spread times `sdCalibration` (see calibration.ts) */
   teamWeeklySd: number;
+  /** the spread measured from this league's projection misses, before calibration (absent on hand-built models) */
+  teamWeeklySdRaw?: number;
+  /** the factor applied to get `teamWeeklySd` (SD_CALIBRATION, or 1 in a reference-compatible build; absent on hand-built models) */
+  sdCalibration?: number;
+  /** the late-season blend of projection and season average: from which week it applies and whether it is on for this model's week */
+  projectionBlend?: { startWeek: number; active: boolean };
   simRuns: number;
   currentWeek: number;
   lastRegularWeek: number;

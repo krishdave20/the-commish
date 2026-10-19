@@ -6,6 +6,8 @@ import { DataProvider } from './app/DataProvider';
 import { ModelProvider } from './app/ModelProvider';
 import { ScenarioProvider } from './app/ScenarioProvider';
 import type { LoadModel } from './app/loadModel';
+const Almanac = lazy(() => import('./pages/Almanac'));
+const Leagues = lazy(() => import('./pages/Leagues'));
 const Method = lazy(() => import('./pages/Method'));
 const Draft = lazy(() => import('./pages/Draft'));
 const GameDay = lazy(() => import('./pages/GameDay'));
@@ -41,6 +43,8 @@ export function AppRoutes() {
         <Route path="/waivers" element={<Waivers />} />
         <Route path="/trades" element={<Trades />} />
         <Route path="/draft" element={<Draft />} />
+        <Route path="/almanac" element={<Almanac />} />
+        <Route path="/leagues" element={<Leagues />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/method" element={<Method />} />
       </Route>

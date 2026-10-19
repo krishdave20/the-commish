@@ -12,6 +12,7 @@ import { usePlayersFile } from '../../app/playersData';
 import { cityOf, gameLeaders, playerInfo, slotDate, timeSlot } from '../../engine/nfl';
 import type { DetailPlayer, GameLeader, NfGame } from '../../engine/nfl';
 import { statusText, winnerOf } from './format';
+import { RedZoneBadge } from './RedZoneBadge';
 import { useGameDetail } from './useGameDetail';
 import { useGameStats } from './useGameStats';
 import { useMemo } from 'react';
@@ -213,6 +214,7 @@ export function GameDrawer({ game: g, week, currentWeek, season, fantasy, onClos
           {[g.channel, g.stadiumCity].filter(Boolean).map((x) => <span key={x} className="nf-meta"> · {x}</span>)}
         </p>
         {scoreLine && <span className="sr-only">{scoreLine}</span>}
+        {g.state === 'live' && <RedZoneBadge game={g} compact />}
         {g.state === 'live' && g.situation && <div className="nf-field"><FieldSituation game={g} variant="drawer" /></div>}
       </div>
       <Linescore g={g} />

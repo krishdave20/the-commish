@@ -1,0 +1,69 @@
+/* The record book (pages/Almanac.tsx) and all leagues (pages/Leagues.tsx). Tokens only: no literal colour, font family, radius or size. */
+
+/* champions */
+.champ-cell { display: inline-flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.champ-cup { color: var(--gold-text); flex: none; }
+
+/* records: a grid of small cards, one record each */
+.rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); gap: var(--s-4) var(--s-5); align-items: start; }
+.rec { align-content: start; }
+.rec-head { display: flex; align-items: center; gap: var(--s-3); }
+.rec-big { font-family: var(--serif); font-size: 40px; line-height: 1; }
+.rec-who { font-weight: 500; }
+.rec-top { list-style: decimal; margin: 0; padding-left: var(--s-4); display: grid; gap: var(--s-2); font-size: var(--fs-sm); }
+.rec-top li { padding-left: var(--s-1); }
+.rec-top li > span { display: block; }
+
+/* rivalries */
+.rivals { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); }
+.rival { display: grid; gap: var(--s-1); align-content: start; min-width: 12rem; }
+.rival-btn { font: inherit; text-align: left; background: var(--sheet); color: var(--ink); border: 0; box-shadow: 0 0 0 1px var(--rule); border-radius: var(--r); padding: var(--s-2) var(--s-3); cursor: pointer; display: grid; gap: 2px; min-height: var(--touch); }
+.rival-btn:hover { box-shadow: 0 0 0 1px var(--ink-3); }
+.rival-name { font-family: var(--serif); font-size: 22px; line-height: 1.1; }
+.rival-rec { color: var(--ink-2); font-size: var(--fs-sm); }
+
+.mx-wrap { max-width: 100%; }
+.mx { width: auto; min-width: 0; font-size: var(--fs-sm); }
+.mx th, .mx td { padding: 2px; text-align: center; border-bottom: 1px solid var(--rule-2); }
+.mx-col { font-size: var(--fs-xs); font-weight: 400; max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: var(--s-1); }
+.mx-row { text-align: left; font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; padding-inline: 0 var(--s-3); position: sticky; left: 0; background: var(--paper); z-index: 1; }
+.mx-corner { position: sticky; left: 0; background: var(--paper); z-index: 1; }
+.mx tr.me > .mx-row { background: var(--gold-soft); }
+.mx-self, .mx-none { color: var(--ink-3); font-size: var(--fs-xs); min-width: 3.25rem; }
+.mx-cell { min-width: 3.25rem; }
+.mx-btn { font: inherit; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; width: 100%; min-height: 32px; padding: 2px var(--s-1); border: 0; border-radius: var(--r-sm); background: var(--rule-2); color: var(--ink); cursor: pointer; white-space: nowrap; transition: box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.mx-cell[data-lead='up'] .mx-btn { background: var(--green-soft); color: var(--green); }
+.mx-cell[data-lead='down'] .mx-btn { background: var(--red-soft); color: var(--red); }
+.mx-btn:hover { box-shadow: 0 0 0 1px var(--ink-3); }
+@media (pointer: coarse) { .mx-btn { min-height: var(--touch); min-width: var(--touch); } }
+
+/* one rivalry, in the drawer */
+.series { display: grid; gap: var(--s-4); }
+.series-head { display: grid; gap: var(--s-1); }
+.series-rec { font-family: var(--serif); font-size: 56px; line-height: 1; }
+.series-po { display: block; }
+
+/* all leagues */
+.lg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: var(--s-4); align-items: stretch; }
+.lg-card { position: relative; display: grid; gap: var(--s-2); align-content: start; padding: var(--s-3); border-radius: var(--r); background: var(--sheet); box-shadow: 0 0 0 1px var(--rule); min-width: 0; transition: box-shadow var(--t-fast) var(--ease); }
+.lg-card:hover { box-shadow: 0 0 0 1px var(--ink-3); }
+.lg-card[data-active='true'] { box-shadow: 0 0 0 2px var(--ink); }
+.lg-top { display: grid; gap: 2px; }
+.lg-name { font-family: var(--serif); font-size: 26px; line-height: 1.05; }
+/* the whole card is the tap target: the league's name is the button, stretched over the card */
+.lg-open { font: inherit; font-family: var(--serif); font-size: 26px; line-height: 1.05; text-align: left; padding: 0; margin: 0; background: none; border: 0; color: var(--ink); cursor: pointer; }
+.lg-open::after { content: ''; position: absolute; inset: 0; border-radius: var(--r); }
+.lg-open:focus-visible { outline: none; }
+.lg-open:focus-visible::after { outline: 2px solid var(--ink); outline-offset: 2px; }
+.lg-rec { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; }
+.lg-rec b { font-family: var(--serif); font-size: 32px; line-height: 1; font-weight: 400; }
+.lg-line { color: var(--ink-2); font-size: var(--fs-sm); }
+.lg-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s-2); align-items: baseline; padding-top: var(--s-2); border-top: 1px solid var(--rule-2); font-size: var(--fs-sm); }
+.lg-side { min-width: 0; display: grid; gap: 2px; }
+.lg-team { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg-side:last-child { text-align: right; }
+.lg-pts { font-family: var(--serif); font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+.lg-proj { color: var(--ink-2); font-size: var(--fs-xs); }
+.lg-mid { color: var(--ink-3); }
+.lg-live { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--fs-xs); color: var(--ink-2); }
+.lg-skel { display: grid; gap: var(--s-2); }

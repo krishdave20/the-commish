@@ -10,6 +10,9 @@
    Adds Sleeper's undocumented NFL scores for weeks 1 to (fixture week + 1): the nfl page, game day's week picker and the live
    poller read them. Played weeks are saved as received; the fixture week and the next one are rewritten to the fixture's own
    moment (see scoresAsOf).
+          npm run fixture:capture -- --only history [--out <dir>]
+   Adds what the trade history, trade finder and game day scouting read beyond the original pull: transactions for the fixture week
+   (only those made at or before the fixture moment) and weekly projections for the played weeks the original pull skipped.
           npm run fixture:capture -- --only nflverse [--out <dir>] [--src <dir>]
    Copies a snapshot of the nightly nflverse pipeline output (public/data/nflverse by default; generated first if it
    is missing) into <out>/nflverse/, so the Playwright smoke test is offline and deterministic.
@@ -23,7 +26,7 @@ import type { NflState, SleeperDraft, SleeperLeague, SleeperUser } from '../src/
 import { createLimiter } from '../src/data/limiter.ts';
 import { planPull } from '../src/data/plan.ts';
 import { browserTransport } from '../src/data/transport.ts';
-import { fantasyCalcUrl, sleeperUrls } from '../src/data/urls.ts';
+import { fantasyCalcUrl, positionsFor, sleeperUrls } from '../src/data/urls.ts';
 import { fantasyCalcParams } from '../src/engine/draft/fantasycalc.ts';
 
 export function parseArgs(argv: string[]): { user: string; league: string; out: string } {
@@ -156,6 +159,40 @@ async function captureScores(out: string) {
   console.log(`Added the scores to ${manifestPath}`);
 }
 
+/** Transactions as they stood at `capturedAt` (epoch ms): anything made later is dropped, like the scores. Sleeper stamps each one with
+    `created` (and `status_updated`) in epoch ms. */
+export function transactionsAsOf<T extends { created?: number; status_updated?: number }>(rows: readonly T[], capturedAt: number): T[] {
+  return rows.filter((t) => (t.created ?? t.status_updated ?? 0) <= capturedAt);
+}
+
+/** Add the fixture week's transactions (as of the fixture moment), the weeks the trade pages ask for that the first pull skipped, and the
+    played weeks' projections that were not saved. Weeks already in the manifest are left alone. */
+async function captureHistory(out: string) {
+  const manifestPath = resolve(out, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as { league_id: string; season: string; week: number; captured_at: number | string; files: Record<string, string> };
+  const leagueFile = manifest.files[sleeperUrls.league(manifest.league_id)];
+  if (!leagueFile) throw new Error('The fixture has no league file; capture the fixture first.');
+  const league = JSON.parse(gunzipSync(await readFile(resolve(out, leagueFile))).toString('utf8')) as SleeperLeague;
+  const capturedAt = typeof manifest.captured_at === 'number' ? manifest.captured_at : Date.parse(manifest.captured_at);
+  const positions = positionsFor(league.roster_positions);
+  const limiter = createLimiter();
+  const wk = (w: number) => String(w).padStart(2, '0');
+  const add = async (name: string, url: string, rewrite?: (body: unknown[]) => unknown[]) => {
+    if (manifest.files[url]) return;
+    const res = await limiter.run(() => browserTransport(url));
+    if (res.status !== 200 || !(Array.isArray(res.body) || (res.body && typeof res.body === 'object'))) { console.warn(`  skipped ${name}: HTTP ${res.status} for ${url}`); return; }
+    const body = rewrite && Array.isArray(res.body) ? rewrite(res.body) : res.body;
+    await writeFile(resolve(out, `${name}.json.gz`), gzipSync(JSON.stringify(body)));
+    manifest.files[url] = `${name}.json.gz`;
+    console.log(`  ${name}${Array.isArray(body) ? `: ${body.length} rows` : ''}`);
+  };
+  await add(`transactions_w${wk(manifest.week)}`, sleeperUrls.transactions(manifest.league_id, manifest.week), (b) => transactionsAsOf(b as Array<{ created?: number }>, capturedAt));
+  for (let w = 1; w < manifest.week; w++) await add(`projections_w${wk(w)}`, sleeperUrls.projections(manifest.season, w, positions));
+  manifest.files = Object.fromEntries(Object.entries(manifest.files).sort(([a], [b]) => a.localeCompare(b)));
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+  console.log(`Added the history files to ${manifestPath}`);
+}
+
 /** `--src <dir>`: where the pipeline output lives (default public/data/nflverse). */
 export const srcDirOf = (argv: string[]): string => {
   const i = argv.indexOf('--src');
@@ -190,8 +227,9 @@ async function main() {
   if (only === 'fantasycalc') return captureFantasyCalc(outDirOf(process.argv.slice(2)));
   if (only === 'brackets') return captureBrackets(outDirOf(process.argv.slice(2)));
   if (only === 'scores') return captureScores(outDirOf(process.argv.slice(2)));
+  if (only === 'history') return captureHistory(outDirOf(process.argv.slice(2)));
   if (only === 'nflverse') return captureNflverse(outDirOf(process.argv.slice(2)), srcDirOf(process.argv.slice(2)));
-  if (only) throw new Error(`Unknown --only value "${only}" (supported: fantasycalc, brackets, scores, nflverse).`);
+  if (only) throw new Error(`Unknown --only value "${only}" (supported: fantasycalc, brackets, scores, history, nflverse).`);
   const { user: username, league: leagueId, out } = parseArgs(process.argv.slice(2));
   const limiter = createLimiter();
   const files: Record<string, string> = {};
@@ -254,7 +292,7 @@ async function main() {
     ...plan.matchWeeks.map((w) => grab(`matchups_w${wk(w)}`, sleeperUrls.matchups(leagueId, w))),
     ...plan.statWeeks.map((w) => grab(`stats_w${wk(w)}`, sleeperUrls.stats(season, w))),
     ...[...plan.calWeeks, ...plan.projWeeks].map((w) => grab(`projections_w${wk(w)}`, sleeperUrls.projections(season, w, plan.positions))),
-    ...plan.completedWeeks.map((w) => grab(`transactions_w${wk(w)}`, sleeperUrls.transactions(leagueId, w))),
+    ...[...plan.completedWeeks, state.week].filter((w, i, a) => w >= 1 && a.indexOf(w) === i).map((w) => grab(`transactions_w${wk(w)}`, sleeperUrls.transactions(leagueId, w))),
     (async () => {
       const drafts = await grab<SleeperDraft[]>('drafts', sleeperUrls.drafts(leagueId));
       await Promise.all((drafts ?? []).flatMap((d) => [

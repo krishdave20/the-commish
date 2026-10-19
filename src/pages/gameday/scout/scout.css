@@ -1,0 +1,57 @@
+/* Opponent scouting (game day tab). Hybrid look: system sans for text, Instrument Serif only through the shared headline strip.
+   Tokens only. One card per section, the rest in disclosures. */
+.scout { display: grid; gap: var(--s-4); min-width: 0; }
+.scout-who { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); min-width: 0; }
+.scout-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); margin: 0; min-width: 0; }
+.scout-name b { font-weight: 500; overflow-wrap: anywhere; }
+.scout .strip .kpi { min-width: 0; }
+.scout .strip .kpi .big { overflow-wrap: anywhere; }
+.scout .strip .avatar-name { font-family: var(--sans); font-size: var(--fs-base); font-weight: 500; line-height: 1.25; }
+.scout .strip .kpi:last-child { flex: 1 1 12rem; }
+.scout .strip .kpi .sub { overflow-wrap: anywhere; }
+
+.scout-grade b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* a list of findings: a headshot (or a dot), a sentence, an optional number */
+.scout-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.scout-list > li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: var(--s-2); align-items: center;
+  padding: var(--s-2) 0; border-top: 1px solid var(--rule-2); min-height: var(--touch); min-width: 0;
+}
+.scout-list > li:first-child { border-top: 0; }
+.scout-text { min-width: 0; overflow-wrap: anywhere; line-height: 1.35; }
+.scout-sub { color: var(--ink-3); font-size: var(--fs-xs); }
+.scout-num { font-variant-numeric: tabular-nums; font-weight: 500; text-align: right; color: var(--green); }
+.scout-num[data-sign='neg'] { color: var(--red); }
+.scout-num[data-sign='zero'] { color: var(--ink-3); font-weight: 400; }
+.scout-dot { width: 28px; height: 28px; display: grid; place-items: center; }
+.scout-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); }
+
+/* the keys: numbered, three at most */
+.scout-keys > li { grid-template-columns: 1.5rem auto minmax(0, 1fr); }
+.scout-n { color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); }
+
+/* the lineup flags: a coloured edge carries how serious it is (and the sentence says it, so it is never colour alone) */
+.scout-list > li[data-severity] { grid-template-columns: 4px auto minmax(0, 1fr) auto; column-gap: var(--s-2); }
+.scout-mark { align-self: stretch; border-radius: 999px; background: var(--ink-3); min-height: 1.5rem; }
+li[data-severity='high'] > .scout-mark { background: var(--red); }
+li[data-severity='medium'] > .scout-mark { background: var(--gold); }
+li[data-severity='low'] > .scout-mark { background: var(--rule); }
+li[data-severity] > .scout-num { color: var(--red); }
+
+.scout-plain > li { grid-template-columns: minmax(0, 1fr); }
+.scout-hinges > li { grid-template-columns: minmax(0, 1fr) auto; }
+.scout-hinge-who { display: grid; min-width: 0; }
+.scout-hinge-who .plink { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scout-hinges .avatar-name { min-width: 0; }
+
+.scout-more { display: grid; }
+.scout-more > .disclosure:last-child { border-bottom: 1px solid var(--rule); }
+.scout-more .disclosure > summary h3 { font-size: var(--fs-base); font-family: var(--sans); font-weight: 500; }
+
+@media (max-width: 760px) {
+  .scout .avatar[data-size='28'] { --av: 20px; --av-ring-w: 1.5px; }
+  .scout-dot { width: 20px; height: 20px; }
+  .scout .strip .kpi:last-child { grid-column: 1 / -1; }
+  .scout-text { font-size: var(--fs-table); }
+}

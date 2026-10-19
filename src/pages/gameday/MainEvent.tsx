@@ -8,6 +8,7 @@ import { FieldSituation } from '../../components/field';
 import { CountUp } from '../../components/CountUp';
 import { Segmented } from '../../components/Segmented';
 import { SectionHeader } from '../../components/SectionHeader';
+import { ShareButton, matchupCard } from '../../components/share';
 import { LiveDot } from '../../components/ticker/LiveDot';
 import { SLOT_LABEL } from '../../engine';
 import type { LiveCtx, LiveSnapshot, MatchupLive, StarterLive, TeamLive } from '../../engine/live';
@@ -124,7 +125,12 @@ export function MainEvent({ m, ctx, frames, projected, status, assumed, onBackTo
       <SectionHeader
         id="gd-main" title={FEATURE.mainEvent}
         kicker={<span className="gd-status-line" data-replay={status.replay ? 'true' : undefined}>{status.live && <LiveDot />}{status.label}{decided && <Whistle size={22} className="art-blow" />}</span>}
-        action={onBackToMine ? <button type="button" className="btn quiet" onClick={onBackToMine}>back to my matchup</button> : undefined}
+        action={(
+          <span className="row">
+            {onBackToMine && <button type="button" className="btn quiet" onClick={onBackToMine}>back to my matchup</button>}
+            <ShareButton card={matchupCard({ m, week: ctx.week, projected, status })} />
+          </span>
+        )}
         tip={(
           <>
             <p>each starter counts his points so far plus his projection for the part of his game still to play (from the game clock). a game that has not started counts at the full projection, a finished one at its actual points. the team figure is the sum.</p>

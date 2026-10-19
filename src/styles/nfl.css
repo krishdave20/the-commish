@@ -99,3 +99,155 @@ tr.lead > td:first-child { box-shadow: inset 2px 0 0 var(--green); }
   .nf-pwho > .avatar[data-size='28'], .nf-ldr dd > .avatar[data-size='28'] { --av: 20px; --av-ring-w: 1.5px; }
   .nf-pwho { column-gap: var(--s-1); }
 }
+
+/* ---------- the live tab ---------- */
+/* the tab strip: a calm live dot in front of "live · n" (the live tab is the first one) while any game is on */
+.nf-tabs { display: grid; gap: var(--s-3); min-width: 0; }
+.nf-tabs[data-live='true'] .seg > button:first-child::before {
+  content: ''; display: inline-block; width: 7px; height: 7px; margin-right: var(--s-2); border-radius: 50%; background: var(--green); vertical-align: 1px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nf-tabs[data-live='true'] .seg > button:first-child::before { animation: nf-dot-breathe 2.6s var(--ease) infinite; }
+}
+@keyframes nf-dot-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.nf-live { display: grid; gap: var(--s-4); min-width: 0; }
+.nf-live-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); }
+.nf-live-count { margin: 0; font-size: var(--fs-sm); color: var(--ink-2); }
+.nf-lv-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); gap: var(--s-3); }
+.nf-lv-grid > li { display: grid; min-width: 0; }
+
+/* nothing live */
+.nf-quiet { display: grid; gap: var(--s-2); padding: var(--s-4); border-radius: var(--r); background: var(--sheet); box-shadow: 0 0 0 1px var(--rule-2); justify-items: start; }
+.nf-quiet h3 { font-size: 24px; margin: 0; }
+.nf-quiet p { margin: 0; color: var(--ink-2); }
+.nf-quiet strong { color: var(--ink); font-weight: 600; }
+.nf-quiet-count { font-variant-numeric: tabular-nums; }
+.nf-quiet-link { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+/* a live game: the whole card opens the drawer through a transparent button under the content (the content ignores the pointer) */
+.nf-lv {
+  position: relative; display: grid; border-radius: var(--r); background: var(--sheet); box-shadow: 0 0 0 1px var(--rule-2); min-width: 0;
+  transition: box-shadow var(--t-fast) var(--ease);
+}
+.nf-lv:hover { box-shadow: 0 0 0 1px var(--ink-3), var(--shadow-pop); }
+.nf-lv[data-red='true'] { box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 60%, var(--rule-2)); }
+.nf-lv-open { position: absolute; inset: 0; width: 100%; min-height: var(--touch); border: 0; border-radius: var(--r); background: none; cursor: pointer; padding: 0; }
+.nf-lv-open:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.nf-lv-body { position: relative; display: grid; gap: var(--s-3); padding: var(--s-3); pointer-events: none; min-width: 0; align-content: start; }
+.nf-lv-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-2); font-size: var(--fs-sm); color: var(--ink-2); }
+.nf-lv-top .nf-status { font-weight: 500; font-variant-numeric: tabular-nums; }
+.nf-lv-teams { display: grid; gap: var(--s-1); }
+.nf-lv-team { display: grid; grid-template-columns: 4.25rem minmax(0, 1fr) auto auto; align-items: center; column-gap: var(--s-2); color: var(--ink-2); }
+.nf-lv-team[data-lead='true'] { color: var(--ink); }
+.nf-lv-abbr { display: inline-flex; align-items: center; gap: var(--s-1); font-weight: 600; font-size: var(--fs-base); letter-spacing: var(--ls-micro); }
+.nf-lv-ball { display: inline-flex; color: var(--gold-text); }
+.nf-lv-name { display: grid; min-width: 0; line-height: 1.2; }
+.nf-lv-city { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); }
+.nf-lv-to { display: inline-flex; }
+.nf-lv-scorecell { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--s-2); min-width: 3.5rem; }
+.nf-lv-score { font-family: var(--serif); font-size: 56px; line-height: 0.95; font-variant-numeric: tabular-nums lining-nums; }
+.nf-lv-team[data-lead='true'] .nf-lv-score { font-size: 64px; color: var(--ink); }
+.nf-lv-chip {
+  display: inline-block; padding: 1px var(--s-2); border-radius: var(--r-sm); font-size: var(--fs-xs); font-weight: 600; line-height: 1.5;
+  font-variant-numeric: tabular-nums; background: var(--green); color: var(--on-accent);
+}
+.nf-lv-sit { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); font-size: var(--fs-sm); color: var(--ink); min-width: 0; }
+.nf-lv-sit-text { font-variant-numeric: tabular-nums; }
+.nf-lv-field { display: block; }
+/* the field at the width of the card, 40 px tall (the mini field's own size is 120 x 28) */
+.nf-lv .mf { width: 100%; }
+.nf-lv .mf .mf-turf { height: 40px; }
+.nf-lv .mf .art-turf-ez { font-size: var(--fs-micro); }
+.nf-lv .mf .mf-ball { width: 20px; height: 14px; }
+.nf-lv .mf .mf-turf > svg.mf-arrow { width: 18px; height: 9px; margin-top: -4.5px; }
+.nf-lv .mf .mf-turf > svg.mf-arrow[data-dir='right'] { margin-left: 12px; }
+.nf-lv .mf .mf-turf > svg.mf-arrow[data-dir='left'] { margin-left: -30px; }
+.nf-lv-ql { font-size: var(--fs-sm); }
+.nf-lv-ql .fs-line { width: 100%; }
+.nf-lv-fx { display: grid; gap: var(--s-2); padding-top: var(--s-2); border-top: 1px solid var(--rule-2); }
+.nf-lv-starters { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); }
+.nf-lv-starter { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-width: 0; }
+.nf-lv-starter .avatar-name { font-size: var(--fs-sm); }
+.nf-lv-starter .pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nf-lv-pts { font-family: var(--serif); font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums lining-nums; }
+.nf-lv-fxnote { margin: 0; font-size: var(--fs-xs); color: var(--ink-3); }
+
+/* a score that just changed: a "+7" chip for three seconds (the app removes it), and a short pop while motion is welcome */
+@media (prefers-reduced-motion: no-preference) {
+  .nf-lv-chip { animation: nf-chip-in 400ms var(--ease) both; }
+  .nf-lv-score[data-flash='true'] { animation: nf-score-flash 450ms var(--ease) both; }
+  .nf-lv[data-entered='true'] { animation: nf-lv-pulse 450ms var(--ease) 1; }
+  .rzb[data-enter='true'] .rzb-tag { animation: rzb-wipe 360ms var(--ease) both; }
+}
+@keyframes nf-chip-in { from { opacity: 0; transform: translateY(6px) scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes nf-score-flash { 0% { color: var(--green); transform: scale(1.12); } 100% { transform: none; } }
+@keyframes nf-lv-pulse { 0% { box-shadow: 0 0 0 1px var(--red), 0 0 0 5px color-mix(in srgb, var(--red) 40%, transparent); } 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 60%, var(--rule-2)); } }
+@keyframes rzb-wipe { from { clip-path: inset(0 100% 0 0); transform: skewX(-8deg) translateX(-14px); } to { clip-path: inset(0 0 0 0); transform: skewX(-8deg); } }
+
+/* ---------- the red zone lockup ----------
+   A broadcast-style score-bug graphic: a slanted bar of heavy italic lettering in warm red, a thin gold edge and a soft sheen.
+   The lettering is the ONE place in the app set in capitals (set on .rzb-tag below): it imitates the TV graphic, so the lowercase rule does not apply.
+   The DOM text stays "red zone". */
+.rzb { --rzb-bar: var(--red); --rzb-ink: var(--on-accent); --rzb-edge: var(--gold-on-inverse); display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; max-width: 100%; }
+:root[data-theme='dark'] .rzb { --rzb-bar: var(--red-on-inverse); --rzb-ink: var(--surface-inverse); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .rzb { --rzb-bar: var(--red-on-inverse); --rzb-ink: var(--surface-inverse); } }
+.rzb-tag {
+  position: relative; display: inline-block; flex: none; overflow: hidden; padding: 2px 14px 2px 12px; border-radius: var(--r-xs);
+  font-family: var(--sans); font-weight: 900; font-style: italic; font-stretch: 75%; letter-spacing: 0.1em; line-height: 1.25; font-size: var(--fs-sm);
+  text-transform: uppercase; /* the exception: TV lettering */
+  color: var(--rzb-ink); background: var(--rzb-bar); transform: skewX(-8deg); box-shadow: inset 0 -2px 0 var(--rzb-edge);
+}
+.rzb-tag::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 15%, color-mix(in srgb, var(--rzb-ink) 30%, transparent) 42%, transparent 62%);
+}
+.rzb-team { font-weight: 700; letter-spacing: var(--ls-micro); }
+.rzb-where { font-variant-numeric: tabular-nums; color: var(--ink); }
+.rzb[data-size='compact'] .rzb-tag { padding: 1px 10px 1px 8px; font-size: var(--fs-micro); }
+.rzb[data-size='compact'] { font-size: var(--fs-xs); }
+h3.rzb-title { margin: 0; font-family: var(--sans); }
+h3.rzb-title .rzb-tag { font-size: var(--fs-base); padding: 3px 18px 3px 14px; }
+
+/* the red zone section: one item for each drive inside the 20 */
+.nf-rz { display: grid; gap: var(--s-2); min-width: 0; }
+.nf-rz-strip { list-style: none; margin: 0; padding: 0 0 var(--s-1); display: flex; gap: var(--s-3); overflow-x: auto; scroll-snap-type: x proximity; max-width: 100%; }
+.nf-rz-item { flex: 0 0 auto; max-width: min(100%, 26rem); scroll-snap-align: start; display: grid; }
+.nf-rz-btn {
+  font: inherit; color: inherit; text-align: left; display: grid; gap: var(--s-2); align-content: start; min-height: var(--touch); padding: var(--s-2) var(--s-3); cursor: pointer;
+  background: var(--sheet); border: 0; border-radius: var(--r); box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 55%, var(--rule-2));
+}
+.nf-rz-line { font-weight: 600; font-variant-numeric: tabular-nums; }
+.nf-rz-fx { display: grid; gap: var(--s-1); font-size: var(--fs-sm); color: var(--ink-2); }
+.nf-rz-mine, .nf-rz-others { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
+.nf-rz-mine .avatar-name { color: var(--ink); }
+
+/* the "live now" strip on the scoreboard */
+.nf-ls { display: grid; gap: var(--s-2); min-width: 0; }
+.nf-ls-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-1) var(--s-3); }
+.nf-ls-head .nf-sub-h { display: inline-flex; align-items: center; gap: var(--s-2); }
+.nf-ls-all { display: inline-flex; align-items: center; min-height: var(--touch); color: var(--ink-2); font-size: var(--fs-sm); text-decoration: underline; text-underline-offset: 3px; }
+.nf-ls-row { list-style: none; margin: 0; padding: 0 0 var(--s-1); display: flex; gap: var(--s-2); overflow-x: auto; scroll-snap-type: x proximity; max-width: 100%; }
+.nf-ls-row > li { flex: 0 0 auto; scroll-snap-align: start; display: grid; }
+.nf-ls-card {
+  display: grid; gap: var(--s-1); align-content: center; min-width: 9.5rem; min-height: var(--touch); padding: var(--s-2) var(--s-3); color: inherit; text-decoration: none;
+  background: var(--sheet); border-radius: var(--r); box-shadow: 0 0 0 1px var(--rule-2);
+}
+.nf-ls-card:hover { box-shadow: 0 0 0 1px var(--ink-3), var(--shadow-pop); }
+.nf-ls-card[data-red='true'] { box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 60%, var(--rule-2)); }
+.nf-ls-status { font-size: var(--fs-xs); color: var(--green); font-variant-numeric: tabular-nums; }
+.nf-ls-teams { display: grid; gap: 2px; }
+.nf-ls-teams > span { display: flex; justify-content: space-between; gap: var(--s-3); align-items: baseline; }
+.nf-ls-teams b { font-weight: 600; letter-spacing: var(--ls-micro); }
+.nf-ls-teams i { font-style: normal; font-family: var(--serif); font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums lining-nums; }
+
+/* phone: one column, the field the width of the card, 44 px targets */
+@media (max-width: 560px) {
+  .nf-lv-grid { grid-template-columns: minmax(0, 1fr); }
+  .nf-lv-team { grid-template-columns: 3.75rem minmax(0, 1fr) auto auto; }
+  .nf-lv-score { font-size: 48px; }
+  .nf-lv-team[data-lead='true'] .nf-lv-score { font-size: 54px; }
+  .nf-lv-starter { min-height: var(--touch); }
+  .nf-rz-item { max-width: 88%; }
+  .nf-lv-starter .avatar-name > .avatar[data-size='28'] { --av: 28px; --av-ring-w: 2px; }
+}

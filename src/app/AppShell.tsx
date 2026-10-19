@@ -10,6 +10,7 @@ import { useTickerMode } from '../components/ticker/useTickerMode';
 import { useActive } from './hooks';
 import { LiveProvider } from './live/LiveProvider';
 import { MomentsProvider } from './moments/MomentsProvider';
+import { PwaHost } from './pwa';
 import { TabBar } from './PhoneChrome';
 import { PhoneTop, Sidebar, SiteFooter } from './Sidebar';
 import { SIGN_IN_PATH } from './routes';
@@ -38,6 +39,7 @@ function Frame() {
       <div className="shell" data-ticker={ticker} data-phone={phone ? 'true' : undefined}>
         {!phone && <Ticker />}
         <LiveActivity />
+        <PwaHost />
         <div className="app">
           {phone ? <PhoneTop ticker={<Ticker />} /> : <Sidebar />}
           <main className="main" id="main" tabIndex={-1} ref={main} key={location.pathname}>

@@ -11,9 +11,6 @@
     --bar-h: 44px;
     --inset-top: env(safe-area-inset-top, 0px);
     --tabbar-h: 56px;
-    /* Where the live activity pill's bottom edge sits on a phone: the tab bar, the home-indicator safe area and a gap above it. The pill's
-       owner reads this (and `--activity-top` on wide screens); it never needs to know how tall the tab bar is. */
-    --activity-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--s-2));
   }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 8.5rem; }
   body { -webkit-tap-highlight-color: transparent; }
@@ -21,11 +18,18 @@
 
   /* ---------- the shell ---------- */
   .shell { --top-h: calc(var(--inset-top) + var(--ticker-h, 0px) + var(--bar-h)); }
+  /* no gap between the ticker and the bar: page content used to show through an 8 px slit when scrolled */
+  .sidebar { row-gap: 0; }
+  /* Where the live activity pill's top edge sits on a phone: inside the top bar's band, just under the ticker (the island), 2 px in from the bar's top.
+     The pill's owner reads this (live-activity.css); it never needs to know how tall the ticker or the bar are. */
+  .shell { --activity-top: calc(var(--inset-top) + var(--ticker-h, 0px) + 2px); }
+  .shell[data-ticker='off'] { --activity-top: calc(var(--inset-top) + 2px); }
   .shell[data-ticker='on'], .shell[data-ticker='hold'] { --ticker-h: 36px; }
   .shell[data-ticker='collapsed'] { --ticker-h: 28px; }
-  /* the page keeps its own room clear of the tab bar (and the live pill when one shows) */
+  /* the page keeps its own room clear of the tab bar */
   .app { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
-  body[data-la] .app { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--touch) + var(--s-2)); }
+  /* the live activity pill sits in the bar's band at the top: while it shows, the large title starts one bar lower so the pill never lies on it */
+  body[data-la] .tn-large { padding-top: calc(var(--bar-h) + var(--s-1)); }
   .main { padding-bottom: var(--s-4); }
   .site-foot { padding-block: var(--s-2) var(--s-3); }
 

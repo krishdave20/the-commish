@@ -19,6 +19,9 @@ import type { Model, ModelTeam } from './types.ts';
 
 export * from './types.ts';
 export * from './bracket/index.ts';
+export {
+  SD_CALIBRATION, calibratedSd, PROJECTION_BLEND_START_WEEK, BLEND_MIN_GAMES, BLEND_PRIOR_GAMES, BLEND_MIN_PROJECTION, BLEND_POSITIONS, blendWeight, blendedMean,
+} from './calibration.ts';
 export { loadLeaguePull, type LoadOpts, type LoadProgress } from './load.ts';
 export { buildModel, makeScorer, type BuildOpts, FALLBACK_Q, FALLBACK_SD, INJ_MULT, POOL_CAP, MIN_CAL_SAMPLES } from './model.ts';
 export {

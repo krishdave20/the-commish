@@ -18,9 +18,13 @@ import { Avatar, AvatarName } from '../components/Avatar';
 import { PlayerLink } from '../components/PlayerLink';
 import type { Engine, ModelPlayer, TradeIdea, TradeProposal } from '../engine';
 import { evaluateDynastyTrade } from '../engine/dynasty/index.ts';
+import type { Prefill } from '../engine/tradefinder/index.ts';
 import { PlayerTags } from './team/PlayerTags';
 import { DynastyReadout } from './trades/DynastyReadout';
 import { LensCard } from './trades/LensCard';
+import { FinderTab } from './trades/finder/FinderTab';
+import { FINDER_TAB, HISTORY_TAB } from './trades/finder/labels';
+import { HistoryTab } from './trades/history/HistoryTab';
 import { PickPicker } from './trades/PickPicker';
 import { PicksCard } from './trades/PicksCard';
 import { useDynasty } from './trades/useDynasty';
@@ -222,6 +226,15 @@ function TradeBlock({ engine }: { engine: Engine }) {
     analyzerRef.current?.scrollIntoView?.({ block: 'start' });
   }
 
+  /** "load in analyzer" from the trade finder: the idea's players on both sides (or your leg of a rotation) */
+  function loadPrefill(x: Prefill) {
+    setPartner(x.partnerRid);
+    setSend(x.send);
+    setGet(x.get);
+    setSendPicks([]);
+    setGetPicks([]);
+  }
+
   const changePartner = (r: number) => { setPartner(r); setGet([]); setGetPicks([]); };
 
   return (
@@ -230,7 +243,11 @@ function TradeBlock({ engine }: { engine: Engine }) {
       <ScenarioBar />
       <PageTabs
         label="Trade block sections" defaultTab="analyzer"
-        tabs={[{ value: 'analyzer', label: 'analyzer' }, { value: 'deals', label: FEATURE.handshake }, ...(league ? [{ value: 'dynasty', label: 'dynasty' }] : [])]}
+        tabs={[
+          { value: 'analyzer', label: 'analyzer' }, { value: 'deals', label: FEATURE.handshake },
+          { value: 'finder', label: FINDER_TAB }, { value: 'history', label: HISTORY_TAB },
+          ...(league ? [{ value: 'dynasty', label: 'dynasty' }] : []),
+        ]}
       >
         {(tab, setTab) => tab === 'analyzer' ? (
           <Analyzer engine={engine} analyzerRef={analyzerRef} dyn={dyn}
@@ -238,6 +255,10 @@ function TradeBlock({ engine }: { engine: Engine }) {
           />
         ) : tab === 'deals' ? (
           <HandshakeDeals engine={engine} own={own} onLoad={(x) => { load(x); setTab('analyzer'); }} />
+        ) : tab === 'finder' ? (
+          <FinderTab engine={engine} dyn={dyn} onLoad={(x) => { loadPrefill(x); setTab('analyzer'); }} />
+        ) : tab === 'history' ? (
+          <HistoryTab engine={engine} dyn={dyn} onFinder={() => setTab('finder')} />
         ) : (
           <>
             {league && <LensCard engine={engine} dyn={dyn} redraft={redraft} explore={explore} setExplore={setExplore} />}

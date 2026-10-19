@@ -67,7 +67,7 @@ describe('smart order in the navigation', () => {
     expect(links[1]).toHaveAttribute('data-up', 'true');
     expect(links[1]).toHaveTextContent(/up front:/);
     expect(links[1].querySelector('.nav-up')).not.toBeNull();
-    expect(links.at(-1)).toHaveTextContent('front office');
+    expect(links.at(-1)).toHaveTextContent('record book');
     cleanup();
     savePrefs({ smartNav: false });
     renderApp({ linked, route: '/?phase=pre_draft' });

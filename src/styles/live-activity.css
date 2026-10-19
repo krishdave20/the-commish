@@ -1,7 +1,7 @@
 /* The live activity: a Dynamic Island–style pill. Tokens only. The surface is the inverse ink (stays dark on the light page, lifts in dark mode), with a faint inner
    edge (--edge-inverse). Compact: the pill. Expanded: a card with a leading region (the header), a centre, and a bottom (pager and the one action). With several
    activities the best one is the pill and the others are minimal circles beside it.
-   Placement is the shell's: --activity-top (desktop: under the ticker) and --activity-bottom (phone: above the tab bar), both set in the layout CSS with the fallbacks below.
+   Placement is the shell's: --activity-top (desktop: under the ticker; phone: in the top bar's band under it), set in the layout CSS with the fallbacks below.
    Corners: a pill has no token, so a local --r (22 px pill, 20 px card, 24 px sheet on a phone). Scores are Instrument Serif; labels are the system font. */
 .la-wrap {
   position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); display: flex; align-items: flex-start; gap: var(--s-2);
@@ -149,37 +149,74 @@
 /* room for the pill so it does not sit on the first lines of a page */
 @media (min-width: 761px) { body[data-la] .shell > .app { padding-top: var(--s-5); } }
 
-/* ---------- phones: above the tab bar, and an open card is a sheet from the bottom, inside the safe areas ---------- */
+/* ---------- phones: the island floats in the top bar (centre, under the ticker); an open card is a top sheet that drops from it ----------
+   --activity-top is set on .shell in phone.css (safe area + ticker + 2 px): the pill sits inside the 44 px bar band, which is kept clear (the large title is pushed down
+   by one bar while the pill shows, and the collapsed bar hands its centre to the pill). The pill is 40 px tall; the other activities are 36 px circles to its right. */
 @media (max-width: 760px) {
-  .la-wrap { top: auto; z-index: 44; bottom: var(--activity-bottom, calc(var(--tabbar-h, 0px) + env(safe-area-inset-bottom, 0px) + var(--s-2))); align-items: flex-end; }
-  .la-head { min-height: var(--touch); }
-  .la-x { width: var(--touch); height: var(--touch); margin-top: 0; }
-  .la-min { width: var(--touch); height: var(--touch); }
-  .la-wrap[data-open='true'] {
-    left: max(var(--s-3), env(safe-area-inset-left, 0px)); right: max(var(--s-3), env(safe-area-inset-right, 0px)); transform: none; max-width: none;
+  .la-wrap {
+    --la-h: 40px;
+    top: var(--activity-top, calc(env(safe-area-inset-top, 0px) + var(--ticker-h, 0px) + 2px)); bottom: auto; left: 0; right: 0; transform: none; max-width: none;
+    z-index: 44; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 0;
+    padding-inline: max(var(--s-2), env(safe-area-inset-left, 0px)) max(var(--s-2), env(safe-area-inset-right, 0px));
   }
-  .la-wrap[data-open='true'] .la { flex: 1; }
-  .la[data-open='true'] .la-card { --r: 24px; width: 100%; animation: la-sheet var(--t-base) var(--la-spring) both; }
-  .la[data-open='true'] .la-head { min-height: var(--touch); }
-  .la-wrap[data-open='true'] .la-x { top: 0; right: 0; width: var(--touch); height: var(--touch); }
+  .la-wrap > .la { grid-column: 2; grid-row: 1; max-width: calc(100vw - 2 * (var(--la-mins-w, 0px) + var(--s-2))); }
+  /* a big moment widens the pill: the circles step aside, so it may take the width of the screen */
+  .la-wrap > .la[data-flash='true'] { max-width: calc(100vw - var(--s-2) * 2); }
+  .la-head { min-height: var(--la-h); }
+  .la-mins { grid-column: 3; grid-row: 1; justify-self: start; margin-left: 6px; gap: 4px; }
+  .la-min { width: 36px; height: 36px; margin-top: 2px; }
+  .la-min::before { content: ''; position: absolute; inset: -2px; border-radius: 50%; }
+  .la-more { margin-left: 2px; }
+  /* the circle for a score that is flashing shares the room with the pill's widening: it waits */
+  .la[data-flash='true'] ~ .la-mins { visibility: hidden; }
+  /* no × beside the pill (there is no room); a long press hides it, and the open card has its own × */
+  .la-wrap:not([data-open='true']):not([data-short]) .la-x { display: none; }
+  .la-wrap[data-short] .la-x { grid-column: 3; grid-row: 1; justify-self: start; margin: 6px 0 0 6px; width: 28px; height: 28px; }
+  /* the matchup pill is dense: a touch smaller on a phone so it keeps its win chance beside two circles */
+  .la-n { font-size: 19px; }
   .la-step { width: var(--touch); height: var(--touch); }
   .la-go { min-height: var(--touch); display: inline-flex; align-items: center; }
   .la-score { font-size: 42px; }
+
+  /* the bar's centre is the pill's: the team name steps aside while an activity shows */
+  body[data-la] .sidebar[data-collapsed='true'] .pt-team { opacity: 0; visibility: hidden; }
+
+  /* open: a top sheet. It drops from the island, full width inside the safe areas, over a dimmed page */
+  .la-wrap[data-open='true'] {
+    display: block; z-index: 60; padding-inline: 0;
+    left: max(var(--s-3), env(safe-area-inset-left, 0px)); right: max(var(--s-3), env(safe-area-inset-right, 0px));
+  }
+  .la-scrim { position: fixed; inset: 0; background: var(--scrim); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: la-fade var(--t-base) var(--ease) both; }
+  .la-wrap[data-open='true'] > .la { max-width: none; }
+  .la[data-open='true'] .la-card {
+    --r: 28px; position: relative; width: 100%; max-height: calc(100dvh - var(--activity-top, 0px) - var(--s-3)); overflow-y: auto; overscroll-behavior: contain;
+    transform-origin: 50% 0; animation: la-drop var(--t-base) var(--la-spring) both;
+  }
+  .la[data-open='true'] .la-head { min-height: 48px; padding-left: var(--s-4); }
+  .la[data-open='true'] .la-panel { padding: 0 var(--s-4) var(--s-3); }
+  .la-wrap[data-open='true'] .la-x { top: 2px; right: 2px; width: var(--touch); height: var(--touch); }
+  .la-grab { display: block; width: 36px; height: 5px; margin: var(--s-3) auto 0; border-radius: 3px; background: var(--rule-inverse); }
 }
-/* a short screen (a phone on its side, or with the keyboard up) has no room for a pill: its state stays on the game day tab's pulse */
-@media (max-width: 760px) and (max-height: 520px) {
-  .la-wrap { display: none; }
-  body[data-la] .app { padding-bottom: calc(var(--tabbar-h, 0px) + env(safe-area-inset-bottom, 0px)); }
-}
+/* a short screen (a phone on its side, or with the keyboard up) has no room for a card: the pill stays, compact, and a tap goes to its action */
+@media (max-height: 520px) { .la-grab { display: none; } }
+
+/* ---------- the lock-screen widget on the huddle (phones): the top activity as a static card, in the same inverse surface and layout as the expanded view ---------- */
+.la-widget { --r: 24px; margin: 0; }
+.la-widget .la-head { min-height: 48px; padding-inline: var(--s-4); cursor: default; pointer-events: none; }
+.la-widget .la-panel { padding: 0 var(--s-4) var(--s-4); }
 
 @keyframes la-open { from { transform: scale(0.9); opacity: 0.6; } to { transform: none; opacity: 1; } }
-@keyframes la-sheet { from { transform: translateY(24px) scale(0.98); opacity: 0.6; } to { transform: none; opacity: 1; } }
+@keyframes la-drop { from { transform: translateY(-14px) scale(0.94); opacity: 0.5; } to { transform: none; opacity: 1; } }
+@keyframes la-fade { from { opacity: 0; } to { opacity: 1; } }
+/* the haptic-style pop on a big moment: the pill swells a few percent and settles */
+@keyframes la-pop { 0% { transform: scale(1); } 35% { transform: scale(1.07); } 100% { transform: scale(1); } }
 @keyframes la-widen { from { max-width: 0; padding-left: 0; opacity: 0; } to { max-width: 15rem; padding-left: var(--s-2); opacity: 1; } }
 @keyframes la-pulse { 0% { box-shadow: 0 0 0 0 var(--green-on-inverse); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.la[data-motion='ok'][data-flash='true']:not([data-open='true']) .la-card { animation: la-pop 360ms var(--la-spring) both; }
 /* reduced motion: nothing animates, and the flash is just the text */
-.la[data-motion='reduced'] .la-card, .la[data-motion='reduced'] .la-ico::after, .la[data-motion='reduced'] .la-flash { animation: none; }
+.la[data-motion='reduced'] .la-card, .la[data-motion='reduced'] .la-ico::after, .la[data-motion='reduced'] .la-flash, .la-scrim[data-motion='reduced'] { animation: none; }
 .la[data-motion='reduced'] .la-bar i, .la[data-motion='reduced'] .la-prog i, .la[data-motion='reduced'] .la-meter i, .la[data-motion='reduced'] .la-dots i { transition: none; }
 @media (prefers-reduced-motion: reduce) {
-  .la-card, .la-ico::after, .la-flash { animation: none !important; }
+  .la-card, .la-ico::after, .la-flash, .la-scrim { animation: none !important; }
   .la-bar i, .la-prog i, .la-meter i, .la-dots i { transition: none !important; }
 }

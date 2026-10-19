@@ -5,7 +5,7 @@ import { ThemeSwitch } from '../components/ThemeSwitch';
 import { LiveDot } from '../components/ticker/LiveDot';
 import { AccountSwitcher } from './AccountSwitcher';
 import { useLiveMaybe } from './live/liveContext';
-import { FOOTER_NAV } from './routes';
+import { FOOTER_NAV, LEAGUES_NAV } from './routes';
 import { PAGES } from './names';
 import { LargeTitle, PhoneHeader } from './PhoneChrome';
 import { useFlip } from './useFlip';
@@ -42,11 +42,14 @@ export function Sidebar() {
       </NavLink>
       <TeamHeader />
       <div className="tn-tools">
+        <NavLink to={LEAGUES_NAV.path} className="tn-leagues">{LEAGUES_NAV.label}</NavLink>
+        {/* settings live with the account tools, not among the sections, so the tab row stays one line */}
+        <NavLink to={PAGES.settings.path} className="tn-leagues">{PAGES.settings.name}</NavLink>
         <AccountSwitcher />
         <ThemeSwitch className="tn-theme" />
       </div>
       <nav className="nav" aria-label="Primary" ref={nav}>
-        {order.map((n) => (
+        {order.filter((n) => n.path !== PAGES.settings.path).map((n) => (
           <NavLink
             key={n.path} to={n.path} end={n.path === '/'} data-flip={n.path}
             data-up={promoted[n.path] ? 'true' : undefined} title={promoted[n.path] ? `up front: ${promoted[n.path]}` : undefined}

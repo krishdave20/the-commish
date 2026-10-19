@@ -77,7 +77,7 @@ function setup(o: Setup = {}) {
     },
     playersFile: playersFile(),
   });
-  const utils = renderApp({ linked, route: o.route ?? '/nfl', sleeper, loadModel: sampleLoadModel(liveSampleModel) });
+  const utils = renderApp({ linked, route: o.route ?? '/nfl?tab=scoreboard', sleeper, loadModel: sampleLoadModel(liveSampleModel) });
   return { state, kickoff, ...utils };
 }
 

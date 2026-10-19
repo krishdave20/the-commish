@@ -69,7 +69,7 @@ describe('the bottom tab bar', () => {
     expect(more).toHaveAttribute('aria-expanded', 'true');
     const all = within(within(sheet).getByRole('navigation', { name: 'All sections' }));
     expect(all.getAllByRole('link').map((a) => a.textContent)).toEqual([
-      'huddle', 'game day', 'locker room', 'playoff picture', 'hot takes', 'nfl', 'waiver wire', 'trade block', 'scouting report', 'draft room', 'front office', 'under the hood',
+      'huddle', 'game day', 'locker room', 'playoff picture', 'hot takes', 'nfl', 'waiver wire', 'trade block', 'scouting report', 'draft room', 'record book', 'front office', 'all leagues', 'under the hood',
     ]);
     expect(all.getByRole('link', { name: 'hot takes' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByTestId('sheet-handle')).toBeInTheDocument();

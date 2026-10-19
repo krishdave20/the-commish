@@ -8,22 +8,28 @@ import { useNow } from '../app/useNow';
 import { usePageTitle } from '../app/usePageTitle';
 import { PageHeader } from '../components/PageHeader';
 import { PageTabs } from '../components/PageTabs';
+import { useReducedMotion } from '../components/motion';
 import { Segmented } from '../components/Segmented';
 import { usePlayersFile } from '../app/playersData';
 import { buildStandings, CONFERENCES, playerInfo } from '../engine/nfl';
 import type { Conference, WeekOfStats } from '../engine/nfl';
 import { GameDrawer } from './nfl/GameDrawer';
+import { LiveStrip } from './nfl/LiveStrip';
+import { LiveTab } from './nfl/LiveTab';
 import { PictureView } from './nfl/Picture';
 import { Scoreboard } from './nfl/Scoreboard';
 import { StandingsView } from './nfl/Standings';
 import { StatsView } from './nfl/StatsView';
 import { LAST_WEEK } from './nfl/data';
+import { useLiveChanges } from './nfl/useLiveChanges';
 import { useNflOnly } from './nfl/useNflOnly';
 import { useSeasonResults, useSeasonStats, useWeekGames } from './nfl/useNflWeek';
 import '../styles/nfl.css';
 
-type Tab = 'scoreboard' | 'stats' | 'standings' | 'picture';
-const TABS: Array<{ value: Tab; label: string }> = [
+type Tab = 'live' | 'scoreboard' | 'stats' | 'standings' | 'picture';
+/** The tabs; the live one comes first and carries the count of games in progress ("live · 3"). */
+const tabsFor = (liveCount: number): Array<{ value: Tab; label: string }> => [
+  { value: 'live', label: liveCount > 0 ? `live · ${liveCount}` : 'live' },
   { value: 'scoreboard', label: NFL_COPY.tabs.scoreboard },
   { value: 'stats', label: NFL_COPY.tabs.stats },
   { value: 'standings', label: NFL_COPY.tabs.standings },
@@ -74,7 +80,7 @@ export default function Nfl() {
   const asked = Number(params.get('week'));
   const week = Number.isInteger(asked) && asked >= 1 && asked <= LAST_WEEK ? asked : currentWeek;
   const conf: Conference = params.get('conf') === 'NFC' ? 'NFC' : 'AFC';
-  const tab = (['stats', 'standings', 'picture'] as string[]).includes(params.get('tab') ?? '') ? (params.get('tab') as Tab) : 'scoreboard';
+  const tab = (['live', 'stats', 'standings', 'picture'] as string[]).includes(params.get('tab') ?? '') ? (params.get('tab') as Tab) : 'scoreboard';
 
   const setParam = (k: string, v: string | null, replace = true) => setParams((prev) => {
     const out = new URLSearchParams(prev);
@@ -91,6 +97,14 @@ export default function Nfl() {
   const seasonStats = useSeasonStats(season, currentWeek, tab === 'stats');
   const standings = useMemo(() => buildStandings(results.games), [results.games]);
 
+  // games in progress this week (halftime included): the live tab, its count, and the default tab while any is on
+  const liveGames = useMemo(() => (cur.games ?? []).filter((g) => g.state === 'live'), [cur.games]);
+  const liveCount = liveGames.length;
+  const defaultTab: Tab = liveCount > 0 && week === currentWeek && !live.replay ? 'live' : 'scoreboard';
+  const tabs = useMemo(() => tabsFor(liveCount), [liveCount]);
+  const changes = useLiveChanges(live.replay ? null : cur.games);
+  const motion = !useReducedMotion();
+
   // my rostered players by NFL team (standings) and my starters by team (this week's cards)
   const mineRostered = useMemo(() => {
     const m = new Map<string, number>();
@@ -106,6 +120,14 @@ export default function Nfl() {
     for (const s of me?.starters ?? []) if (s.nfl) m.set(s.nfl, (m.get(s.nfl) ?? 0) + 1);
     return m;
   }, [live.view, live.replay, week, currentWeek, nflOnly]);
+
+  // my starters (with their live fantasy points) and the league's rostered players, for the live cards; none under "nfl only" or in a replay
+  const mineLive = useMemo(() => {
+    if (nflOnly || live.replay) return [];
+    const mine = live.view?.mine;
+    return (mine ? (mine.a.isMe ? mine.a : mine.b) : null)?.starters ?? [];
+  }, [live.view, live.replay, nflOnly]);
+  const leaguePlayers = useMemo(() => (nflOnly ? [] : model?.players ?? []), [model, nflOnly]);
 
   const gameId = params.get('game');
   const openGame = gameId ? (viewed.games ?? []).find((g) => g.id === gameId) ?? (cur.games ?? []).find((g) => g.id === gameId) ?? null : null;
@@ -135,40 +157,50 @@ export default function Nfl() {
           nfl only
         </button>
       </div>
-      <PageTabs tabs={TABS} label="nfl view" defaultTab="scoreboard">
-        {(t) => (
-          <>
-            {t === 'scoreboard' && (
-              <>
-                {currentWeek > 0 && <WeekPicker week={week} currentWeek={currentWeek} onPick={(w) => setParam('week', w === currentWeek ? null : String(w))} />}
-                {viewed.games ? (
-                  <Scoreboard
-                    week={week} currentWeek={currentWeek} games={viewed.games} mineByTeam={mineStarters}
-                    now={week === currentWeek && live.snapshot ? live.snapshot.clock : wall}
-                    onOpen={(id) => setParam('game', id, false)} fantasy={!nflOnly}
-                  />
-                ) : (
-                  <p className="note" role="status">{error ? `could not load the scores. ${error}` : 'loading the scoreboard…'}</p>
-                )}
-              </>
-            )}
-            {t === 'stats' && (
-              <StatsPane weeks={seasonStats.weeks} records={standings.records} ready={results.ready} currentWeek={currentWeek} loading={seasonStats.loading} />
-            )}
-            {(t === 'standings' || t === 'picture') && onTable && (
-              <>
-                <Segmented
-                  label="conference" value={conf} onChange={(c) => setParam('conf', c === 'AFC' ? null : c)}
-                  options={CONFERENCES.map((c) => ({ value: c, label: c.toLowerCase() }))}
+      <div className="nf-tabs" data-live={liveCount > 0 ? 'true' : undefined}>
+        <PageTabs tabs={tabs} label="nfl view" defaultTab={defaultTab}>
+          {(t) => (
+            <>
+              {t === 'live' && (
+                <LiveTab
+                  games={liveGames} now={live.snapshot ? live.snapshot.clock : wall} next={live.nextGame} fantasy={!nflOnly}
+                  starters={mineLive} players={leaguePlayers} changes={changes} loaded={cur.games !== null} motion={motion}
+                  asOf={cur.asOf} onOpen={(id) => setParam('game', id, false)}
                 />
-                {!results.ready && !results.error ? <p className="note" role="status">loading the season’s results…</p>
-                  : t === 'standings' ? <StandingsView standings={standings} conference={conf} mine={mineRostered} />
-                    : <PictureView standings={standings} conference={conf} />}
-              </>
-            )}
-          </>
-        )}
-      </PageTabs>
+              )}
+              {t === 'scoreboard' && (
+                <>
+                  {currentWeek > 0 && <WeekPicker week={week} currentWeek={currentWeek} onPick={(w) => setParam('week', w === currentWeek ? null : String(w))} />}
+                  {week === currentWeek && <LiveStrip games={liveGames} />}
+                  {viewed.games ? (
+                    <Scoreboard
+                      week={week} currentWeek={currentWeek} games={viewed.games} mineByTeam={mineStarters}
+                      now={week === currentWeek && live.snapshot ? live.snapshot.clock : wall}
+                      onOpen={(id) => setParam('game', id, false)} fantasy={!nflOnly}
+                    />
+                  ) : (
+                    <p className="note" role="status">{error ? `could not load the scores. ${error}` : 'loading the scoreboard…'}</p>
+                  )}
+                </>
+              )}
+              {t === 'stats' && (
+                <StatsPane weeks={seasonStats.weeks} records={standings.records} ready={results.ready} currentWeek={currentWeek} loading={seasonStats.loading} />
+              )}
+              {(t === 'standings' || t === 'picture') && onTable && (
+                <>
+                  <Segmented
+                    label="conference" value={conf} onChange={(c) => setParam('conf', c === 'AFC' ? null : c)}
+                    options={CONFERENCES.map((c) => ({ value: c, label: c.toLowerCase() }))}
+                  />
+                  {!results.ready && !results.error ? <p className="note" role="status">loading the season’s results…</p>
+                    : t === 'standings' ? <StandingsView standings={standings} conference={conf} mine={mineRostered} />
+                      : <PictureView standings={standings} conference={conf} />}
+                </>
+              )}
+            </>
+          )}
+        </PageTabs>
+      </div>
       <p className="note attribution">scores: sleeper public api · stats: sleeper{nflOnly ? '' : ' · fantasy points and rosters: sleeper league data'}.</p>
       {openGame && (
         <GameDrawer game={openGame} week={openWeek} currentWeek={currentWeek} season={season} fantasy={!nflOnly} onClose={() => setParam('game', null)} />

@@ -207,7 +207,7 @@ describe('playoff picture (/race)', () => {
     expect(within(strip).getByText('magic number').closest('.kpi')).toHaveTextContent(/\d|—/);
 
     const tabs = screen.getByRole('radiogroup', { name: 'Playoff picture sections' });
-    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['standings', 'brackets', 'playoff machine', 'odds detail']);
+    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['standings', 'power rankings', 'brackets', 'playoff machine', 'odds detail']);
 
     const table = await screen.findByRole('table', { name: 'Playoff picture standings' });
     expect(within(table).getAllByRole('row')).toHaveLength(1 + 4);
@@ -422,10 +422,10 @@ describe('trade block (/trades)', () => {
     expect(screen.getByRole('radio', { name: 'analyzer' })).toBeChecked();
   });
 
-  it('is three tabs: analyzer, handshake deals and dynasty', async () => {
+  it('is five tabs: analyzer, handshake deals, trade finder, trade history and dynasty', async () => {
     const { user } = renderApp({ linked, route: '/trades' });
     const tabs = await screen.findByRole('radiogroup', { name: 'Trade block sections' });
-    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['analyzer', 'handshake deals', 'dynasty']);
+    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['analyzer', 'handshake deals', 'trade finder', 'trade history', 'dynasty']);
     expect(screen.getByRole('heading', { level: 2, name: 'the analyzer' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'handshake deals' })).not.toBeInTheDocument();
     await user.click(within(tabs).getByRole('radio', { name: 'handshake deals' }));

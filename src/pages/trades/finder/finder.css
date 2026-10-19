@@ -1,0 +1,21 @@
+/* Trade finder cards: one section card, ideas separated by hairlines (no cards inside cards). Tokens only. */
+.finder-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.fcard { display: grid; gap: var(--s-2); padding: var(--s-3) 0; border-top: 1px solid var(--rule-2); min-width: 0; }
+.fcard:first-child { border-top: 0; padding-top: 0; }
+.fcard-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); font-size: var(--fs-sm); }
+.fcard-with { font-weight: 500; }
+.fcard-odds { margin-left: auto; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.ftrade { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s-3); align-items: center; }
+.fside { display: grid; gap: var(--s-1); min-width: 0; }
+.fside-row { display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; flex-wrap: wrap; }
+.farrow { color: var(--ink-3); font-size: var(--fs-base); }
+.flegs { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.fgains { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.fdrops { margin: 0; }
+.ffilters { align-items: center; }
+.ftoggle { display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--fs-sm); color: var(--ink-2); min-height: var(--touch); }
+@media (max-width: 760px) {
+  .ftrade { grid-template-columns: minmax(0, 1fr); gap: var(--s-2); }
+  .farrow { display: none; }
+  .fcard-odds { margin-left: 0; flex-basis: 100%; }
+}

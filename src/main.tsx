@@ -12,6 +12,7 @@ import { App } from './App.tsx';
 import './styles/phone.css'; // after every other stylesheet (the app's imports above pull in the page ones), so a phone rule wins a tie
 import { StartupError } from './app/StartupError.tsx';
 import { createAccountStore, createDataLayer } from './data';
+import { startPwa } from './app/pwa';
 
 function boot() {
   try {
@@ -22,4 +23,5 @@ function boot() {
   }
 }
 
+startPwa(); // install offer + service worker (production only)
 createRoot(document.getElementById('root')!).render(<StrictMode>{boot()}</StrictMode>);

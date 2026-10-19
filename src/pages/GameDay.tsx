@@ -23,6 +23,7 @@ import { GameBalls, Sideline } from './gameday/League';
 import { MainEvent } from './gameday/MainEvent';
 import { GamesContext, HeadToHead, HeadToHeadFor, Hinges } from './gameday/matchup';
 import { ReplayBar } from './gameday/ReplayBar';
+import { Scouting, SCOUT_TAB_LABEL } from './gameday/scout';
 import { StandingsMoves, Storylines } from './gameday/Storylines';
 import { useWeekView } from './gameday/useWeekView';
 import { WeekPicker } from './gameday/WeekPicker';
@@ -30,11 +31,12 @@ import { weekList } from './gameday/weekRange';
 import { resolveWeek } from './gameday/weekParam';
 import './gameday/gameday.css';
 
-type LeagueTab = 'around' | 'h2h' | 'hinges' | 'balls' | 'drive' | 'sideline';
+type LeagueTab = 'around' | 'h2h' | 'scout' | 'hinges' | 'balls' | 'drive' | 'sideline';
 
 const ALL_TABS: Array<{ value: LeagueTab; label: string }> = [
   { value: 'around', label: FEATURE.aroundLeague },
   { value: 'h2h', label: 'head to head' },
+  { value: 'scout', label: SCOUT_TAB_LABEL },
   { value: 'hinges', label: 'hinges on' },
   { value: 'balls', label: FEATURE.gameBalls },
   { value: 'drive', label: FEATURE.driveChart },
@@ -151,7 +153,7 @@ export default function GameDay() {
   const nextLine = !live.live && live.nextGame?.kickoff
     ? `next kickoff: ${formatKickoff(live.nextGame.kickoff)} · ${live.nextGame.away} at ${live.nextGame.home}`.toLowerCase()
     : null;
-  const tabs = ALL_TABS.filter((t) => t.value !== 'hinges' || (isCurrent && !live.replay));
+  const tabs = ALL_TABS.filter((t) => (t.value !== 'hinges' || (isCurrent && !live.replay)) && (t.value !== 'scout' || !live.replay));
   const playoffStart = model?.meta.playoff?.weekStart ?? (model && model.meta.lastRegularWeek > 0 ? model.meta.lastRegularWeek + 1 : null);
 
   return (
@@ -220,6 +222,8 @@ export default function GameDay() {
                       {isCurrent && !live.replay ? <HeadToHead /> : shown.view.mine ? <HeadToHeadFor m={shown.view.mine} /> : <p className="note">you have no matchup this week.</p>}
                     </div>
                   )}
+                  {/* scouting: the matchup on screen (yours by default), this week or any finished one */}
+                  {tab === 'scout' && <div className="gd-panel"><Scouting focus={focus} ctx={shown.ctx} snapshot={shown.snapshot} week={selected} currentWeek={currentWeek} /></div>}
                   {tab === 'hinges' && <div className="gd-panel"><Hinges /></div>}
                   {tab === 'balls' && (
                     <div className="gd-panel">

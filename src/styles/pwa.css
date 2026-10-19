@@ -1,0 +1,26 @@
+/* The installable app: the offline chip, the "new version is ready" prompt and the front office "app" section. Tokens only. */
+
+/* ---------- offline chip (src/app/pwa/OfflineChip.tsx): top right, just under the score ticker when there is one (--ticker-h is set on .shell) ---------- */
+.pwa-offline {
+  position: fixed; z-index: 70; top: calc(env(safe-area-inset-top, 0px) + var(--ticker-h, 0px) + var(--s-1)); right: var(--s-2);
+  pointer-events: none; display: flex; justify-content: flex-end; max-width: calc(100vw - var(--s-3));
+}
+.pwa-offline .chip { box-shadow: var(--shadow-pop); }
+
+/* ---------- update prompt (src/app/pwa/UpdatePrompt.tsx) ---------- */
+.pwa-update {
+  position: fixed; z-index: 70; left: 50%; transform: translateX(-50%); display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: var(--s-2);
+  bottom: calc(var(--tabbar-h, 0px) + env(safe-area-inset-bottom, 0px) + var(--s-3)); max-width: calc(100vw - var(--s-3) * 2);
+  background: var(--surface-inverse); color: var(--on-inverse); border-radius: var(--r); padding: var(--s-2) var(--s-3); font-size: var(--fs-sm);
+  box-shadow: var(--shadow-pop); box-sizing: border-box;
+}
+body[data-la] .pwa-update { bottom: calc(var(--tabbar-h, 0px) + env(safe-area-inset-bottom, 0px) + var(--touch) + var(--s-3) * 2); }
+.pwa-update .btn.solid { background: var(--on-inverse); color: var(--surface-inverse); }
+.pwa-update .btn.solid:hover { background: var(--on-inverse-2); color: var(--surface-inverse); }
+.pwa-update .btn.quiet { color: var(--on-inverse-2); }
+.pwa-update .btn.quiet:hover { background: var(--fill-inverse); color: var(--on-inverse); }
+
+/* ---------- front office "app" section (src/pages/settings/AppSection.tsx) ---------- */
+.pwa-steps { margin: 0; padding-left: var(--s-4); display: grid; gap: var(--s-2); }
+.pwa-share { display: inline-block; vertical-align: -4px; width: 20px; height: 20px; color: var(--green); margin: 0 2px; }
+.pwa-status { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }

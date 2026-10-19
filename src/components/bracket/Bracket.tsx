@@ -7,6 +7,7 @@ import {
 } from '../../engine';
 import { Uprights } from '../art/Uprights';
 import { OddsCell } from '../OddsCell';
+import { ShareButton, bracketCard } from '../share';
 import { useReducedMotion } from '../motion';
 import { TOUCH_QUERY, useMediaQuery } from '../useMediaQuery';
 import { copyFor, roundLabel, weeksLabel } from './copy';
@@ -160,6 +161,7 @@ export function Bracket({ bracket, ctx, names, meRid, caption, compact = false, 
         <button type="button" className="btn solid" onClick={simIt}>{runNo === 0 ? 'sim it' : 'reroll'}</button>
         <button type="button" className="btn warn" onClick={reset} disabled={nPicked === 0 && !run}>reset</button>
         <span className="note br-count">{open.length ? `${nPicked} of ${open.length} open games picked` : 'every game has been played'}</span>
+        <ShareButton card={bracketCard({ bracket, resolved, names, meRid, champion, picks: nPicked })} />
       </div>
       <p className="note br-hint">{copy.hint}</p>
       {caption && <p className="note br-caption">{caption}</p>}

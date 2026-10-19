@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LiveContext } from '../../app/live/liveContext';
 import type { LiveValue } from '../../app/live/liveContext';
@@ -12,7 +12,12 @@ import type { RawChange } from '../../engine/live';
 import { ctx as liveCtx, game, snapshot } from '../../engine/live/test-helpers';
 import { model, ctx as momentCtx } from '../../engine/moments/test-helpers';
 import type { DraftLiveInfo, Moment, MomentCtx } from '../../engine/moments';
+import { Ticker } from '../ticker/Ticker';
 import { LiveActivity } from './LiveActivity';
+import { NowCard } from './NowCard';
+import { resetHaptics } from './haptic';
+import { PHONE_QUERY } from '../useMediaQuery';
+import { SHORT_QUERY } from './useShortScreen';
 
 const H = 3_600_000, MIN = 60_000;
 const NOW = new Date(2026, 9, 22, 17, 0, 0).getTime();
@@ -23,6 +28,8 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   resetNowOverride();
+  resetHaptics();
+  document.body.removeAttribute('data-la');
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
 });
 
@@ -875,5 +882,305 @@ describe('live activity: announcements', () => {
     const { rerender } = render(tree(value([live(), clock('you’re on the clock in 1 pick')])));
     rerender(tree(value([live(), clock()])));
     expect(status()).toHaveTextContent('you’re on the clock');
+  });
+});
+
+/* ======================================================================================================================================= */
+
+/* On a phone the island floats in the top bar and an open card is a top sheet. The screen is a mocked matchMedia: width (the phone breakpoint), height (the
+   short-screen query) and the motion preference. */
+function stubScreen({ phone = true, short = false, reduce = false }: { phone?: boolean; short?: boolean; reduce?: boolean } = {}) {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: q === PHONE_QUERY ? phone : q === SHORT_QUERY ? short : q.includes('no-preference') ? !reduce : q.includes('reduce') ? reduce : false,
+    media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false,
+  }));
+}
+const Where = () => <p data-testid="where">{useLocation().pathname}</p>;
+const phoneTree = (v: MomentsValue, l: LiveValue | null = null, extra: React.ReactNode = null) => (
+  <MemoryRouter>
+    <LiveContext.Provider value={l}><MomentsContext.Provider value={v}>{extra}<LiveActivity /><Where /></MomentsContext.Provider></LiveContext.Provider>
+  </MemoryRouter>
+);
+/** a live value the ticker can draw too: it reads the phase, the week and whether games are on */
+const tickerLive = (changes: RawChange[] = []): LiveValue => ({ ...liveValue(changes), live: true, week: 7, phase: 'live', snapshot: null } as unknown as LiveValue);
+const scrim = () => document.querySelector('.la-scrim') as HTMLElement | null;
+const swipeUp = () => {
+  const card = document.querySelector('.la-card') as HTMLElement;
+  fireEvent.pointerDown(card, { clientX: 200, clientY: 200, pointerId: 1, pointerType: 'touch', button: 0 });
+  fireEvent.pointerUp(window, { clientX: 204, clientY: 120, pointerId: 1, pointerType: 'touch' });
+};
+
+describe('live activity: on a phone', () => {
+  beforeEach(() => stubScreen());
+
+  it('shows the live matchup as the pill, with the ticker on (nothing hides it)', () => {
+    render(phoneTree(value([live()]), tickerLive(), <Ticker />));
+    expect(screen.getByRole('region', { name: 'league scores' })).toBeInTheDocument();
+    expect(head()).toHaveTextContent('icemen');
+    expect(head()).toHaveAccessibleName(expect.stringContaining('icemen'));
+    expect(document.body.dataset.la).toBe('on');
+    expect(document.querySelector('.la')).toHaveAttribute('data-kind', 'matchup');
+  });
+
+  it('the ticker drops its pinned "my matchup" pill while the pill shows it, and keeps the rest', () => {
+    const { unmount } = render(phoneTree(value([live()]), tickerLive(), <Ticker />));
+    const ticker = screen.getByRole('region', { name: 'league scores' });
+    expect(ticker.querySelector('.tk-pin')).toBeNull();
+    // the other matchups and the status tag stay
+    expect(within(ticker).getByText('live')).toBeInTheDocument();
+    expect(ticker.querySelectorAll('.tk-item').length).toBeGreaterThan(0);
+    // it comes back when the pill goes
+    unmount();
+    render(phoneTree(value([]), tickerLive(), <Ticker />));
+    expect(screen.getByRole('region', { name: 'league scores' }).querySelector('.tk-pin')).not.toBeNull();
+  });
+
+  it('keeps the ticker’s pinned matchup when the pill shows something else, or when the screen is wide', () => {
+    // a draft clock (99) outranks the live matchup (92): the matchup is a circle, not the pill, so the ticker keeps its own copy of the score
+    render(phoneTree(value([clock('you’re on the clock'), live()]), tickerLive(), <Ticker />));
+    expect(head()).toHaveTextContent('on the clock');
+    expect(screen.getByRole('region', { name: 'league scores' }).querySelector('.tk-pin')).not.toBeNull();
+    cleanup();
+    stubScreen({ phone: false });
+    render(phoneTree(value([live()]), tickerLive(), <Ticker />));
+    expect(screen.getByRole('region', { name: 'league scores' }).querySelector('.tk-pin')).not.toBeNull();
+  });
+
+  it('opens a top sheet: a dialog named for the activity, with a scrim, focus on its header, and a grabber', async () => {
+    const user = userEvent.setup();
+    render(phoneTree(value([kickoff()])));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(scrim()).toBeNull();
+    await user.click(head());
+    const dialog = screen.getByRole('dialog', { name: 'kickoff' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveClass('la-wrap');
+    expect(scrim()).toBeInTheDocument();
+    expect(head()).toHaveAttribute('aria-expanded', 'true');
+    expect(head()).toHaveFocus();
+    expect(document.querySelector('.la-grab')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'check lineup →' })).toBeVisible();
+  });
+
+  it('closes with a swipe up, but a swipe down does nothing (a top sheet is pulled up)', async () => {
+    const user = userEvent.setup();
+    render(phoneTree(value([kickoff()])));
+    await user.click(head());
+    const card = document.querySelector('.la-card') as HTMLElement;
+    fireEvent.pointerDown(card, { clientX: 200, clientY: 100, pointerId: 1, pointerType: 'touch', button: 0 });
+    fireEvent.pointerUp(window, { clientX: 204, clientY: 190, pointerId: 1, pointerType: 'touch' });
+    expect(head()).toHaveAttribute('aria-expanded', 'true');
+    swipeUp();
+    expect(head()).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(scrim()).toBeNull();
+  });
+
+  it('closes on a tap outside (the scrim, or anything else) and the tap does not reach the page under it', async () => {
+    const user = userEvent.setup();
+    const hit = vi.fn();
+    render(phoneTree(value([kickoff()]), null, <button type="button" onClick={hit}>page below</button>));
+    await user.click(head());
+    await user.click(scrim()!);
+    expect(head()).toHaveAttribute('aria-expanded', 'false');
+    // a press outside the island on the page itself (a button under the scrim in the real page) closes it and its click is swallowed
+    await user.click(head());
+    await user.click(screen.getByRole('button', { name: 'page below', hidden: true }));
+    expect(head()).toHaveAttribute('aria-expanded', 'false');
+    expect(hit).not.toHaveBeenCalled();
+    // and the next, ordinary click works again
+    await act(async () => { await new Promise((r) => setTimeout(r, 450)); });
+    await user.click(screen.getByRole('button', { name: 'page below' }));
+    expect(hit).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes on Escape and puts focus back on the pill', async () => {
+    const user = userEvent.setup();
+    render(phoneTree(value([kickoff()])));
+    await user.click(head());
+    await user.keyboard('{Escape}');
+    expect(head()).toHaveAttribute('aria-expanded', 'false');
+    expect(head()).toHaveFocus();
+  });
+
+  it('keeps Tab inside the open sheet', async () => {
+    const user = userEvent.setup();
+    render(phoneTree(value(three3())));
+    await user.click(head());
+    const go = screen.getByRole('link', { name: 'open game day →' }), dismiss = screen.getByRole('button', { name: /dismiss/ });
+    dismiss.focus();
+    await user.tab();
+    expect(head()).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(dismiss).toHaveFocus();
+    go.focus();
+    await user.tab();
+    expect(dismiss).toHaveFocus();
+  });
+
+  it('keeps the pager between activities: the arrows and a swipe sideways', async () => {
+    const user = userEvent.setup();
+    render(phoneTree(value(three3())));
+    await user.click(head());
+    expect(screen.getByRole('link', { name: 'open game day →' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'next activity' }));
+    expect(screen.getByRole('link', { name: 'check lineup →' })).toBeVisible();
+    const card = document.querySelector('.la-card') as HTMLElement;
+    fireEvent.pointerDown(card, { clientX: 200, clientY: 100, pointerId: 1, pointerType: 'touch', button: 0 });
+    fireEvent.pointerUp(window, { clientX: 110, clientY: 100, pointerId: 1, pointerType: 'touch' });
+    expect(screen.getByRole('link', { name: 'open waiver wire →' })).toBeVisible();
+    expect(head()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('shows at most two minimal circles, then counts the rest', () => {
+    const more = [live(), kickoff(), waivers(), recap(), { ...waivers(), id: 'trade', kind: 'trade-deadline' as const, priority: 40, label: 'deadline', title: 'trade deadline' }];
+    render(phoneTree(value(more)));
+    expect(document.querySelectorAll('.la-min')).toHaveLength(2);
+    expect(document.querySelector('.la-more')).toHaveTextContent('+2');
+    // the pill is told how much room the circles take
+    expect((document.querySelector('.la-wrap') as HTMLElement).style.getPropertyValue('--la-mins-w')).not.toBe('');
+  });
+});
+
+const three3 = () => [live(), kickoff(), waivers()];
+
+describe('live activity: a short screen', () => {
+  it('shows only the compact pill: no circles, no card, and a tap goes to its action', async () => {
+    stubScreen({ short: true });
+    const user = userEvent.setup();
+    render(phoneTree(value(three3())));
+    expect(head()).toHaveTextContent('icemen');
+    expect(document.body.dataset.la).toBe('on');
+    expect(document.querySelectorAll('.la-min')).toHaveLength(0);
+    expect(head()).not.toHaveAttribute('aria-expanded');
+    expect(head()).toHaveAccessibleName(expect.stringMatching(/open game day$/));
+    await user.click(head());
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('.la-panel')).toBeEmptyDOMElement();
+    expect(screen.getByTestId('where')).toHaveTextContent('/gameday');
+  });
+
+  it('closes a card that was open when the screen turned short (a phone turned on its side)', async () => {
+    stubScreen();
+    const user = userEvent.setup();
+    const { rerender } = render(phoneTree(value([kickoff()])));
+    await user.click(head());
+    expect(head()).toHaveAttribute('aria-expanded', 'true');
+    stubScreen({ short: true });
+    rerender(phoneTree(value([kickoff()])));
+    expect(head()).not.toHaveAttribute('aria-expanded');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('a wide screen that is short and touch (a big phone on its side) is compact too', () => {
+    stubScreen({ phone: false, short: true });
+    render(phoneTree(value([kickoff(), waivers()])));
+    expect(document.querySelectorAll('.la-min')).toHaveLength(0);
+    expect(head()).not.toHaveAttribute('aria-expanded');
+  });
+
+  it('a long press still hides it', () => {
+    stubScreen({ short: true });
+    stepTime();
+    render(phoneTree(value([kickoff()])));
+    fireEvent.pointerDown(head(), { clientX: 10, clientY: 10, pointerId: 1, pointerType: 'touch', button: 0 });
+    act(() => { vi.advanceTimersByTime(600); });
+    expect(document.querySelector('.la-wrap')).toBeNull();
+  });
+});
+
+describe('live activity: a big moment on a phone', () => {
+  beforeEach(stepTime);
+  const vibrate = () => vi.fn(() => true);
+  const flashOn = () => {
+    const r = render(phoneTree(value([live()]), liveValue()));
+    r.rerender(phoneTree(value([live()]), liveValue([change(6.4, Date.now() + 30_000)])));
+    return r;
+  };
+
+  it('pops the pill (data-flash drives a scale animation) and ticks the device, once the viewer has touched the page', () => {
+    stubScreen();
+    const v = vibrate();
+    vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { vibrate: v }));
+    fireEvent.pointerDown(document.body);
+    flashOn();
+    expect(document.querySelector('.la')).toHaveAttribute('data-flash', 'true');
+    expect(document.querySelector('.la')).toHaveAttribute('data-motion', 'ok');
+    expect(v).toHaveBeenCalledWith(10);
+    expect(v).toHaveBeenCalledTimes(1);
+  });
+
+  it('never vibrates before the viewer has touched the page (not on load)', () => {
+    stubScreen();
+    const v = vibrate();
+    vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { vibrate: v }));
+    flashOn();
+    expect(document.querySelector('.la-flash')).toHaveTextContent('+6.4 · runner');
+    expect(v).not.toHaveBeenCalled();
+  });
+
+  it('with reduced motion there is no pop and no vibration, only the text', () => {
+    stubScreen({ reduce: true });
+    const v = vibrate();
+    vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { vibrate: v }));
+    fireEvent.pointerDown(document.body);
+    flashOn();
+    expect(document.querySelector('.la')).toHaveAttribute('data-motion', 'reduced');
+    expect(document.querySelector('.la-flash')).toHaveTextContent('+6.4 · runner');
+    expect(v).not.toHaveBeenCalled();
+  });
+
+  it('does not vibrate on a wide screen, and copes with a browser that cannot', () => {
+    stubScreen({ phone: false });
+    const v = vibrate();
+    vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { vibrate: v }));
+    fireEvent.pointerDown(document.body);
+    flashOn();
+    expect(v).not.toHaveBeenCalled();
+    cleanup();
+    stubScreen();
+    vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { vibrate: undefined }));
+    expect(() => flashOn()).not.toThrow();
+  });
+
+  it('with reduced motion the sheet and the pill hold still (data-motion on the pill and the scrim)', async () => {
+    stubScreen({ reduce: true });
+    render(phoneTree(value([kickoff()])));
+    fireEvent.click(head());
+    expect(document.querySelector('.la')).toHaveAttribute('data-motion', 'reduced');
+    expect(scrim()).toHaveAttribute('data-motion', 'reduced');
+  });
+});
+
+describe('the now card on the huddle (phones)', () => {
+  const card = (v: MomentsValue, l: LiveValue | null = null) => (
+    <MemoryRouter><LiveContext.Provider value={l}><MomentsContext.Provider value={v}><NowCard /></MomentsContext.Provider></LiveContext.Provider></MemoryRouter>
+  );
+
+  it('mirrors the top activity in the expanded view’s layout, with its one action', () => {
+    stubScreen();
+    render(card(value([live(), kickoff()]), liveValue()));
+    const now = screen.getByRole('region', { name: 'now: live matchup' });
+    expect(within(now).getByRole('img', { name: /to win/ })).toBeInTheDocument();
+    expect(within(now).getAllByText(/^projected/)).toHaveLength(2);
+    expect(within(now).getByRole('link', { name: 'open game day →' })).toHaveAttribute('href', '/gameday');
+    // static: nothing to fold, swipe or dismiss
+    expect(within(now).queryByRole('button')).toBeNull();
+  });
+
+  it('shows a countdown activity too, and ticks', () => {
+    stubScreen();
+    render(card(value([waivers()])));
+    expect(screen.getByRole('region', { name: 'now: waivers' })).toHaveTextContent('3h 12m');
+  });
+
+  it('is nothing on a wide screen, or when nothing is ongoing', () => {
+    stubScreen({ phone: false });
+    const { unmount } = render(card(value([live()]), liveValue()));
+    expect(screen.queryByRole('region')).toBeNull();
+    unmount();
+    stubScreen();
+    render(card(value([])));
+    expect(screen.queryByRole('region')).toBeNull();
   });
 });

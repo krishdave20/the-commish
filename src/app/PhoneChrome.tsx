@@ -7,7 +7,7 @@ import { ThemeSwitch } from '../components/ThemeSwitch';
 import { LiveDot } from '../components/ticker/LiveDot';
 import { AccountSwitcher } from './AccountSwitcher';
 import { useLiveMaybe } from './live/liveContext';
-import { FOOTER_NAV } from './routes';
+import { FOOTER_NAV, LEAGUES_NAV } from './routes';
 import { PAGES } from './names';
 import type { PageKey } from './names';
 import { TabIcon } from './tabIcons';
@@ -96,7 +96,7 @@ export function TabBar() {
             const isLive = LIVE_PATHS.has(n.path) && live;
             return (
               <li key={n.path}>
-                <NavLink to={n.path} end={n.path === '/'} className="tb-item" title={promoted[n.path] ? `up front: ${promoted[n.path]}` : undefined}>
+                <NavLink to={n.path} end={n.path === '/'} className="tb-item" onClick={() => setOpenAt(null)} title={promoted[n.path] ? `up front: ${promoted[n.path]}` : undefined}>
                   <span className="tb-icon">
                     <TabIcon name={key} />
                     {isLive && <LiveDot />}
@@ -126,7 +126,8 @@ export function TabBar() {
         </ul>
       </nav>
       <Drawer open={open} onClose={() => setOpenAt(null)} title="more" kicker="every section">
-        <div id={sheetId} className="more-sheet">
+        {/* following any link in the sheet forgets where it was opened, so coming back to that page doesn't reopen it */}
+        <div id={sheetId} className="more-sheet" onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setOpenAt(null); }}>
           <div className="more-appearance">
             <span className="micro">appearance</span>
             <ThemeSwitch />
@@ -142,6 +143,8 @@ export function TabBar() {
                   </NavLink>
                 </li>
               ))}
+              {/* the multi-league dashboard: beside the league switcher on wide screens, here on a phone */}
+              <li><NavLink to={LEAGUES_NAV.path} className="more-link"><span>{LEAGUES_NAV.label}</span></NavLink></li>
               {FOOTER_NAV.map((n) => (
                 <li key={n.path}><NavLink to={n.path} className="more-link more-quiet"><span>{n.label}</span></NavLink></li>
               ))}
