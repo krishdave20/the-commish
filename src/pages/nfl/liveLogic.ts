@@ -1,7 +1,7 @@
 /* The pure rules of the nfl page's live tab: which games are in the red zone and how that reads, how live games sort, and the fantasy angle
    (your starters and the league's rostered players in each game). No React, no fetching. Everything is derived from the scores feed rows
    (`NfGame`, with the ball's situation) and the model's players; the yard mapping stays in engine/live/situation.ts. */
-import { gameStatusText, spotText } from '../../engine/live';
+import { gameStatusText, spotText, yardsToGoal } from '../../engine/live';
 import type { StarterLive } from '../../engine/live';
 import type { ModelPlayer } from '../../engine/types';
 import type { NfGame } from '../../engine/nfl';
@@ -118,4 +118,24 @@ export function attackOf(team: string, starters: readonly StarterLive[], players
     .filter((p) => p.ownerRid > 0 && p.nfl === team && SCORERS.has(p.pos) && !ids.has(p.pid))
     .sort((a, b) => (b.seasonAvg ?? 0) - (a.seasonAvg ?? 0) || a.name.localeCompare(b.name));
   return { mine, others };
+}
+
+/* ---------- the whip-around (the red zone section drawn like a broadcast) ---------- */
+
+/** Yards from the ball to the goal line for the team with the ball (1 to 99), null with no spot. */
+export function yardsOut(g: NfGame): number | null {
+  const s = g.situation;
+  return s ? yardsToGoal(s) : null;
+}
+
+export type ScoreKind = 'touchdown' | 'field goal' | 'score';
+
+/** What a jump in one team's score most likely was: 6 or more is a touchdown (with the try, or more, inside one poll), 3 a field goal. */
+export const scoreKind = (delta: number): ScoreKind => (delta >= 6 ? 'touchdown' : delta === 3 ? 'field goal' : 'score');
+
+/** The game clock as a scoreboard draws it: the period ("q2", "ot") and the clock ("7:30", or "" when the feed has none). */
+export function clockParts(g: Pick<NfGame, 'quarter' | 'clock' | 'state'>): { period: string; clock: string } {
+  const q = g.quarter.toLowerCase();
+  const period = q === 'ot' ? 'ot' : /^\d$/.test(q) ? `q${q}` : '';
+  return { period, clock: g.state === 'live' ? g.clock : '' };
 }

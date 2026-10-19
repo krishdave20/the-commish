@@ -194,7 +194,7 @@ tr.lead > td:first-child { box-shadow: inset 2px 0 0 var(--green); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .rzb { --rzb-bar: var(--red-on-inverse); --rzb-ink: var(--surface-inverse); } }
 .rzb-tag {
   position: relative; display: inline-block; flex: none; overflow: hidden; padding: 2px 14px 2px 12px; border-radius: var(--r-xs);
-  font-family: var(--sans); font-weight: 900; font-style: italic; font-stretch: 75%; letter-spacing: 0.1em; line-height: 1.25; font-size: var(--fs-sm);
+  font-family: var(--display); font-weight: 800; font-style: italic; font-stretch: 75%; letter-spacing: 0.08em; line-height: 1.25; font-size: var(--fs-base);
   text-transform: uppercase; /* the exception: TV lettering */
   color: var(--rzb-ink); background: var(--rzb-bar); transform: skewX(-8deg); box-shadow: inset 0 -2px 0 var(--rzb-edge);
 }

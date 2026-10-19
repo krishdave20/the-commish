@@ -6,7 +6,7 @@ import {
 } from '../../test/fakes';
 import type { PlayersMap, ScoreGame } from '../../data';
 import { renderApp } from '../../app/testUtils';
-import { redZoneLine, redZoneSpoken, redZoneTeam, sortLive } from './liveLogic';
+import { clockParts, redZoneLine, redZoneSpoken, redZoneTeam, scoreKind, sortLive } from './liveLogic';
 import { parseGameRows } from '../../engine/nfl';
 import { resetLiveMemory } from './useLiveChanges';
 
@@ -374,5 +374,97 @@ describe('the "live now" strip on the scoreboard', () => {
     setup({ route: '/nfl?tab=scoreboard', specs: [{ id: 'g1', away: 'N2', home: 'N1', score: [10, 17], state: 'final' }] });
     await screen.findByRole('group', { name: 'week 5 at a glance' });
     expect(screen.queryByText(/live now ·/)).toBeNull();
+  });
+});
+
+describe('the whip-around', () => {
+  const two = (a: Ball, b: Ball): Spec[] => [
+    { id: 'g1', away: 'N2', home: 'N1', score: [10, 17], ball: a },
+    { id: 'g2', away: 'N4', home: 'N3', score: [20, 21], ball: b },
+    DEFAULT[2]!,
+  ];
+  const section = async () => (await screen.findByRole('heading', { name: 'red zone' })).closest('section')!;
+
+  it('stands by in one slim line while games are on and no drive is inside the 20', async () => {
+    setup();
+    await cardOf('N2', 'N1');
+    expect(screen.getByText('standing by · no drive inside the 20 right now')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'red zone' })).toBeNull();
+  });
+
+  it('gives each drive inside the 20 a split-screen tile, the one nearest the goal line first, with a red scoreboard clock and the yards to go', async () => {
+    setup({ specs: two({ poss: 'N1', terr: 'N2', yard: 17, down: '2nd & 8' }, { poss: 'N4', terr: 'N3', yard: 3, down: '1st & Goal' }) });
+    const s = await section();
+    const tiles = s.querySelectorAll('.rzw-tile');
+    expect(tiles).toHaveLength(2);
+    expect(s.querySelector('.rzw-grid')).toHaveAttribute('data-count', '2');
+    // nearest the goal line first, and loudest inside the 5
+    expect(tiles[0]!.querySelector('.rzw-abbr')).toHaveTextContent('N4');
+    expect(tiles[0]).toHaveAttribute('data-goal', 'true');
+    expect(tiles[1]).not.toHaveAttribute('data-goal');
+    expect(tiles[0]!.querySelector('.rzw-clock-q')).toHaveTextContent('q2');
+    expect(tiles[0]!.querySelector('.rzw-clock-t')).toHaveTextContent('7:30');
+    expect(tiles[0]!.querySelector('.rzw-out')).toHaveTextContent('3 to go');
+    expect(tiles[1]!.querySelector('.rzw-out')).toHaveTextContent('17 to go');
+    // the screen reader gets the drive's sentence; the drawn pieces are hidden
+    expect(within(tiles[0] as HTMLElement).getByText('n4 · 1st & goal at the n3 3 · q2 7:30')).toBeInTheDocument();
+    for (const el of tiles[0]!.querySelectorAll('.rzw-tile-top, .rzw-tile-main, .rzw-down, .rzw-zone')) expect(el).toHaveAttribute('aria-hidden', 'true');
+    // the live card of a red-zone game carries the same clock
+    const card = await cardOf('N4', 'N3');
+    expect(card.querySelector('.nf-lv-top .rzw-clock-t')).toHaveTextContent('7:30');
+  });
+
+  it('holds a drive that scores from inside the 20 for a moment with the call, flashes "touchdown" on its card, then lets it go', async () => {
+    const { world, poll } = setup({ specs: two({ poss: 'N1', terr: 'N1', yard: 30 }, { poss: 'N4', terr: 'N3', yard: 4, down: '1st & Goal' }) });
+    await section();
+    // touchdown and the try: the ball goes back to the other team at its own 25
+    world.specs = two({ poss: 'N1', terr: 'N1', yard: 30 }, { poss: 'N3', terr: 'N3', yard: 25, down: '1st & 10' }).map((s) => (s.id === 'g2' ? { ...s, score: [27, 21] } : s));
+    await poll();
+    const tile = await waitFor(() => {
+      const t = document.querySelector('.rzw-tile[data-call="touchdown"]');
+      expect(t).not.toBeNull();
+      return t!;
+    });
+    expect(tile.querySelector('.rzw-call-word')).toHaveTextContent('touchdown');
+    expect(tile.querySelector('.rzw-call-pts')).toHaveTextContent('+7 N4');
+    expect(within(tile as HTMLElement).getByText('touchdown, n4: n4 27, n3 21')).toBeInTheDocument();
+    const card = (await cardOf('N4', 'N3'));
+    expect(card).toHaveAttribute('data-td', 'true');
+    expect(card.querySelector('.rzw-td-word')).toHaveTextContent('touchdown');
+    // the drive is over: the tile goes, and the section with it
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'red zone' })).toBeNull(), { timeout: 9_500 });
+    expect(screen.getByText(/standing by/)).toBeInTheDocument();
+  }, 20_000);
+
+  it('calls nothing for a score by the team without the ball inside the 20, or by a team seen there long ago', async () => {
+    const { world, poll } = setup({ specs: two({ poss: 'N1', terr: 'N1', yard: 30 }, { poss: 'N4', terr: 'N3', yard: 4, down: '1st & Goal' }) });
+    await section();
+    // the other team (N3) scores: a pick six, say
+    world.specs = two({ poss: 'N1', terr: 'N1', yard: 30 }, { poss: 'N4', terr: 'N4', yard: 25, down: '1st & 10' }).map((s) => (s.id === 'g2' ? { ...s, score: [20, 28] } : s));
+    await poll();
+    await waitFor(() => expect(document.querySelector('.nf-lv-chip')).not.toBeNull());
+    expect(document.querySelector('.rzw-tile[data-call]')).toBeNull();
+  });
+
+  it('is pure about the rules: what a score was, and the clock as a scoreboard shows it', () => {
+    expect([1, 2, 3, 6, 7, 8, 10].map(scoreKind)).toEqual(['score', 'score', 'field goal', 'touchdown', 'touchdown', 'touchdown', 'touchdown']);
+    expect(clockParts({ quarter: '4', clock: '0:01', state: 'live' })).toEqual({ period: 'q4', clock: '0:01' });
+    expect(clockParts({ quarter: 'OT', clock: '9:12', state: 'live' })).toEqual({ period: 'ot', clock: '9:12' });
+    expect(clockParts({ quarter: 'H', clock: '', state: 'live' })).toEqual({ period: '', clock: '' });
+  });
+
+  it('keeps the capitals and the motion in their place, and carries no channel or league marks', () => {
+    const css = readFileSync(`${process.cwd()}/src/styles/whiparound.css`, 'utf8');
+    const rules = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{[^{}]*text-transform:\s*uppercase[^{}]*\}/g)];
+    expect(rules).toHaveLength(1);
+    for (const sel of rules[0]![1]!.split(',')) expect(sel.trim()).toMatch(/^\.rzw-/);
+    // every animation runs only inside the no-preference query
+    const blocks = [...css.matchAll(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/g)].map((m) => m[0]);
+    const outside = blocks.reduce((rest, b) => rest.replace(b, ''), css);
+    expect(blocks.join('\n')).toMatch(/animation: rzw-/);
+    expect(outside).not.toMatch(/animation(-name)?:/);
+    // style, not marks: no channel name, no network, no league shield
+    const src = css + readFileSync(`${process.cwd()}/src/pages/nfl/WhipAround.tsx`, 'utf8');
+    expect(src).not.toMatch(/\bredzone\b|nfl\s*network|nfl\s*red\s*zone|shield/i);
   });
 });

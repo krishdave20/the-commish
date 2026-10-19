@@ -6,10 +6,11 @@ import { cityOf } from '../../engine/nfl';
 import type { NfGame } from '../../engine/nfl';
 import { fieldLabel } from '../../engine/live';
 import { statusText, gameSentence, matchupName } from './format';
-import { isHalftime, redZoneTeam, situationLine } from './liveLogic';
+import { isHalftime, redZoneTeam, scoreKind, situationLine } from './liveLogic';
 import type { Fantasy } from './liveLogic';
 import { RedZoneBadge } from './RedZoneBadge';
 import type { Flash } from './useLiveChanges';
+import { RzClock } from './WhipAround';
 
 interface Props {
   g: NfGame;
@@ -65,15 +66,24 @@ export function LiveCard({ g, fantasy, flash, entering, onOpen }: Props) {
   const sit = situationLine(g);
   const half = isHalftime(g);
   const showField = !!g.situation && !half;
+  const td = flash && scoreKind(flash.delta) === 'touchdown' ? (flash.side === 'home' ? g.home : g.away) : null;
   return (
     <article
-      className="nf-lv" aria-label={gameSentence(g)} data-red={red ? 'true' : undefined} data-entered={entering ? 'true' : undefined}
+      className="nf-lv" aria-label={gameSentence(g)} data-red={red ? 'true' : undefined} data-td={td ? 'true' : undefined} data-entered={entering ? 'true' : undefined}
       data-ball={g.situation?.possession ?? undefined}
     >
       <button type="button" className="nf-lv-open" aria-label={`open game details, ${matchupName(g)}`} onClick={() => onOpen(g.id)} />
       <div className="nf-lv-body">
+        {td && flash && (
+          <span className="rzw-td" key={`td:${flash.key}`} aria-hidden="true">
+            <span className="rzw-td-word">touchdown</span>
+            <span className="rzw-td-team">{td}</span>
+          </span>
+        )}
         <div className="nf-lv-top">
-          <span className="nf-status" data-state="live"><LiveDot />{statusText(g)}</span>
+          {red
+            ? <span className="nf-status" data-state="live"><LiveDot /><span className="sr-only">{statusText(g)}</span><RzClock g={g} /></span>
+            : <span className="nf-status" data-state="live"><LiveDot />{statusText(g)}</span>}
           {g.channel && <span className="nf-chan">{g.channel}</span>}
         </div>
         <div className="nf-lv-teams">

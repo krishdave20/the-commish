@@ -1,0 +1,241 @@
+/* The red zone whip-around: the nfl page's live tab dressed like a Sunday whip-around broadcast (owner request, Oct 19, 2026).
+   Deep red-to-black panels, heavy slanted condensed capitals with speed streaks, the 20-yard-line numeral, a red scoreboard clock, split-screen
+   tiles, a live pulse, and a "touchdown" call when a drive inside the 20 scores. Evokes the look only: no league or network marks.
+
+   Scope: everything here is under .nf-live (the live tab), .rzw-* classes, or the red-zone live card (.nf-lv[data-red]). The rest of the app is
+   untouched. The broadcast panel is a dark TV surface in light AND dark mode, so it uses the fixed --bc-* broadcast tokens, not paper/ink.
+   Capitals: the exception to the app's lowercase rule, as with the badge (.rzb-tag in nfl.css): one rule below, only on .rzw-* lettering. The DOM
+   text stays lowercase. Colours are the --bc-* tokens (tokens.css); the face is --display, Barlow Condensed italic (SIL OFL, bundled from @fontsource, loaded by the nfl page only). */
+.nf-live {
+  --rzw-red: var(--bc-red);          /* broadcast red: the clock box, the live chip, the end zone */
+  --rzw-red-deep: var(--bc-red-deep);
+  --rzw-maroon: var(--bc-maroon);
+  --rzw-black: var(--bc-black);
+  --rzw-ink: var(--bc-ink);
+  --rzw-ink-2: color-mix(in srgb, var(--bc-ink) 74%, transparent);
+  --rzw-ink-3: color-mix(in srgb, var(--bc-ink) 50%, transparent);
+  --rzw-gold: var(--bc-gold);
+  --rzw-glow: color-mix(in srgb, var(--bc-red) 55%, transparent);
+  --rzw-panel: linear-gradient(115deg, var(--bc-crimson) 0%, var(--bc-wine) 34%, var(--bc-ember) 68%, var(--bc-black) 100%);
+  --rzw-edge: 0 0 0 0 transparent;
+}
+:root[data-theme='dark'] .nf-live { --rzw-edge: 0 0 0 1px color-mix(in srgb, var(--bc-ink) 8%, transparent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .nf-live { --rzw-edge: 0 0 0 1px color-mix(in srgb, var(--bc-ink) 8%, transparent); } }
+
+/* the capitals: TV lettering, only here */
+.rzw-title, .rzw-tagline, .rzw-count, .rzw-live, .rzw-clock, .rzw-abbr, .rzw-city, .rzw-score b, .rzw-down, .rzw-zone, .rzw-call, .rzw-standby-tag, .rzw-td { text-transform: uppercase; }
+
+/* the shared lettering: heavy, slanted, condensed */
+.rzw-title, .rzw-tagline, .rzw-count, .rzw-live, .rzw-clock, .rzw-abbr, .rzw-city, .rzw-score, .rzw-down, .rzw-zone-20, .rzw-call, .rzw-standby-tag, .rzw-td {
+  font-family: var(--display); font-style: italic; font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ---------- the section: a broadcast panel ---------- */
+.rzw {
+  position: relative; isolation: isolate; overflow: hidden; display: grid; gap: var(--s-3); min-width: 0; padding: var(--s-4) var(--s-4) var(--s-3);
+  border-radius: var(--r); color: var(--rzw-ink); background: var(--rzw-panel); box-shadow: var(--rzw-edge), var(--shadow-pop);
+}
+/* speed streaks: fine diagonal lines, fading out to the right */
+.rzw::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(100deg, transparent 0 8%, color-mix(in srgb, var(--bc-ink) 16%, transparent) 8% 8.4%, transparent 8.4% 14%, color-mix(in srgb, var(--bc-ink) 10%, transparent) 14% 14.25%, transparent 14.25%) 0 0 / 100% 45% no-repeat,
+    repeating-linear-gradient(100deg, transparent 0 26px, color-mix(in srgb, var(--bc-ink) 4.5%, transparent) 26px 28px);
+  -webkit-mask-image: linear-gradient(90deg, var(--bc-black) 0%, color-mix(in srgb, var(--bc-black) 50%, transparent) 55%, transparent 90%);
+  mask-image: linear-gradient(90deg, var(--bc-black) 0%, color-mix(in srgb, var(--bc-black) 50%, transparent) 55%, transparent 90%);
+}
+
+.rzw-head { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-1); padding-left: 34px; padding-right: 7rem; min-height: 5.5rem; align-content: center; }
+.rzw-title {
+  position: relative; margin: 0; justify-self: start; font-weight: 800; font-size: clamp(40px, 6.5vw, 64px); line-height: 0.88; letter-spacing: 0.01em; color: var(--rzw-ink);
+  text-shadow: 0.045em 0.045em 0 var(--rzw-black);
+}
+/* the streaks behind the lettering */
+.rzw-title::before {
+  content: ''; position: absolute; right: calc(100% + 6px); top: 14%; width: 30px; height: 72%; transform: skewX(-14deg);
+  background: repeating-linear-gradient(to bottom, var(--rzw-ink) 0 3px, transparent 3px 8px);
+  -webkit-mask-image: linear-gradient(to left, var(--bc-black), transparent); mask-image: linear-gradient(to left, var(--bc-black), transparent);
+}
+.rzw-title::after {
+  content: ''; position: absolute; left: 0.1em; right: -0.25em; bottom: -5px; height: 4px; transform: skewX(-14deg);
+  background: linear-gradient(90deg, var(--rzw-red), var(--rzw-ink) 60%, transparent);
+}
+.rzw-tagline { margin: var(--s-2) 0 0; text-wrap: balance; font-weight: 600; font-size: 15px; letter-spacing: 0.14em; color: var(--rzw-ink-2); }
+.rzw-count {
+  justify-self: start; display: inline-flex; align-items: center; gap: var(--s-2); margin: 0; padding: 1px 12px 1px 10px; font-weight: 700; font-size: 14px; letter-spacing: 0.08em;
+  background: color-mix(in srgb, var(--bc-black) 35%, transparent); box-shadow: inset 2px 0 0 var(--rzw-red); transform: skewX(-10deg);
+}
+.rzw-count::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--rzw-red); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bc-red) 35%, transparent); }
+/* the yard-line numeral, with the marker's arrow pointing at the goal */
+.rzw-twenty {
+  position: absolute; right: -0.04em; top: 50%; transform: translateY(-50%); pointer-events: none;
+  font-family: var(--display); font-style: italic; font-weight: 800; font-size: clamp(104px, 15vw, 168px); line-height: 0.8; letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--bc-ink) 10%, transparent); -webkit-text-stroke: 2px color-mix(in srgb, var(--bc-ink) 34%, transparent);
+}
+.rzw-twenty::before {
+  content: ''; position: absolute; left: -0.24em; top: 50%; margin-top: -0.12em; border-style: solid; border-width: 0.12em 0.2em 0.12em 0;
+  border-color: transparent color-mix(in srgb, var(--bc-ink) 34%, transparent) transparent transparent;
+}
+.rzw-twenty::after { content: ''; position: absolute; left: 50%; top: -60%; bottom: -60%; width: 3px; background: color-mix(in srgb, var(--bc-ink) 14%, transparent); transform: skewX(-14deg); z-index: -1; }
+
+/* ---------- the split screens ---------- */
+.rzw-grid {
+  list-style: none; margin: 0; padding: 3px; display: grid; gap: 3px; grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--rzw-black); border-radius: var(--r-sm);
+}
+.rzw-grid[data-count='1'] { grid-template-columns: minmax(0, 1fr); }
+.rzw-grid[data-count='3'] > .rzw-tile:first-child { grid-column: 1 / -1; }
+.rzw-tile {
+  position: relative; display: grid; min-width: 0; overflow: hidden; border-radius: var(--r-xs);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--bc-red) 38%, transparent), transparent 60%),
+    linear-gradient(160deg, var(--bc-tile) 0%, var(--bc-ember) 58%, var(--rzw-black) 100%);
+}
+.rzw-tile[data-goal='true'] { background: radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--bc-red) 62%, transparent), transparent 64%), linear-gradient(160deg, var(--bc-tile-hot) 0%, var(--bc-ember) 58%, var(--rzw-black) 100%); }
+.rzw-tile::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: var(--r-xs); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bc-red) 55%, transparent); }
+.rzw-btn {
+  font: inherit; color: var(--rzw-ink); text-align: left; display: grid; gap: var(--s-2); align-content: start; width: 100%; min-height: var(--touch);
+  padding: var(--s-3); background: none; border: 0; cursor: pointer;
+}
+.rzw-btn:hover .rzw-abbr { color: var(--rzw-ink); text-shadow: 0 0 18px color-mix(in srgb, var(--bc-red) 90%, transparent), 0.04em 0.04em 0 var(--rzw-black); }
+.rzw-btn:focus-visible { outline: 2px solid var(--rzw-ink); outline-offset: -5px; }
+
+.rzw-tile-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.rzw-live {
+  display: inline-flex; align-items: center; gap: 6px; padding: 0 10px 0 8px; font-weight: 800; font-size: 14px; letter-spacing: 0.12em; line-height: 1.6;
+  color: var(--rzw-ink); background: var(--rzw-red); transform: skewX(-12deg);
+}
+.rzw-live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--rzw-ink); }
+
+/* the scoreboard clock: the period, then the time in a bright red box */
+.rzw-clock { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; line-height: 1; }
+.rzw-clock-q { font-size: 15px; letter-spacing: 0.06em; color: inherit; }
+.rzw-clock-t {
+  display: inline-block; min-width: 3.1em; padding: 3px 7px 2px; text-align: center; font-weight: 800; font-size: 21px; letter-spacing: 0.02em;
+  color: var(--rzw-ink); background: linear-gradient(180deg, var(--bc-red-hi), var(--rzw-red) 55%, var(--bc-red-deep)); border-radius: 2px;
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--bc-black) 25%, transparent), 0 0 14px color-mix(in srgb, var(--bc-red) 50%, transparent);
+}
+.rzw .rzw-clock-q { color: var(--rzw-ink-2); }
+
+.rzw-tile-main { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-3); min-width: 0; }
+.rzw-team { display: grid; min-width: 0; }
+.rzw-abbr { font-weight: 800; font-size: 60px; line-height: 0.84; letter-spacing: 0.01em; text-shadow: 0.04em 0.04em 0 var(--rzw-black); transition: text-shadow var(--t-fast) var(--ease); }
+.rzw-city { font-weight: 600; font-size: 14px; letter-spacing: 0.14em; color: var(--rzw-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rzw-score { display: grid; gap: 2px; justify-items: end; }
+.rzw-score-row { display: inline-flex; align-items: baseline; gap: var(--s-2); color: var(--rzw-ink-3); }
+.rzw-score-row[data-atk='true'] { color: var(--rzw-ink); }
+.rzw-score b { font-weight: 700; font-size: 15px; letter-spacing: 0.08em; }
+.rzw-score i { font-style: italic; font-weight: 800; font-size: 32px; line-height: 1; min-width: 1.4em; text-align: right; }
+
+/* the down: a white slanted bar, then the yards to go */
+.rzw-down { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-1) var(--s-3); min-width: 0; }
+.rzw-down-bar {
+  display: inline-block; max-width: 100%; padding: 1px 14px 1px 12px; font-weight: 700; font-size: 18px; letter-spacing: 0.04em; line-height: 1.35;
+  color: var(--rzw-black); background: var(--rzw-ink); transform: skewX(-12deg); box-shadow: 4px 0 0 var(--rzw-red); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rzw-out { font-weight: 600; font-size: 14px; letter-spacing: 0.1em; color: var(--rzw-ink-2); }
+.rzw-out b { font-weight: 800; font-size: 26px; letter-spacing: 0; color: var(--rzw-ink); margin-right: 3px; }
+
+/* the zone: the 20 at the left, the goal line and end zone at the right, 5-yard lines, the ball */
+.rzw-zone { display: grid; grid-template-columns: auto minmax(0, 1fr) 18px; align-items: center; gap: 0; height: 22px; }
+.rzw-zone-20 { position: relative; padding: 0 8px 0 14px; font-weight: 800; font-size: 18px; color: var(--rzw-ink); }
+.rzw-zone-20::before { content: ''; position: absolute; left: 2px; top: 50%; margin-top: -5px; border-style: solid; border-width: 5px 8px 5px 0; border-color: transparent var(--rzw-ink) transparent transparent; }
+.rzw-zone-turf {
+  position: relative; height: 16px;
+  background:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--bc-ink) 70%, transparent) 0 2px, transparent 2px 25%),
+    linear-gradient(90deg, color-mix(in srgb, var(--bc-red) 25%, transparent), color-mix(in srgb, var(--bc-red) 70%, transparent)),
+    var(--turf-edge);
+}
+.rzw-zone-ez { height: 16px; background: repeating-linear-gradient(135deg, var(--rzw-red) 0 4px, var(--rzw-red-deep) 4px 8px); box-shadow: inset 2px 0 0 var(--rzw-ink); }
+.rzw-zone-ball {
+  position: absolute; top: 50%; width: 15px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--turf-ball);
+  box-shadow: 0 0 0 2px var(--rzw-ink), 0 0 12px 2px color-mix(in srgb, var(--bc-ink) 70%, transparent);
+}
+
+/* the call: a drive inside the 20 just scored */
+.rzw-call {
+  display: grid; justify-items: start; gap: 2px; margin: 0 calc(var(--s-3) * -1); padding: var(--s-2) var(--s-3) var(--s-2) calc(var(--s-3) + 6px);
+  background: linear-gradient(100deg, var(--rzw-red) 0%, var(--rzw-red-deep) 70%, transparent 100%); box-shadow: inset 6px 0 0 var(--rzw-ink);
+}
+.rzw-call-word { font-weight: 800; font-size: clamp(40px, 7vw, 60px); line-height: 0.9; letter-spacing: 0.01em; text-shadow: 0.05em 0.05em 0 var(--rzw-black); }
+.rzw-call-pts { font-weight: 700; font-size: 16px; letter-spacing: 0.12em; color: var(--rzw-ink-2); }
+.rzw-tile[data-call='field goal'] .rzw-call { background: linear-gradient(100deg, var(--rzw-maroon), var(--bc-ember) 75%, transparent); box-shadow: inset 6px 0 0 var(--rzw-gold); }
+.rzw-tile[data-call='field goal'] .rzw-call-word { color: var(--rzw-gold); }
+
+/* the fantasy angle under a tile: light lettering on the dark tile */
+.rzw-fx { padding-top: var(--s-2); border-top: 1px solid color-mix(in srgb, var(--bc-ink) 16%, transparent); color: var(--rzw-ink-2); }
+.rzw .nf-rz-mine .avatar-name { color: var(--rzw-ink); }
+
+/* ---------- standby: games on, no drive inside the 20 ---------- */
+.rzw-standby {
+  margin: 0; display: flex; align-items: center; gap: var(--s-3); min-height: var(--touch); padding: var(--s-1) var(--s-3); border-radius: var(--r);
+  font-size: var(--fs-sm); color: var(--rzw-ink-2); background: linear-gradient(100deg, var(--rzw-maroon), var(--bc-ember) 55%, var(--rzw-black)); box-shadow: var(--rzw-edge);
+}
+.rzw-standby-tag {
+  flex: none; padding: 0 12px 0 10px; font-weight: 800; font-size: 16px; letter-spacing: 0.06em; line-height: 1.5; color: var(--rzw-ink); background: var(--rzw-red-deep);
+  transform: skewX(-12deg);
+}
+
+/* ---------- the live cards: the red-zone card is the loud one ---------- */
+.nf-lv[data-red='true'] { box-shadow: 0 0 0 2px var(--rzw-red); overflow: hidden; }
+.nf-lv[data-td='true'] { overflow: hidden; }
+.nf-lv[data-red='true']::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; pointer-events: none;
+  background: linear-gradient(100deg, var(--rzw-red) 0 45%, var(--rzw-red-deep) 45% 70%, var(--rzw-black) 70%);
+}
+.nf-lv[data-red='true'] .nf-lv-body { padding-top: calc(var(--s-3) + 4px); }
+.nf-lv[data-red='true'] .nf-status { gap: var(--s-2); }
+.nf-lv[data-red='true'] .live-dot, .nf-lv[data-red='true'] .live-dot::after { background: var(--rzw-red); }
+.nf-lv .rzw-clock-q { color: var(--ink-2); }
+/* the badge on a live card wears the broadcast red in both themes (this selector outranks the badge's own dark-mode colours in nfl.css) */
+.nf-live .nf-lv .rzb[data-size] { --rzb-bar: var(--rzw-red); --rzb-ink: var(--rzw-ink); --rzb-edge: var(--rzw-black); }
+
+/* the touchdown banner across a live card, for the three seconds the "+7" chip shows */
+.rzw-td {
+  position: absolute; left: 0; right: 0; top: 26%; z-index: 1; display: flex; align-items: baseline; justify-content: center; gap: var(--s-3); padding: 6px var(--s-3);
+  color: var(--rzw-ink); padding-block: var(--s-3); background: linear-gradient(100deg, var(--rzw-red) 0%, var(--rzw-red-deep) 70%, var(--rzw-black) 100%); transform: skewY(-3deg);
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--bc-black) 35%, transparent), inset 0 3px 0 var(--rzw-ink);
+}
+.rzw-td-word { font-weight: 800; font-size: 44px; line-height: 0.95; letter-spacing: 0.02em; text-shadow: 0.05em 0.05em 0 var(--rzw-black); }
+.rzw-td-team { font-weight: 700; font-size: 20px; letter-spacing: 0.1em; color: color-mix(in srgb, var(--bc-ink) 85%, transparent); }
+
+/* ---------- motion: only where it is welcome ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .rzw-live::before, .rzw-count::before { animation: rzw-blink 1.3s steps(1, end) infinite; }
+  .rzw-tile::after { animation: rzw-ring 2.4s var(--ease) infinite; }
+  .rzw-tile[data-goal='true']::after { animation-duration: 1.2s; }
+  .rzw-tile[data-call]::after { animation: rzw-flash 450ms var(--ease) 2; }
+  .rzw-call { animation: rzw-sweep 420ms var(--ease) both; }
+  .rzw-call-word { animation: rzw-slam 520ms var(--ease) both; }
+  .rzw-score-row[data-atk='true'] i { animation: rzw-pop 500ms var(--ease) both; }
+  .rzw-zone-ball { animation: rzw-ball 1.6s var(--ease) infinite; }
+  .rzw-twenty { animation: rzw-drift 550ms var(--ease) both; }
+  .nf-lv[data-red='true']:not([data-entered='true']) { animation: rzw-card 2.4s var(--ease) infinite; }
+  .rzw-td { animation: rzw-td 450ms var(--ease) both; }
+}
+@keyframes rzw-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@keyframes rzw-ring { 0%, 100% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bc-red) 40%, transparent); } 50% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bc-red) 100%, transparent), inset 0 0 22px color-mix(in srgb, var(--bc-red) 45%, transparent); } }
+@keyframes rzw-flash { 0% { box-shadow: inset 0 0 0 3px var(--bc-ink), inset 0 0 60px color-mix(in srgb, var(--bc-ink) 50%, transparent); } 100% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bc-red) 60%, transparent); } }
+@keyframes rzw-sweep { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes rzw-slam { 0% { opacity: 0; transform: translateX(-30px) skewX(-18deg) scale(1.25); } 60% { opacity: 1; transform: translateX(4px) skewX(-6deg) scale(1); } 100% { transform: none; } }
+@keyframes rzw-pop { 0% { transform: scale(1.35); color: var(--rzw-gold); } 100% { transform: none; } }
+@keyframes rzw-ball { 0%, 100% { box-shadow: 0 0 0 2px var(--bc-ink), 0 0 6px 1px color-mix(in srgb, var(--bc-ink) 50%, transparent); } 50% { box-shadow: 0 0 0 2px var(--bc-ink), 0 0 16px 4px color-mix(in srgb, var(--bc-ink) 85%, transparent); } }
+@keyframes rzw-drift { from { opacity: 0; transform: translate(40px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
+@keyframes rzw-card { 0%, 100% { box-shadow: 0 0 0 2px var(--rzw-red); } 50% { box-shadow: 0 0 0 2px var(--rzw-red), 0 0 0 6px color-mix(in srgb, var(--bc-red) 22%, transparent); } }
+@keyframes rzw-td { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+
+/* ---------- phone ---------- */
+@media (max-width: 560px) {
+  .rzw { padding: var(--s-3) var(--s-3) var(--s-2); margin-inline: calc(var(--s-1) * -1); }
+  .rzw-head { padding-left: 26px; padding-right: 5.25rem; min-height: 4.5rem; }
+  .rzw-title::before { width: 22px; }
+  .rzw-tagline { font-size: 13px; letter-spacing: 0.1em; }
+  .rzw-twenty { font-size: 84px; }
+  .rzw-grid, .rzw-grid[data-count='1'] { grid-template-columns: minmax(0, 1fr); }
+  .rzw-abbr { font-size: 48px; }
+  .rzw-score i { font-size: 28px; }
+  .rzw-down-bar { font-size: 16px; }
+  .rzw-td-word { font-size: 36px; }
+  .rzw-standby { font-size: var(--fs-xs); gap: var(--s-2); }
+}

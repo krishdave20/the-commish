@@ -24,7 +24,11 @@ import { LAST_WEEK } from './nfl/data';
 import { useLiveChanges } from './nfl/useLiveChanges';
 import { useNflOnly } from './nfl/useNflOnly';
 import { useSeasonResults, useSeasonStats, useWeekGames } from './nfl/useNflWeek';
+import '@fontsource/barlow-condensed/600-italic.css';
+import '@fontsource/barlow-condensed/700-italic.css';
+import '@fontsource/barlow-condensed/800-italic.css';
 import '../styles/nfl.css';
+import '../styles/whiparound.css';
 
 type Tab = 'live' | 'scoreboard' | 'stats' | 'standings' | 'picture';
 /** The tabs; the live one comes first and carries the count of games in progress ("live · 3"). */

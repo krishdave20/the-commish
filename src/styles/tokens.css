@@ -49,6 +49,20 @@
   --turf-num: rgba(255, 255, 255, 0.88);
   --turf-on: rgba(255, 255, 255, 0.92);
   --turf-edge: #1f3f1b;
+
+  /* The red zone whip-around (nfl live tab): a broadcast panel, the same dark TV surface in both themes, like the turf. */
+  --bc-red: #e0102b;
+  --bc-red-hi: #ff2a45;
+  --bc-red-deep: #8e0716;
+  --bc-crimson: #b30c22;
+  --bc-wine: #6d0814;
+  --bc-maroon: #4a0710;
+  --bc-ember: #1d0709;
+  --bc-tile: #2b0a0f;
+  --bc-tile-hot: #3d0a12;
+  --bc-black: #0b0a0b;
+  --bc-ink: #ffffff;
+  --bc-gold: #ffc629;
   --turf-ez-red: #8b3a1a;
   --turf-ball: #8b4719;
   --turf-ball-line: #4c270e;
@@ -66,6 +80,8 @@
   --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
   /* page titles, section titles, big numbers */
   --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  /* the red zone whip-around's broadcast lettering: a heavy slanted condensed face (Barlow Condensed, bundled by the nfl page only) */
+  --display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
 
   /* Derived, never new hues: a gold that reads as text on the soft panels (5.1:1 on gold-soft where gold-ink alone is 4.4:1),
      and a darker green for hover states (paper on green-2 is only 4.3:1). The palette above is untouched. */
@@ -156,6 +172,18 @@
   --turf-num: rgba(255, 255, 255, 0.88);
   --turf-on: rgba(255, 255, 255, 0.92);
   --turf-edge: #1f3f1b;
+  --bc-red: #e0102b;
+  --bc-red-hi: #ff2a45;
+  --bc-red-deep: #8e0716;
+  --bc-crimson: #b30c22;
+  --bc-wine: #6d0814;
+  --bc-maroon: #4a0710;
+  --bc-ember: #1d0709;
+  --bc-tile: #2b0a0f;
+  --bc-tile-hot: #3d0a12;
+  --bc-black: #0b0a0b;
+  --bc-ink: #ffffff;
+  --bc-gold: #ffc629;
   --turf-ez-red: #8b3a1a;
   --turf-ball: #8b4719;
   --turf-ball-line: #4c270e;
@@ -216,6 +244,18 @@
     --turf-num: rgba(255, 255, 255, 0.88);
     --turf-on: rgba(255, 255, 255, 0.92);
     --turf-edge: #1f3f1b;
+    --bc-red: #e0102b;
+    --bc-red-hi: #ff2a45;
+    --bc-red-deep: #8e0716;
+    --bc-crimson: #b30c22;
+    --bc-wine: #6d0814;
+    --bc-maroon: #4a0710;
+    --bc-ember: #1d0709;
+    --bc-tile: #2b0a0f;
+    --bc-tile-hot: #3d0a12;
+    --bc-black: #0b0a0b;
+    --bc-ink: #ffffff;
+    --bc-gold: #ffc629;
     --turf-ez-red: #8b3a1a;
     --turf-ball: #8b4719;
     --turf-ball-line: #4c270e;

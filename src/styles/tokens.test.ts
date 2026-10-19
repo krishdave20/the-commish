@@ -21,6 +21,13 @@ describe('design tokens', () => {
     for (const { css } of CSS) expect(css).not.toMatch(/DM Mono/i);
   });
 
+  it('keeps the broadcast face to the red zone whip-around: --display, bundled and imported by the nfl page only', () => {
+    expect(tokens).toMatch(/--display: 'Barlow Condensed'/);
+    expect(readFileSync(`${process.cwd()}/src/main.tsx`, 'utf8')).not.toMatch(/barlow/i);
+    const users = rest.filter((c) => /var\(--display\)/.test(c.css)).map((c) => c.name.split('/').pop());
+    expect(users.sort()).toEqual(['nfl.css', 'whiparound.css']);
+  });
+
   it('keeps Instrument Serif for display and the palette unchanged', () => {
     expect(tokens).toMatch(/--serif: 'Instrument Serif'/);
     for (const hex of ['#f4f1eb', '#faf8f3', '#1f1d19', '#2d5a27', '#8b3a1a', '#c4922a']) expect(tokens).toContain(hex);
@@ -46,7 +53,7 @@ describe('design tokens', () => {
     for (const { name, css } of rest) {
       for (const line of css.split('\n')) {
         const t = line.trim();
-        if (/font-family:/.test(t) && !/font-family: var\(--(sans|serif|mono)\)/.test(t) && !/font-family: inherit|font: inherit/.test(t)) bad.push(`${name}: ${t.slice(0, 80)}`);
+        if (/font-family:/.test(t) && !/font-family: var\(--(sans|serif|mono|display)\)/.test(t) && !/font-family: inherit|font: inherit/.test(t)) bad.push(`${name}: ${t.slice(0, 80)}`);
         // a radius is a token, 50% (a circle), 0 or a couple of pixels on a hairline
         for (const m of t.matchAll(/border-radius: ([^;}]+)/g)) {
           if (!/^(var\(--r(-sm|-xs)?\)|50%|0|var\(--r\) 0 0 var\(--r\)|2px|1px|3px)( |$)/.test(m[1]!.trim())) bad.push(`${name}: ${t.slice(0, 80)}`);
