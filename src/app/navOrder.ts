@@ -60,9 +60,9 @@ function rules({ phase, now, live, moments }: NavOrderInput): Rule[] {
   // the waiver run is a day away, until it clears
   const waivers = find(moments, 'waivers-tonight');
   if (waivers) out.push({ sections: ['waivers', 'team'], reason: waivers.title });
-  // tuesday's recap
+  // tuesday's recap: the week is final, so the standings, power rankings and the week ahead are new (around the league), then the odds
   const recap = find(moments, 'week-recap');
-  if (recap) out.push({ sections: ['race'], reason: recap.title });
+  if (recap) out.push({ sections: ['league', 'race'], reason: recap.title });
   // lineup days: wednesday after the waiver run, through saturday
   const day = new Date(now).getDay();
   if (day >= 3 && day <= 6) {
