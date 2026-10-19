@@ -1,7 +1,9 @@
 import { Suspense, lazy, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import type { Picks } from '../engine';
 import type { SeedingMode } from '../components/bracket/assemble';
 import { EnginePage } from '../app/EnginePage';
+import { PAGES } from '../app/names';
 import { ScenarioBar } from '../app/ScenarioBar';
 import { PageTabs } from '../components/PageTabs';
 import { BlockSkeleton } from '../components/Skeleton';
@@ -13,9 +15,15 @@ import { TeamDrawer } from './race/TeamDrawer';
 const BracketCard = lazy(() => import('./race/BracketCard').then((m) => ({ default: m.BracketCard })));
 const PlayoffMachine = lazy(() => import('./race/PlayoffMachine').then((m) => ({ default: m.PlayoffMachine })));
 const OddsDetail = lazy(() => import('./race/OddsDetail'));
-const PowerRankings = lazy(() => import('./race/power/PowerRankings'));
 
 export default function LeagueRace() {
+  const { search } = useLocation();
+  // the power rankings moved to around the league; old links (?tab=power, with any ?week=) follow them there
+  if (new URLSearchParams(search).get('tab') === 'power') return <Navigate to={`${PAGES.league.path}${search}`} replace />;
+  return <Race />;
+}
+
+function Race() {
   const [open, setOpen] = useState<number | null>(null);
   // the playoff machine's picks feed the bracket's "from the machine" seeding; they stay while you move between tabs
   const [picks, setPicks] = useState<Picks>({});
@@ -30,7 +38,7 @@ export default function LeagueRace() {
           <PageTabs
             label="Playoff picture sections" defaultTab="standings"
             tabs={[
-              { value: 'standings', label: 'standings' }, { value: 'power', label: 'power rankings' }, { value: 'brackets', label: 'brackets' },
+              { value: 'standings', label: 'standings' }, { value: 'brackets', label: 'brackets' },
               { value: 'machine', label: 'playoff machine' }, { value: 'odds', label: 'odds detail' },
             ]}
           >
@@ -39,7 +47,6 @@ export default function LeagueRace() {
             ) : (
               <Suspense fallback={<BlockSkeleton height="18rem" />}>
                 {tab === 'brackets' ? <BracketCard engine={engine} picks={picks} seeding={seeding} setSeeding={setSeeding} />
-                  : tab === 'power' ? <PowerRankings engine={engine} />
                   : tab === 'machine' ? <PlayoffMachine engine={engine} picks={picks} setPicks={setPicks} />
                   : <OddsDetail engine={engine} />}
               </Suspense>

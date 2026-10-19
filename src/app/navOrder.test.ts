@@ -44,12 +44,16 @@ describe('navOrder', () => {
     expect(run({ now: at(22, 17) }).promoted['/team']).toBe('lineup days');
   });
 
-  it('promotes game day on Monday night before kickoff, and the playoff picture for the Tuesday recap', () => {
+  it('promotes game day on Monday night before kickoff, and around the league then the playoff picture for the Tuesday recap', () => {
     const mon = run({ now: at(19, 18), moments: [mo('monday-night', 'monday night: you need 12.4')] });
     expect(labels(mon).slice(0, 2)).toEqual(['huddle', 'game day']);
     expect(Object.keys(mon.promoted)).toEqual(['/gameday']);
     const tue = run({ now: at(20, 9), moments: [mo('week-recap', 'week 6 recap')] });
-    expect(labels(tue).slice(0, 2)).toEqual(['huddle', 'playoff picture']);
+    expect(labels(tue).slice(0, 3)).toEqual(['huddle', 'around the league', 'playoff picture']);
+    expect(tue.promoted).toEqual({ '/league': 'week 6 recap', '/race': 'week 6 recap' });
+    // tuesday evening the waiver run comes first and takes both places
+    const eve = run({ now: at(20, 20), moments: [mo('waivers-tonight', 'waivers process tonight at 3:00 am'), mo('week-recap', 'week 6 recap')] });
+    expect(labels(eve).slice(0, 3)).toEqual(['huddle', 'waiver wire', 'locker room']);
   });
 
   it('promotes the trade block in deadline week', () => {

@@ -2,7 +2,7 @@
    The name carries the flavor; the kicker says plainly what the page does. Routes do not change. */
 
 export type PageKey =
-  | 'home' | 'gameday' | 'nfl' | 'takes' | 'players' | 'team' | 'race' | 'waivers' | 'trades' | 'draft' | 'almanac' | 'leagues' | 'settings' | 'method' | 'signin';
+  | 'home' | 'gameday' | 'nfl' | 'takes' | 'players' | 'team' | 'race' | 'league' | 'waivers' | 'trades' | 'draft' | 'almanac' | 'leagues' | 'settings' | 'method' | 'signin';
 
 export interface PageName {
   path: string;
@@ -22,6 +22,7 @@ export const PAGES: Record<PageKey, PageName> = {
   players: { path: '/players', name: 'scouting report', kicker: 'every player, every split', blurb: 'search every player and open a profile built from free play-by-play, snap and charting data.' },
   team: { path: '/team', name: 'locker room', kicker: 'your roster and lineup', blurb: 'your roster with usage and value, and the lineup that gives you the best shot each week.' },
   race: { path: '/race', name: 'playoff picture', kicker: 'standings, odds, clinch marks', blurb: 'where every team stands and what it would take to make the playoffs.' },
+  league: { path: '/league', name: 'around the league', kicker: 'standings · the week ahead · power and form', blurb: 'every team side by side: the standings, how they look once this week resolves, and who is actually good.' },
   waivers: { path: '/waivers', name: 'waiver wire', kicker: 'who helps your lineup most', blurb: 'the best adds for your lineup, and what to bid on them.' },
   trades: { path: '/trades', name: 'trade block', kicker: 'score any deal', blurb: 'test any trade against your lineup and your playoff odds.' },
   draft: { path: '/draft', name: 'draft room', kicker: 'rankings, mock drafts, live assistant', blurb: 'rankings, mock drafts and a live assistant for draft day.' },
@@ -34,7 +35,7 @@ export const PAGES: Record<PageKey, PageName> = {
 
 /** The section tabs under the team header, and the phone menu, in order (owner request, Oct 18, 2026: tabs replace the sidebar).
     Front office is the last tab; under the hood sits quietly in the footer. */
-export const NAV_KEYS: PageKey[] = ['home', 'gameday', 'team', 'race', 'takes', 'nfl', 'waivers', 'trades', 'players', 'draft', 'almanac', 'settings'];
+export const NAV_KEYS: PageKey[] = ['home', 'gameday', 'team', 'race', 'league', 'takes', 'nfl', 'waivers', 'trades', 'players', 'draft', 'almanac', 'settings'];
 
 /** Kept for the smoke test, which still reads the old grouped navigation: one group holding every section tab. */
 export const NAV_GROUPS: ReadonlyArray<{ label: string; keys: PageKey[] }> = [{ label: 'sections', keys: NAV_KEYS }];

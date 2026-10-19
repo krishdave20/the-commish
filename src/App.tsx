@@ -7,6 +7,7 @@ import { ModelProvider } from './app/ModelProvider';
 import { ScenarioProvider } from './app/ScenarioProvider';
 import type { LoadModel } from './app/loadModel';
 const Almanac = lazy(() => import('./pages/Almanac'));
+const AroundLeague = lazy(() => import('./pages/AroundLeague'));
 const Leagues = lazy(() => import('./pages/Leagues'));
 const Method = lazy(() => import('./pages/Method'));
 const Draft = lazy(() => import('./pages/Draft'));
@@ -40,6 +41,7 @@ export function AppRoutes() {
         <Route path="/players/:pid" element={<PlayerProfile />} />
         <Route path="/team" element={<MyTeam />} />
         <Route path="/race" element={<LeagueRace />} />
+        <Route path="/league" element={<AroundLeague />} />
         <Route path="/waivers" element={<Waivers />} />
         <Route path="/trades" element={<Trades />} />
         <Route path="/draft" element={<Draft />} />

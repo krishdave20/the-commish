@@ -64,7 +64,7 @@ const tab = (group: string, label: string, check: (page: Page) => Promise<void>)
 const FEATURE_ALMANAC_NOW = `${manifest.season} so far, against the record book`; // the fixture season, the only one in this league's history
 
 const TABS = {
-  offseason: 'Offseason sections', draftPrep: 'Draft prep', player: 'Player sections', team: 'Locker room sections', race: 'Playoff picture sections',
+  offseason: 'Offseason sections', draftPrep: 'Draft prep', player: 'Player sections', team: 'Locker room sections', race: 'Playoff picture sections', league: 'Around the league sections',
   waivers: 'Waiver wire sections', trades: 'Trade block sections', draft: 'Draft room section', gameday: 'league view', nfl: 'nfl view', almanac: 'Record book sections',
 };
 
@@ -200,16 +200,6 @@ const ROUTES: Route[] = [
     id: 'playoff-picture', path: PAGES.race.path, h1: PAGES.race.name, title: PAGES.race.name,
     states: [
       { id: 'standings', run: async (page) => { await expectRows(table(page, /playoff picture standings/i), 12, 'standings'); } },
-      {
-        id: 'power-rankings',
-        run: tab(TABS.race, 'power rankings', async (page) => {
-          await expect(page).toHaveURL(/tab=power/);
-          await expect(heading(page, /^week \d+ power rankings$/)).toBeVisible();
-          await expect(heading(page, 'rank by week')).toBeVisible();
-          await expect(page.locator('main svg').first(), 'the bump chart').toBeVisible();
-          await expect(page.getByText('results through week', { exact: false })).toBeVisible();
-        }),
-      },
       { id: 'brackets', run: tab(TABS.race, 'brackets', async (page) => {
         await expect(heading(page, FEATURE.bracket)).toBeVisible();
         // narrow screens show one bracket at a time, with a switch between them
@@ -219,6 +209,25 @@ const ROUTES: Route[] = [
       }) },
       { id: 'playoff-machine', run: tab(TABS.race, FEATURE.machine, async (page) => { await expect(heading(page, FEATURE.machine)).toBeVisible(); await expectRows(table(page, /playoff machine standings/i), 12, 'machine'); }) },
       { id: 'odds-detail', run: tab(TABS.race, 'odds detail', async (page) => { await expect(heading(page, FEATURE.seeding)).toBeVisible(); await expect(heading(page, FEATURE.magic)).toBeVisible(); }) },
+    ],
+  },
+  {
+    id: 'around-the-league', path: PAGES.league.path, h1: PAGES.league.name, title: PAGES.league.name,
+    states: [
+      { id: 'standings', run: async (page) => { await expectRows(table(page, /^league standings$/i), 12, 'standings'); } },
+      { id: 'after-this-week', run: tab(TABS.league, 'after this week', async (page) => { await expect(page).toHaveURL(/tab=after/); await expectRows(table(page, /projected standings after this week/i), 12, 'after this week'); }) },
+      {
+        id: 'power-rankings',
+        run: tab(TABS.league, 'power rankings', async (page) => {
+          await expect(page).toHaveURL(/tab=power/);
+          await expect(heading(page, /^week \d+ power rankings$/)).toBeVisible();
+          await expect(heading(page, 'rank by week')).toBeVisible();
+          await expect(page.locator('main svg').first(), 'the bump chart').toBeVisible();
+          await expect(page.getByText('results through week', { exact: false })).toBeVisible();
+        }),
+      },
+      { id: 'team-ratings', run: tab(TABS.league, 'team ratings', async (page) => { await expect(heading(page, 'team ratings')).toBeVisible(); await expectRows(table(page, /team ratings and power rankings/i), 12, 'team ratings'); }) },
+      { id: 'form-schedule', run: tab(TABS.league, 'form & schedule', async (page) => { await expectRows(table(page, /form, schedule left and bench points/i), 12, 'form and schedule'); }) },
     ],
   },
   {
@@ -724,7 +733,7 @@ test.describe('smoke', () => {
 
     test('narrow and wide phones: no horizontal overflow at 320 px and 430 px on the key pages', async ({ app: page, session }) => {
       test.skip(session.project !== 'phone', 'phone widths only');
-      const routes = ['/', PAGES.gameday.path, PAGES.team.path, `${PAGES.race.path}?tab=brackets`, PAGES.waivers.path, PAGES.nfl.path, PAGES.draft.path, PAGES.settings.path, PAGES.almanac.path, PAGES.leagues.path, `${PAGES.race.path}?tab=power`, `${PAGES.trades.path}?tab=history`];
+      const routes = ['/', PAGES.gameday.path, PAGES.team.path, `${PAGES.race.path}?tab=brackets`, PAGES.waivers.path, PAGES.nfl.path, PAGES.draft.path, PAGES.settings.path, PAGES.almanac.path, PAGES.leagues.path, `${PAGES.league.path}?tab=power`, `${PAGES.trades.path}?tab=history`];
       const size = page.viewportSize()!;
       try {
         for (const width of [320, 430]) {
