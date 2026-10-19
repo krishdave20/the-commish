@@ -27,7 +27,7 @@ function Mover({ label, t, none }: { label: string; t: PowerTeamWeek | null; non
   );
 }
 
-/** The power rankings tab of the playoff picture: the week's riser and faller, the ranking list, and a bump chart of rank by week. */
+/** The power rankings tab of around the league: the week's riser and faller, the ranking list, and a bump chart of rank by week. */
 export default function PowerRankings({ engine }: { engine: Engine }) {
   const model = engine.model;
   const rankings = useMemo(() => buildPowerRankings(model), [model]);

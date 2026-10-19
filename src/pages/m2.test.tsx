@@ -207,7 +207,7 @@ describe('playoff picture (/race)', () => {
     expect(within(strip).getByText('magic number').closest('.kpi')).toHaveTextContent(/\d|—/);
 
     const tabs = screen.getByRole('radiogroup', { name: 'Playoff picture sections' });
-    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['standings', 'power rankings', 'brackets', 'playoff machine', 'odds detail']);
+    expect(within(tabs).getAllByRole('radio').map((r) => r.textContent)).toEqual(['standings', 'brackets', 'playoff machine', 'odds detail']);
 
     const table = await screen.findByRole('table', { name: 'Playoff picture standings' });
     expect(within(table).getAllByRole('row')).toHaveLength(1 + 4);

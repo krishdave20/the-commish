@@ -16,13 +16,13 @@ describe('app shell', () => {
     expect(await screen.findByLabelText('Sleeper username')).toBeInTheDocument();
   });
 
-  it('shows the 11 section tabs, front office with the account tools, and the footer link', async () => {
+  it('shows the 12 section tabs, front office with the account tools, and the footer link', async () => {
     renderApp({ linked: [sampleAccount()] });
     const nav = await screen.findByRole('navigation', { name: 'Primary' });
     const links = within(nav).getAllByRole('link');
-    expect(links).toHaveLength(11);
+    expect(links).toHaveLength(12);
     expect(links.map((a) => a.textContent)).toEqual(NAV.filter((n) => n.path !== '/settings').map((n) => n.label));
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/gameday', '/team', '/race', '/takes', '/nfl', '/waivers', '/trades', '/players', '/draft', '/almanac']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/gameday', '/team', '/race', '/league', '/takes', '/nfl', '/waivers', '/trades', '/players', '/draft', '/almanac']);
     // front office sits with the account tools so the tab row stays on one line
     const office = screen.getByRole('link', { name: 'front office' });
     expect(office).toHaveAttribute('href', '/settings');

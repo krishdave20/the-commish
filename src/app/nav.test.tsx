@@ -25,7 +25,7 @@ describe('section tabs', () => {
     renderApp({ linked });
     const nav = await screen.findByRole('navigation', { name: 'Primary' });
     expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual([
-      'huddle', 'game day', 'locker room', 'playoff picture', 'hot takes', 'nfl', 'waiver wire', 'trade block', 'scouting report', 'draft room', 'record book',
+      'huddle', 'game day', 'locker room', 'playoff picture', 'around the league', 'hot takes', 'nfl', 'waiver wire', 'trade block', 'scouting report', 'draft room', 'record book',
     ]);
     expect(screen.getByRole('link', { name: 'front office' }).closest('.tn-tools')).not.toBeNull();
     const ref = screen.getByRole('navigation', { name: 'Reference' });

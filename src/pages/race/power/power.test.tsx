@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { DataProvider } from '../../../app/DataProvider';
 import { ModelProvider } from '../../../app/ModelProvider';
 import { ScenarioProvider } from '../../../app/ScenarioProvider';
-import LeagueRace from '../../LeagueRace';
+import AroundLeague from '../../AroundLeague';
 import { createFakeAccountStore, createFakeApi, createFakeSleeper } from '../../../test/fakes';
 import type { LoadModel } from '../../../app/loadModel';
 import { buildPowerRankings, bumpData } from '../../../engine/power';
@@ -22,14 +22,14 @@ afterEach(() => {
 const linked = [sampleAccount()];
 const model = () => { const m = league(); m.meta.leagueId = 'L1'; return m; };
 
-/** The playoff picture page in the app's providers (not the whole router, so the test does not depend on other pages). */
+/** The around the league page in the app's providers (not the whole router, so the test does not depend on other pages). */
 function renderRace(route: string, loadModel: LoadModel) {
   const user = userEvent.setup();
   const utils = render(
     <DataProvider api={createFakeApi()} accounts={createFakeAccountStore(linked)} sleeper={createFakeSleeper()}>
       <ModelProvider loadModel={loadModel}>
         <ScenarioProvider>
-          <MemoryRouter initialEntries={[route]}><LeagueRace /></MemoryRouter>
+          <MemoryRouter initialEntries={[route]}><AroundLeague /></MemoryRouter>
         </ScenarioProvider>
       </ModelProvider>
     </DataProvider>,
@@ -37,7 +37,7 @@ function renderRace(route: string, loadModel: LoadModel) {
   return { user, ...utils };
 }
 
-async function ready(route = '/race?tab=power') {
+async function ready(route = '/league?tab=power') {
   const r = renderRace(route, sampleLoadModel(model));
   await screen.findByRole('heading', { level: 2, name: /power rankings/ });
   return r;
@@ -46,9 +46,9 @@ const rows = () => [...document.querySelectorAll<HTMLElement>('.pw-row')];
 const rankings = buildPowerRankings(model());
 
 describe('the power rankings tab', () => {
-  it('is a tab of the playoff picture and opens on the current week', async () => {
+  it('is a tab of around the league and opens on the current week', async () => {
     await ready();
-    const tabs = screen.getByRole('radiogroup', { name: 'Playoff picture sections' });
+    const tabs = screen.getByRole('radiogroup', { name: 'Around the league sections' });
     expect(within(tabs).getByRole('radio', { name: 'power rankings' })).toBeChecked();
     expect(screen.getByRole('heading', { level: 2, name: 'week 5 power rankings' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'rank by week' })).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe('the power rankings tab', () => {
   });
 
   it('the headline names the riser and the faller of the week', async () => {
-    await ready('/race?tab=power&week=4');
+    await ready('/league?tab=power&week=4');
     await screen.findByRole('heading', { level: 2, name: 'week 4 power rankings' });
     const head = document.querySelector('.pw-head') as HTMLElement;
     const riser = within(head).getByText('riser').parentElement!;
@@ -121,7 +121,7 @@ describe('the power rankings tab', () => {
   });
 
   it('the first week has no movement and says so', async () => {
-    await ready('/race?tab=power&week=2');
+    await ready('/league?tab=power&week=2');
     await screen.findByRole('heading', { level: 2, name: 'week 2 power rankings' });
     expect(screen.getAllByText('first rankings').length).toBeGreaterThanOrEqual(2);
   });
@@ -172,7 +172,7 @@ describe('the power rankings tab', () => {
   it('says so when there are no rankings yet', async () => {
     const m = league({ points: [], cur: 1 });
     m.meta.leagueId = 'L1';
-    renderRace('/race?tab=power', sampleLoadModel(() => m));
+    renderRace('/league?tab=power', sampleLoadModel(() => m));
     expect(await screen.findByText(/first power rankings arrive once week 1 is final/)).toBeInTheDocument();
   });
 });

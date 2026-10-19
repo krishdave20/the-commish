@@ -34,6 +34,8 @@ const PATHS: Partial<Record<PageKey | 'more', ReactNode>> = {
       <path d="M12 13v4M8.5 20h7M9.8 17h4.4" />
     </>
   ),
+  // around the league: a ladder of bars, best on top
+  league: <path d="M4 6h16M4 10.5h12M4 15h8.5M4 19.5h5" />,
   // the league: a shield
   nfl: <path d="M12 3l7 2.5v6c0 4.2-2.8 7.4-7 9-4.2-1.6-7-4.8-7-9v-6L12 3zM12 8v8M8.5 11h7" />,
   // a speech bubble
