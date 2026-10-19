@@ -14,5 +14,8 @@ export default defineConfig({
     testTimeout: 20_000,
     // a couple of simulation-gated UI tests are timing-sensitive on small CI runners; locally a failure is a failure
     retry: process.env.CI ? 2 : 0,
+    // UI tests build their clock from local-time dates (Tue 8 pm, Sun 10 am); pin the zone so CI (UTC) and a laptop agree.
+    // The moments engine itself passes in UTC and Pacific too.
+    env: { TZ: 'America/Chicago' },
   },
 })
