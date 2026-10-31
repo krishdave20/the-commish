@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import type { AccountStore, DataApi, NflverseClient, SleeperClient } from './data';
 import { AppShell } from './app/AppShell';
@@ -10,6 +10,7 @@ const Almanac = lazy(() => import('./pages/Almanac'));
 const AroundLeague = lazy(() => import('./pages/AroundLeague'));
 const Leagues = lazy(() => import('./pages/Leagues'));
 const Method = lazy(() => import('./pages/Method'));
+const NativeFeed = lazy(() => import('./app/native/NativeFeed'));
 const Draft = lazy(() => import('./pages/Draft'));
 const GameDay = lazy(() => import('./pages/GameDay'));
 import Home from './pages/Home';
@@ -32,6 +33,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/signin" element={<SignIn />} />
+      {/* the iPhone app's hidden engine page (src/app/native/NativeFeed.tsx); no UI */}
+      <Route path="/native-feed" element={<Suspense fallback={null}><NativeFeed /></Suspense>} />
       <Route element={<AppShell />}>
         <Route index element={<Home />} />
         <Route path="/gameday" element={<GameDay />} />

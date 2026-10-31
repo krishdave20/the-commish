@@ -1,10 +1,14 @@
 /* Raising a notification. An installed iPhone app only allows `registration.showNotification` (a page-made `new Notification` throws there), so
-   the worker's registration is used whenever there is one; `new Notification` is the fallback for a browser tab with no worker. */
+   the worker's registration is used whenever there is one; `new Notification` is the fallback for a browser tab with no worker.
+   In the iPhone app (a WKWebView has no Notification API) the app raises them: it keeps the permission in `window.commishNative.notify`, asks with
+   the system prompt, and opens the notice's page when it is tapped. */
+import { askNative, isNativeApp, nativeInfo, postNative } from '../native/bridge';
 
 export type PermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
 
 /** The notification permission now, or 'unsupported' when the browser has no Notification API (iOS Safari outside an installed app). */
 export function notificationPermission(): PermissionState {
+  if (isNativeApp()) return nativeInfo()?.notify ?? 'default';
   if (typeof Notification === 'undefined') return 'unsupported';
   const p = Notification.permission;
   return p === 'granted' || p === 'denied' || p === 'default' ? p : 'default';
@@ -12,6 +16,7 @@ export function notificationPermission(): PermissionState {
 
 /** Asks the browser for permission. Call it only from a tap on the toggle: browsers refuse (or ignore) a prompt that no one asked for. */
 export async function requestAlertPermission(): Promise<PermissionState> {
+  if (isNativeApp()) return (await askNative<PermissionState>({ type: 'notify-request' }, 120_000)) ?? notificationPermission();
   if (typeof Notification === 'undefined') return 'unsupported';
   try {
     // old Safari takes a callback and returns nothing; the promise form is everywhere else
@@ -32,6 +37,7 @@ function assetUrl(file: string): string {
 /** Shows the notice. Resolves to true when one was raised; never throws (a blocked notification is not an app error). */
 export async function deliver(n: Notice): Promise<boolean> {
   if (notificationPermission() !== 'granted') return false;
+  if (isNativeApp()) return postNative({ type: 'notify', notice: n });
   const options = { body: n.body, tag: n.tag, icon: assetUrl('icon-192.png'), badge: assetUrl('icon-192.png'), data: { to: n.to } };
   try {
     const reg = typeof navigator !== 'undefined' && navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : undefined;

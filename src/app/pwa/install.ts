@@ -2,6 +2,7 @@
    owner taps "install". Safari on iPhone and iPad has no such event: the way in is Share → Add to Home Screen, so the section says that instead.
    `watchInstall()` starts listening at app start (the event can arrive long before front office is opened). */
 import { useSyncExternalStore } from 'react';
+import { isNativeApp } from '../native/bridge';
 
 /** The non-standard event Chromium fires (not in lib.dom). */
 export interface BeforeInstallPromptEvent extends Event {
@@ -30,6 +31,7 @@ function set(next: Partial<InstallState>) {
 /** Running as an installed app: a standalone (or fullscreen, or minimal-ui) display mode, or iOS's own flag. */
 export function isStandalone(): boolean {
   if (typeof window === 'undefined') return false;
+  if (isNativeApp()) return true; // the iPhone app
   try {
     if (['standalone', 'fullscreen', 'minimal-ui'].some((m) => window.matchMedia?.(`(display-mode: ${m})`).matches)) return true;
   } catch { /* no matchMedia */ }

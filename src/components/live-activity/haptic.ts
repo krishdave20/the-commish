@@ -1,5 +1,7 @@
-/* A tiny tick for a big moment, where the device can do it (Android browsers; iOS Safari has no vibrate). Never on page load: a vibration is only allowed after the
+/* A tiny tick for a big moment, where the device can do it (Android browsers, and the iPhone app's Taptic Engine; iOS Safari has no vibrate). Never on page load: a vibration is only allowed after the
    viewer has touched the page, so this waits for a first press or key (`navigator.userActivation` when the browser has it, else a flag set by a listener). */
+import { isNativeApp, postNative } from '../../app/native/bridge';
+
 let touched = false;
 let armed = false;
 
@@ -20,6 +22,7 @@ export function hasInteracted(): boolean {
 
 /** Vibrate for `ms` milliseconds if the device supports it and the viewer has interacted. Returns whether it asked the device to. */
 export function tick(ms = 10): boolean {
+  if (isNativeApp() && hasInteracted()) return postNative({ type: 'haptic', style: 'medium' });
   if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function' || !hasInteracted()) return false;
   try { return navigator.vibrate(ms); } catch { return false; }
 }

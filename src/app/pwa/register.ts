@@ -4,6 +4,7 @@
    Update flow: a new worker installs in the background and waits. `useSwUpdate()` turns true, the update prompt shows "a new version is ready ·
    reload", and `applyUpdate()` tells the waiting worker to take over, then reloads once it has. Registered only in a production build. */
 import { useSyncExternalStore } from 'react';
+import { isNativeApp } from '../native/bridge';
 import { SKIP_WAITING } from './swRoutes';
 
 export type SwStatus = 'unsupported' | 'idle' | 'registering' | 'ready' | 'error';
@@ -32,6 +33,8 @@ export function useSwStatus(): SwStatus {
 }
 
 export function swSupported(): boolean {
+  // the iPhone app ships the site in its bundle and updates through the app itself: no worker
+  if (isNativeApp()) return false;
   return typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !!navigator.serviceWorker;
 }
 

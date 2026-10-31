@@ -39,3 +39,8 @@ public/data/nflverse/
 e2e/results/
 playwright-report/
 test-results/
+# the iPhone app (ios/): Xcode's per-user state and build output
+ios/build/
+ios/DerivedData/
+xcuserdata/
+*.xcuserstate

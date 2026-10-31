@@ -9,6 +9,7 @@ import { useAccountStore, useAccounts, useActive, useApi } from '../app/hooks';
 import { PAGES } from '../app/names';
 import { usePageTitle } from '../app/usePageTitle';
 import { leagueScoring, leagueTypeLabel, statusLabel } from '../app/league';
+import { linkedAccount, lookupSleeper } from '../app/sleeperLookup';
 import type { SleeperLeague, SleeperUser } from '../data';
 
 type Step =
@@ -35,33 +36,13 @@ export default function SignIn() {
     if (!name) return;
     setPhase({ kind: 'busy', text: 'Looking up your Sleeper account…' });
     try {
-      const user = await api.user(name);
-      if (!user) {
+      const found = await lookupSleeper(api, name, linked);
+      if (!found) {
         setPhase({ kind: 'error', text: `No Sleeper account named “${name}”.` });
         return;
       }
-      setPhase({ kind: 'busy', text: 'Loading your leagues…' });
-      const state = (await api.nflState()).data;
-      const primarySeason = state.league_season ?? state.season;
-      const seasons = [primarySeason];
-      if ((state.season_type === 'off' || state.season_type === 'pre') && state.previous_season) {
-        seasons.push(state.previous_season);
-      }
-      const results = await Promise.all(seasons.map((s) => api.userLeagues(user.user_id, s)));
-      const seen = new Set<string>();
-      const leagues: SleeperLeague[] = [];
-      for (const res of results) {
-        for (const lg of res.data) {
-          if (!seen.has(lg.league_id)) { seen.add(lg.league_id); leagues.push(lg); }
-        }
-      }
-      const existing = linked.find((a) => a.userId === user.user_id);
-      const current = leagues.filter((l) => l.season === primarySeason);
-      const defaults = existing
-        ? leagues.filter((l) => existing.leagueIds.includes(l.league_id))
-        : current.length > 0 ? current : leagues;
-      setPicked(new Set(defaults.map((l) => l.league_id)));
-      setPhase({ kind: 'pick', user, leagues, primarySeason });
+      setPicked(new Set(found.defaults));
+      setPhase({ kind: 'pick', user: found.user, leagues: found.leagues, primarySeason: found.primarySeason });
     } catch (err) {
       setPhase({ kind: 'error', text: `Could not reach Sleeper. ${err instanceof Error ? err.message : String(err)}` });
     }
@@ -79,19 +60,7 @@ export default function SignIn() {
     if (phase.kind !== 'pick') return;
     const { user, leagues } = phase;
     const leagueIds = leagues.filter((l) => picked.has(l.league_id)).map((l) => l.league_id);
-    const existing = linked.find((a) => a.userId === user.user_id);
-    const activeLeagueId = existing?.activeLeagueId && leagueIds.includes(existing.activeLeagueId)
-      ? existing.activeLeagueId
-      : (leagueIds[0] ?? null);
-    store.upsert({
-      userId: user.user_id,
-      username: user.username ?? username.trim(),
-      displayName: user.display_name,
-      avatar: user.avatar,
-      leagueIds,
-      activeLeagueId,
-      addedAt: existing?.addedAt ?? Date.now(),
-    });
+    store.upsert(linkedAccount(user, username, leagueIds, linked.find((a) => a.userId === user.user_id)));
     store.setActive(user.user_id);
     navigate('/');
   }

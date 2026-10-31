@@ -426,3 +426,34 @@ The live tab's red zone section is drawn like a Sunday whip-around channel (`pag
 - **Live cards.** A red-zone card gets a red frame with a broadcast stripe on top, a slow pulse, the red clock in place of the green status, and the badge in broadcast red.
 - **Capitals and marks.** The lettering is lowercase in the DOM; one `text-transform: uppercase` rule in `whiparound.css`, only on `.rzw-*` lettering (tested, like the badge's). Style only: no league
   shield, no channel wordmark or network name (tested). Every animation sits inside `prefers-reduced-motion: no-preference` (tested).
+
+## The iPhone app (owner request, Oct 25, 2026: "turn the web app into an iphone app… live activities… optimize the app for iphone, don't just port the web app")
+A native SwiftUI app in `ios/` (setup and layout: `ios/README.md`). Owner decisions (Oct 25, 2026): Live Activities update **on the device only**
+(no server, per SPEC section 1), and a **free Apple ID** (no push, no TestFlight).
+- **Native where it counts, one engine.** The tabs (huddle, game day, lineup, league, more), check in, the league picker and the Live Activity are
+  SwiftUI. The numbers are not re-derived in Swift: a hidden web view keeps the site's providers running on `#/native-feed`
+  (`src/app/native/NativeFeed.tsx`, no UI) and posts a `NativeSnapshot` (`snapshot.ts`; `ios/App/Model/Snapshot.swift` decodes the same shape;
+  bump `SNAPSHOT_VERSION` on a breaking change). The app calls `window.commishFeed` (lookup, link, setLeague, signOut, refresh) through
+  `callAsyncJavaScript`. Check in's lookup moved to `src/app/sleeperLookup.ts`, so the page and the app share it.
+- **The bridge** (`src/app/native/bridge.ts`): the app injects `window.commishNative` before any script and listens on
+  `webkit.messageHandlers.commish`. In a browser everything is a no-op. `html[data-native="ios"]` (phone.css: no callouts or text selection on the chrome, no service worker
+  prompt). Inside the app the service worker never registers (`swSupported()` is false), the install section says "installed", haptics go to the Taptic
+  Engine (`haptic.ts`), and notifications go to the system (`notify.ts`; the permission lives in `commishNative.notify`). The local alerts run once,
+  in the feed page.
+- **Pushed pages** (`WebPageView.swift`) load the site with `embedded: true`: `AppShell` renders the page alone (no ticker, pill, top bar, tab bar or
+  footer; `NativeHost` answers the app's pull to refresh) and phone.css hides the page's own h1, since the native navigation bar names it.
+- **Origin:** the bundled `dist/` is served at `commish://app/` by a `WKURLSchemeHandler` (module scripts, IndexedDB and localStorage need a real
+  origin; every web view shares it, so accounts and cache are shared). `data/nflverse/*.json` is proxied from the live GitHub Pages site.
+- **The Live Activity** (`ios/Shared/CommishActivity.swift`, `ios/Widget/CommishLiveActivity.swift`): the top activity the web pill would show
+  (`activityPayload.ts` → `NativeActivity`, in the pill's own words), one at a time. Its kind lives in the content state, so kickoff → live
+  matchup → final is one activity. Countdowns use `Text(timerInterval:)`, so iOS ticks them with no updates. An update is sent only when
+  what it shows changes. It ends when nothing is ongoing (a result stays up to iOS's four hours). Off with "live activities" in More.
+- **With the app closed** (`BackgroundRefresh.swift`): a `BGAppRefreshTask` (about every 15 minutes at best, at iOS's discretion) fetches
+  `/v1/league/{id}/matchups/{week}` and updates the two scores. The win chance is re-estimated on the phone from the last engine state
+  (`refreshedWinChance`), and the lock screen says "win % estimated" until the app opens.
+- **Phone-first touches:** large titles, pull to refresh everywhere, native sheets, swipe back, haptics on tab changes, a selection and a big score jump
+  (+6, the pill's rule), numeric text transitions on live scores, the last snapshot saved to disk so the app opens on real data while the engine starts,
+  portrait on iPhone, a parchment launch screen, and the app icon from `public/icon-maskable.svg`.
+- **Verified:** the feed against the live league in the browser (a stub `webkit` handler captured the snapshots), the Swift `Snapshot` decoder compiled
+  with `swiftc` and run on a real snapshot (`ios/App/Preview Content/sample-snapshot.json`), and the project file parsed with every reference resolving.
+  **Not verified:** an Xcode build and anything on a simulator or device (Xcode was not installed on the build machine).

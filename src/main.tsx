@@ -13,6 +13,7 @@ import './styles/phone.css'; // after every other stylesheet (the app's imports 
 import { StartupError } from './app/StartupError.tsx';
 import { createAccountStore, createDataLayer } from './data';
 import { startPwa } from './app/pwa';
+import { markNative } from './app/native/bridge';
 
 function boot() {
   try {
@@ -23,5 +24,6 @@ function boot() {
   }
 }
 
-startPwa(); // install offer + service worker (production only)
+markNative(); // html[data-native] inside the iPhone app
+startPwa(); // install offer + service worker (production only; never in the iPhone app)
 createRoot(document.getElementById('root')!).render(<StrictMode>{boot()}</StrictMode>);

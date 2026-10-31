@@ -212,3 +212,19 @@
 }
 
 @keyframes wr-sheet { from { transform: translateY(100%); } to { transform: none; } }
+
+/* ---------- the iPhone app (html[data-native="ios"], set by src/app/native/bridge.ts) ----------
+   The site in a WKWebView should feel like the app it is: no link previews or text selection on the chrome (a long press on a tab or a button
+   is not a request to copy it), no page-level rubber band past the bottom tab bar, and no web-only furniture. Content text stays selectable. */
+html[data-native='ios'] { -webkit-text-size-adjust: 100%; }
+html[data-native='ios'] body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+html[data-native='ios'] :is(.tabbar, .sidebar, .ticker, .btn, button, [role='tab'], .seg, .page-tabs, a.plink) {
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+}
+/* the app updates with a new build, never with a service worker prompt */
+html[data-native='ios'] .pwa-update { display: none; }
+/* a site page pushed inside the app's navigation (AppShell renders no bars): nothing sits above the page, and the app's navigation bar already
+   names it, so the page's own title steps aside (its kicker, data stamp and refresh stay) */
+html[data-embedded] .shell { --top-h: 0px; --ticker-h: 0px; --bar-h: 0px; --activity-top: 0px; }
+html[data-embedded] .main { padding-top: var(--s-3); padding-bottom: max(var(--s-5), env(safe-area-inset-bottom, 0px)); }
+html[data-embedded] .page-head h1 { display: none; }

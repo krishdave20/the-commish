@@ -10,6 +10,8 @@ import { useTickerMode } from '../components/ticker/useTickerMode';
 import { useActive } from './hooks';
 import { LiveProvider } from './live/LiveProvider';
 import { MomentsProvider } from './moments/MomentsProvider';
+import { NativeHost } from './native/NativeHost';
+import { isEmbedded } from './native/bridge';
 import { PwaHost } from './pwa';
 import { TabBar } from './PhoneChrome';
 import { PhoneTop, Sidebar, SiteFooter } from './Sidebar';
@@ -33,6 +35,19 @@ function Frame() {
     if (first.current) { first.current = false; return; }
     main.current?.focus({ preventScroll: true });
   }, [location.pathname]);
+  // a page pushed inside the iPhone app: the app draws the navigation bar, the tabs and the Live Activity, so the page is just the page
+  if (isEmbedded()) {
+    return (
+      <div className="shell" data-embedded="true" data-phone={phone ? 'true' : undefined}>
+        <NativeHost />
+        <div className="app">
+          <main className="main" id="main" tabIndex={-1} ref={main} key={location.pathname}>
+            <ErrorBoundary key={location.pathname}><Suspense fallback={<PageSkeleton />}><Outlet /></Suspense></ErrorBoundary>
+          </main>
+        </div>
+      </div>
+    );
+  }
   return (
     <>
       <SkipLink />
@@ -40,6 +55,7 @@ function Frame() {
         {!phone && <Ticker />}
         <LiveActivity />
         <PwaHost />
+        <NativeHost />
         <div className="app">
           {phone ? <PhoneTop ticker={<Ticker />} /> : <Sidebar />}
           <main className="main" id="main" tabIndex={-1} ref={main} key={location.pathname}>
